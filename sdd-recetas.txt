@@ -1,0 +1,290 @@
+
+2026-08-13
+
+Tengo creada la estructura canónica de documentación SDD en la carpeta /docs. Leé docs/README.md y la carpeta docs/.ai/ para entender las reglas de trabajo del proyecto. A partir de las ideas que voy a escribir de a poco, quiero que empecemos a completar progresivamente los documentos siguiendo el paradigma SDD.
+
+Mirá, quiero hacer una aplicación de recetas de cocina para que un usuario que se registra en la aplicación pueda consultar recetas, guardar como favoritas, generar recetas, poder calificarlas, poder buscar por ingrediente o por nombre de la receta y algunas cosas mas que podemos definir más adelante.
+
+Antes de pasarte más detalles, me di cuenta que no te pasé la URL del repo de github del proyecto: 
+https://github.com/.../sdd-recetas
+
+Las recetas podrían tener etiquetas o tags: "comida sin TACC" "keto" "vegana" etc.
+ 
+Las recetas deberían tener una categoría: "postre" "entrada" "snack" etc
+. Se podría filtrar recetas por categoría y por tags. 
+
+Las categorías deberían ser cerradas, las etiquetas no pero debería predecirse la etiqueta que estoy escribiendo: por ejemplo si pongo "veg" --> debería mostrarme las opciones de etiquetas que contienen esas letras que escribí: "vegetariano" "vegano" etc. 
+
+¿Cómo se combinan los filtros de categorías/tags con la búsqueda por nombre/ingrediente? ¿Se pueden aplicar juntos? --> si, que la búsqueda lo hagan juntas: categorías, tags, nombre de la receta e ingredientes. 
+Esto en un MVP --> Mínimo Producto Viable, las recetas deberían permitir cargar hasta una sola foto o imagen representativa pero en esta primera etapa ese campo va a ser nulo.
+
+Una cosa que podemos agregar es un contador de visitas de una receta para saber cuántas personas ingresaron a ver una receta, este contador debería ser tal que si hago F5 en la página no me incremente más de una vez este contador. También debería tener un contador de veces que se guardó una receta y decrementar este contador si anularon el guardado. No hablamos del sistema de registro de usuarios.
+
+¿Qué cuenta como una visita? -> es cuando un usuario despliega el detalle de una receta, eso cuenta como una visita. Pero hay un problema: las recetas van a ser públicas. Puede verlas un usario que no está logueado. Te dejo a tu criterio cuál sería el mejor método para que se pueda contar una visita con un usuario que no está logueado. 
+
+Tema usuarios: el usuario va a quedar definido por su correo electrónico y un display-name. Va a tener un avatar, va a tener una fecha de creación de perfil, una fehc y hora de último login, se van a poder loguear con el email y su contraseña (que debe tener la seguridad mínimo 8 caracteres, una mayúscula, una número y un caracter). El usuario debería poder recuperar su contraseña si no la recuerda (por el momento todo lo relacionado a envío de correos electrónicos no es necesario configurarlo). Mostrar logueo satisfactorio y mostrar mensaje de error si hay problemas de autenticación (happy path y bad path). También hay que pensar en que el usuario puede darse de baja. Hay que ver qué hacemos con las recetas que creó el usuario que se dió de baja - quedan asignada a un usuario genérico? quedan con autor anónimo? - qué pasa con el conteo de visitas que hizo y las recetas que guardó. 
+
+Creo que deberíamos manejar una baja lógica del usuario con un campo is_active = false - por lo tanto con las visitas y las guardaras mantenerlas - pero en ese caso deberíamos ver si las recetas pasaron a ser anónimas y el usuario vuelve a plataforma cómo hace para recuperar las recetas de su autoría. Dame opciones de solución a este problema. 
+Deberíamos manejar en la eliminación del usuario la posibilidad de que el usuario decida eliminar también sus recetas que subió a la plataforma. 
+
+Hacé un análisis de toda la documentación cargada hasta ahora, y especificame qué cosas quedan pendientes. 
+
+Plataforma: mobile-first. 
+Catálogo inicial: podrían existir algunas recetas modelo (no más de dos o tres) y el resto lo crean los usuarios.
+
+Moderación: para el MVP no. 
+Calificación: estrellas que muestran el promedio de cant estrellas / cant calificaciones - si el promedio da 4.15 me tiene que pintar 4 estrellas y apenas una parte de la quinta. 
+
+Alcance social: compartir si, seguimiento no, perfil de usuario se podria consultar para ver todas sus publicaciones unicamente.
+Búsqueda por ingrediente: parcial, las recetas van a tener un slug para mejorar SEO de la aplicación.
+
+Las recetas van a tener un slug para mejorar el SEO de la aplicación. 
+
+Te paso otras ideas: las categorías deberían tener un slug, los tags también tendrían que tener un slug.
+
+Receta: título, categoría (múltiples), tags (múltiples), slug, ingredientes (lista que contiene ingrediente y cantidad), imagen (nula en el MVP), tiempo de preparación, rendimiento (en porciones o cantidades), fecha de creación, preparación (campo texto de muchos caracteres), id usuario creador. 
+Sistema de logueo vamos a usar tecnología JWT - cookies manejo de credenciales de logueo.
+
+Lista concreta de categorías cerradas: definilas vos, deberían ser categorías genéricas como ser: "postre" "snack" etc.
+ 
+Formato del tiempo de preparación: minutos. 
+Formato del rendimiento: porciones, cantidad de comensales. 
+Normalización de ingredientes y unidades: cm3, gramos, unidades. 
+Detalles de JWT: expiración la normal que utilizan las redes sociales como Facebook o X, refresh-token obligatorio y flags, qué es lo que mejor recomendás? 
+
+Mira, los ingredientes vamos a normalizarlos, pero deberías crear una tabla con 300 ingredientes distintos.
+
+Qué pasa si un usuario crea una receta con un ingrediente que no está en la lista, debería poder cargarse para luego validar ese ingrediente pero la receta se debería cargar. Que sea automática debería validarse con la asistencia de una IA? Caso contrario como es un MVP lo podemos hacer manual desde el Admin de la aplicación del cual todavía no hablamos pero debería ser otro proyecto separado que consuma la conexión a la base de datos y que maneje un sistema de logueo y cookies diferente al del frontend - lo del stack lo dejamos para otro día - necesito que subas todos los cambios a github (tenes que inicializar el proyecto en esta carpeta).
+ 
+
+
+
+
+2026-08-18
+
+Definir el stack tecnológico: 
+Frontend publico - Svelte/SvelteKit ultima version. 
+Backend + FastAPI ultima verston. 
+Base de datos - PostgreSQL. 
+Autenticacion - JWT + cookies. 
+Refresh token - obligatorio. 
+Persistencia de sesiones/tokens (duración de las sesiones
+típicas de redes sociales). 
+Manejo de imagenes - dejar preparado, pero sin implementar en
+MVP. 
+API - REST. 
+Proyecto bajo contenedores de Podman - vamos a usar imagenes públicas de AWS (evitar imágenes de Docker). 
+
+Admin - proyecto independiente también en svelte que va a consumir el acceso al backend - Debería generarse un usuario administrador y el sistema autenticación va a ser independiente al sistema de autenticación implementado por el frontend. 
+
+Si opción abierta es el bootstrap del usuario admin - el fork real es cómo se generan las credenciales iniciales. Elegir setup por variable de entorno: en el primer arranque, el backend crea el admin con user/password que pasás por env 
+(ADMIN_INITIAL_*) y fuerza el cambio en el primer login. Simple, reducible en contenedores, útil para el bootcamp. 
+
+Creo que podemos avanzar por los casos de uso, donde vamos a tener tres tipos de actores: Usuario no autenticado - Usuario autenticado - Administrador.
+Usuario no autenticado:  
+- Ingresa a la aplicación. Ve recetas públicas.  
+- Busca recetas.  
+- Filtra por categorías.  Filtra por tags. 
+- Busca por nombre.  
+- Busca por ingrediente.  Combina todos los filtros.  
+- Ingresa al detalle de una receta.  
+- Genera una visita.  
+- Comparte una receta. 
+- Consulta el perfil público de un autor.  
+- Ve las recetas publicadas por ese autor.  
+- Intenta realizar una acción que requiere autenticación -> se le solicita iniciar sesión. 
+Usuario autenticado:  
+Además de todo lo de "Usuario no autenticado".  
+- Registrarse.  
+- Iniciar sesión.  
+- Cerrar sesión.  
+- Recuperar contraseña.  
+- Editar perfil.  
+- Cambiar avatar.  
+- Crear receta.  
+- Editar receta propia.  
+- Eliminar receta propia.  
+- Agregar receta a favoritos.  
+- Quitar receta de favoritos.  
+- Calificar receta.  
+- Consultar sus recetas.  
+- Consultar sus favoritos.  
+- Consultar su perfil. 
+- Darse de baja. 
+- Decidir qué hacer con sus recetas al darse de baja.  
+Administrador: Esto lo tenemos que definir aparte porque la parte administrativa va a ser otro proyecto.  
+
+Existe alguna omisión en los casos de uso que te pasé?  
+
+Acepto sugerencia respecto a lo de cambiar contraseña y reactivación de cuenta.  
+
+Deberíamos revisar los casos de uso del administrador. 
+
+ Arrancar la fase UX/UI (estilos globales con shadcn-svelte):  Antes de pasar a esa definición necesito que las categorías tengan un campo más que va a guardar un "color" para el badge que va a representarla dentro de la card de la receta y en el detalle de la receta.  
+
+
+La página principal va a tener un navbar superior donde a la izq estará ubicado el logo de la app "Recetas App", el navbar va a ser reactivo a si un usuario se loguea o no (si se loguea debería cambiar el navbar y mostrar "Mis Recetas", "Mis Favoritos"). Debajo existirá un hero que tendría una frase representativa del espíritu de la aplicación. Debajo del hero debería estar el buscador con la posibilidad de eliminar los filtros utilizados. Debajo de este buscador se empezaría a mostrar las recetas en formato cards. Las cards deberían incluir una imagen mockeada tomada de la pagina placehold.co (400x400) y debería la foto en la parte superior de la card, las categorías en badges con los colores definidos de cada categoría, el título, la calificación, cantidad de favoritos, y el autor. Cuando hago click en la card me lleva a una página con el slug de la receta y todo el detalle de la misma (ingredientes, tags, procedimiento, titulo, autor, categorías, calificación, favoritos). 
+
+Qué me faltaría definirte además de la paleta de colores? La página va a admitir modo oscuro. Vamos a usar skeleton en toda la aplicación para mejorar el proceso de carga de los datos en las distintas páginas.  
+Mecanismo modo oscuro: tokens claro + oscuro.  
+Colores de las 10 categorías: asignalas aleatoriamente sobre tonalidades de tailwind.  
+Tipografía: fuente para titulos una fuente con serif - y la fuente para el detalle y demás nunito.  
+Espaciado: el más óptimo, radios, sombras si pero tenues, radios mínimos.  
+Copy del hero (frase del espíritu): inventalo vos y decime qué ponés.  
+Mecánica del buscador: live con debounce.  
+Paginación vs scroll infinito: scroll infinito.  
+Ruta del detalle: ./receta/<slug>  
+Estados vacíos: diseña una página 404 relativa al tema de la página.  
+Estraegia de la alicación del tema: paleta colores cálidos referidos a la temática de la página - letras de títulos en verde oliva oscuro - no quiero blancos plenos ni colores negros plenos - color de fondo de página principal rgb(250,249,246). 
+ 
+El frontend debe incluir un footer persistente en toda la app.  
+
+En cuanto al Admin tendría su propio sistema de autenticacion, independiente del usuario común.  
+Y debería poder como mínimo:  
+Usuarios: 
+- Listar usuarios.
+-  Buscar usuarios.
+- Ver perfil.
+- Activar/desactivar usuario.
+- Consultar fecha de creación.
+- Consultar último login. 
+- Ver cantidad de recetas.
+- Ver estado de la cuenta.
+
+Recetas:
+- Listar recetas.
+- Buscar recetas.
+- Filtrar.
+- Ver receta.
+- Editar.
+- Eliminar.
+- Ocultar/despublicar, si decidimos incorporarlo.
+- Ver autor.
+- Ver estadísticas básicas.
+
+Ingredientes (ABM Completo): 
+ -Mostrar validados.
+ - Listar ingredientes pendientes de validación.
+ - Rechazados.
+Y desde ahí el administrador puede:
+- Aceptar ingrediente.
+- Corregir nombre.
+- Asociarlo a un ingrediente existente.
+- Rechazarlo.
+- Normalizar unidad/nombre. 
+
+Quedan solo pendientes menores (estados vacíos de detalle, errores de red) -> mostrando alertas de shadcn con los colores correspondientes a errores (destructive). 
+
+Commiteá tranquilo.
+ 
+Quieres ir pasándome las specs y vamos decidiendo?
+ 
+Arrancar con tres aleatorias y básicas recetas modelo precargadas.
+Ante títulos similares sugerir que el usuario visite las recetas que tienen el título muy parecido - en el caso que quiera cargar esa receta el título debería agregarse un númer al final "pizza-de-mozzarella" "pizza-de-mozzarela-2" (que el slug se desambigue).
+Al eliminar receta eliminar también sus favoritos/calificaciones/visitas. 
+
+
+
+
+
+2026-08-20
+
+Quiero que recorras toda la documentación del proyecto y me digas si existen algunas incongruencias en todo lo planteado. A continuación, si encuentras algo, deberíamos resolverlo antes de seguir adelante con el proyecto. 
+
+Quiero especificar que necesito hacer tests unitarios en todos los endpoints importantes del backend y que quede documentado consecuentemente. 
+
+
+
+
+
+2026-08-25
+
+Siguiendo la documentación del proyecto en docs/ (específicamente la definición del stack, arquitectura, diseño del backend y tasks.md), vamos a comenzar con la implementación de la Infraestructura, Scaffolding inicial, Bootstrap y Seguridad de repositorio:
+Por favor, generá:
+1. podman-compose.yml y Containerfiles:
+   - Base de datos: PostgreSQL 
+   - Persistencia de datos: Utilizar un Bind Mount a una carpeta local en el disco (ej. ./.data/postgres) para que la información persista en disco local incluso tras ejecutar 'podman-compose down -v'.
+   - Backend: FastAPI 
+   - Frontend: SvelteKit 
+   - Admin: SvelteKit 
+   - Configuración de redes y dependencias (depends_on con healthcheck).
+2. Gestión de variables de entorno y .gitignore estricto:
+   - Archivo .env.example completo con todas las variables requeridas según las specs (DATABASE_URL, JWT_SECRET, ADMIN_INITIAL_USER, ADMIN_INITIAL_PASSWORD, CORS_ORIGINS, etc.) con valores de ejemplo seguros.
+   - Archivo .gitignore raíz exhaustivo para prevenir alertas de seguridad y escaneo de secretos de GitHub:
+     * Archivos de entorno (.env, .env.*, excepto .env.example).
+     * Carpeta de datos persistentes locales de la BD (.data/ o data/).
+     * Subidas locales/media (uploads/).
+     * Artefactos de Python (__pycache__, *.pyc, .venv/, venv/, .pytest_cache/, .coverage, htmlcov/).
+     * Artefactos de Node/SvelteKit (node_modules/, .svelte-kit/, build/, dist/, .env.local).
+3. Scaffolding y Bootstrap del Backend (FastAPI):
+   - Estructura modular según lo especificado en docs/.
+   - Endpoints funcionales GET /health y GET /healthz.
+   - Mecanismo de bootstrap/seed para que en el arranque cree el usuario Administrador inicial a partir de ADMIN_INITIAL_USER y ADMIN_INITIAL_PASSWORD (con flag must_change_password=true), de forma idempotente.
+4. Proyectos base de Frontend y Admin (SvelteKit):
+   - Estructuras mínimas funcionales que levanten en los puertos 3000 y 3001 respectivamente.
+El resultado debe permitir que al ejecutar `podman-compose up --build` todos los servicios arranquen limpios, la BD guarde sus datos en el disco local con el usuario admin listo y los splashes se visualicen correctamente en sus puertos.
+
+
+
+
+
+2026-08-27
+
+Necesito que revises la implementación del frontend teniendo en cuenta la documentación del proyecto y las especificaciones de UX/UI definidas previamente. Asegúrate de que el diseño sea consistente con los estilos globales establecidos, incluyendo la paleta de colores, tipografía, espaciado y sombras. 
+Verifica que el navbar superior sea reactivo según el estado de autenticación del usuario y que el hero, buscador y cards de recetas se muestren correctamente en la página principal. Recuerda que el diseño es mobile first.  
+
+Empecemos instalando todo lo necesario para el proyecto frontend. Luego espera a que lo pruebe para ver si hay que hacer algún ajuste.  
+
+Ahí probé levantar el fronted y me encuentro que la página de login no existe ni la de registro, me da error 404. No está creada la página de error 404 tampoco. No está un botón de tipo toggle en el navbar para cambiar entre modo oscuro y modo claro. No están las páginas estáticas, todas me dan error 404.  
+
+Cuando voy a registrar a un usuario, cuando voy a poner la contraseña no me dice las reglas que necesito para las contraseñas. Puse "sarasa" y debajo me aparece el mismo texto. Me gustaría que el mensaje de error ahora no diga lo mismo sino que me diga las reglas que estoy incumpliendo por ejemplo: "Min 8 caracteres, 1 número, 1 símbolo". Otra cosa: en la documentación del proyecto dijimos los íconos a utilizar eran específicos y no entiendo por qué me pusiste en los campos de contraseña algo que son (creo)  emojis y no los que habíamos definido.  
+
+Deberías desarrollar según la documentación del proyecto el despliegue de las tarjetas con las recetas en la página principal y el detalle de la receta. Además de la barra de búsqueda de recetas según la documentación. 
+
+Falta la página de perfil del usuario donde pueda editar todos sus datos como cambiar su avatar (revisar documentación del proyecto).  
+Hay un error cuando un usuario se loguea en el navbar no se muestra el nombre de su display_name sino que siempre muestra "Usuario Test". Por favor corregí eso. 
+Hay otra cosa que no me gusta como funciona y es el cierre de sesión, debería haber un modal de confirmación antes de cerrar la sesión y que el usuario pueda cancelar la acción. Por favor, implementa este cambio en la funcionalidad de cierre de sesión y asegúrate de que el modal sea claro y fácil de usar y con los estilos de la aplicación.  
+
+Vamos a usar table-icons en su versión filled en toda la aplicación.  Actualiza la documentación con esta especificidad y avanza con los cambios.  
+
+Bueno puedo ver las recetas, pero no puedo loguearme. Por consola no sale ningún error pero por consola del navegador me sale el siguiente error:  
+GET https://localhost:3000/_app/inmutable/entry/ 
+
+Necesito que revises e implementes correctamente todas las funcionalidades relacionadas con usuarios, recetas y perfiles, respetando estrictamente la documentación del proyecto (arquitectura, modelo de datos, reglas de negocio y API). Antes de hacer cambios, auditá la documentación y verificá que cada funcionalidad esté implementada según lo especificado. Si encontrás diferencias entre la documentación y el código, corregí el código para alinearlo con la documentación.  
+1- Funcionalidad a implementar y corregir 
+1.a- Usuarios y recetas. Cuando un usuario inicia sesión debe poder: crear una receta, guardar una receta como favorita, calificar una receta, ver todas las recetas que creó, ver todas sus recetas favoritas. Verificá que todas estas operaciones funcionen de punta a punta y que los datos se almacenen y recuperen correctamente desde la base de datos. 
+1.b- Filtro de la página principal. El filtro por tags actualmente no funciona. Revisá tanto el frontend coo el backend y corregí el filtrado para que funcione correctamente según la documentación. 
+
+Perfil del usuario (privado):  
+Quiero modificar la página de perfil del usuario autenticado. 
+Mantener: foro de perfil, nombre e información del usuario, fecha de registro de la cuenta. El usuario podría cambiar su display_name y su avatar. 
+Cambiar: mostrar "Miembro desde" utiizando la fecha de creación de la cuenta, eliminar la fecha de último login porque no es información relevante para el usuario, eliminar la sección de últimas sesiones y en su lugar mostrar todas las recetas creadas por el usuario obtenidas desde la base de datos, reemplazar "Últimas sesiones" por una lista con todas las recetas creadas por el usuario obtenidas desde la base de datos. 
+Mantener al final de la página: cambiar contraseña, darse de baja o eliminar cuenta, en el detalle de una receta el nombre del autor debe ser un enlace, al hacer click debe abrir el perfil público de ese autor mostrando la información definida en la documentación (foto de perfil, display_name, fecha desde cuándo es miembro) y todas las recetas que publicó.
+
+Cambio de imagen de perfil:  
+Actualmente el usuario autenticado no puede cambiar su imagen de perfil y la operación devuelve un error.  
+
+Revisá y corregí todo el flujo:  
+Subida de imagen.  
+Endpoint correspondiente. 
+Persistencia en la base de datos. 
+Actualización inmediata de la imagen en el frontend. 
+
+"Mis Recetas":  
+La página Mis Recetas no funciona. Debe listar correctamente todas las recetas creadas por el usuario autenticado. 
+
+"Mis Favoritos":  
+La página Mis Favoritos no funciona. Debe mostrar todas las recetas marcadas como favoritas por el usuario autenticado y obtenerlas correctamente desde la base de datos. 
+
+Crear receta:  
+Aunque el usuario esté autenticado, actualmente no puede crear recetas. Encontrá la causa y corregí el flujo completo para que la creación funcione correctamente. 
+
+Requisitos importantes: 
+Revisá tanto el frontend como el backend.  
+Verificá modelos, endpoints, relaciones y consultas a la base de datos según la documentación del proyecto.  
+No implementes soluciones temporales ni mocks: todas las funcionalidades deben persistir y recuperar información real de la base de datos y ajustarse estrictamente a la documentación del proyecto. Cosa que modifiquemos, cosa que vamos a documentar en la documentación del proyecto para que quede registrado y no se pierda el hilo de lo que se hizo y por qué. 
+Al finalizar comprobá que cada funcionalidad funciona de punta a punta respetando la documentación del proyecto. 
+Encontré un nuevo problema en la aplicación y es que las recetas y los endpoints en el backend no traen los ingredientes asociados. Todas las recetas no tienen ingredientes asociados. Por favor revisa la implementación de los endpoints de recetas y asegúrate de que los ingredientes asociados a cada receta se recuperan correctamente desde la base de datos y se incluyan en la respuesta del endpoint. Además verifica que la relación entre recetas e ingredientes esté correctamente definida en el modelo de datos y que las consultas a la base de datos estén optimizadas para obtener esta información sin errores.  
+
+Encontré un error que cuando un usuario autenticado se desloguea y confirma que cierra la sesión, la página queda "pegada" en mi-perfil con el perfil que estaba logueado. Eso no debe pasar porque debe redirigirlo a la página principal. 
+
