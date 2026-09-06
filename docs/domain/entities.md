@@ -82,10 +82,11 @@
 | Atributo | Tipo | Constraints | Descripción |
 |----------|------|-------------|-------------|
 | id | UUID | PK, default gen_random_uuid() | |
-| slug | varchar(50) | NOT NULL, UNIQUE | Key técnica: 'postre', 'entrada' |
-| name | varchar(50) | NOT NULL | Display: 'Postre', 'Entrada' |
+| slug | varchar(50) | NOT NULL, UNIQUE | Key técnica: 'postre', 'entrada', 'snack', 'plato-principal', 'acompañamiento', 'bebida', 'desayuno', 'sopa-crema', 'ensalada', 'horneados' |
+| name | varchar(50) | NOT NULL | Display: 'Postre', 'Entrada', 'Snack', 'Plato principal', 'Acompañamiento', 'Bebida', 'Desayuno', 'Sopa / Crema', 'Ensalada', 'Horneados' |
 | description | text | NULLABLE | |
-| icon | varchar(10) | NULLABLE | Emoji o nombre icono |
+| icon | varchar(10) | NULLABLE | Emoji: 🍰 🥗 🍿 🍽️ 🥔 🥤 ☕ 🍲 🥗 🍞 |
+| color | varchar(7) | NOT NULL, DEFAULT '#FB923C' | **Hex color** para badge UI (Tailwind 400: orange, green, yellow, blue, purple, cyan, rose, lime, emerald, red) |
 | sort_order | int | NOT NULL, default 0 | Orden en UI |
 | is_active | boolean | NOT NULL, default true | Para desactivar sin borrar |
 

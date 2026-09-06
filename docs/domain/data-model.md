@@ -70,20 +70,23 @@ CREATE TABLE categoria (
     name        VARCHAR(50) NOT NULL,
     description TEXT,
     icon        VARCHAR(10),
+    color       VARCHAR(7) NOT NULL DEFAULT '#6366f1',  -- Hex color para badge UI
     sort_order  INT NOT NULL DEFAULT 0,
     is_active   BOOLEAN NOT NULL DEFAULT true
 );
 
--- Seed data
-INSERT INTO categoria (slug, name, icon, sort_order) VALUES
-('postre', 'Postre', '🍰', 1),
-('entrada', 'Entrada', '🥗', 2),
-('snack', 'Snack', '🍿', 3),
-('plato-principal', 'Plato principal', '🍽️', 4),
-('acompañamiento', 'Acompañamiento', '🥔', 5),
-('bebida', 'Bebida', '🥤', 6),
-('desayuno', 'Desayuno', '☕', 7),
-('otro', 'Otro', '📦', 99);
+-- Seed data (10 categorías — colores Tailwind 400 para mejor contraste light/dark)
+INSERT INTO categoria (slug, name, icon, color, sort_order) VALUES
+('postre', 'Postre', '🍰', '#FB923C', 1),              -- orange-400
+('entrada', 'Entrada', '🥗', '#4ADE80', 2),           -- green-400
+('snack', 'Snack', '🍿', '#FACC15', 3),               -- yellow-400
+('plato-principal', 'Plato principal', '🍽️', '#60A5FA', 4),   -- blue-400
+('acompañamiento', 'Acompañamiento', '🥔', '#C084FC', 5),      -- purple-400
+('bebida', 'Bebida', '🥤', '#22D3EE', 6),             -- cyan-400
+('desayuno', 'Desayuno', '☕', '#FB7185', 7),           -- rose-400
+('sopa-crema', 'Sopa / Crema', '🍲', '#A3E635', 8),    -- lime-400
+('ensalada', 'Ensalada', '🥗', '#34D399', 9),          -- emerald-400
+('horneados', 'Horneados', '🍞', '#F87171', 10);        -- red-400
 
 -- ============================================================
 -- RECETAS MODELO (Seed Data - 2-3 recetas de ejemplo)

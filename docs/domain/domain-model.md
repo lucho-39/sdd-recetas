@@ -72,20 +72,23 @@
 - `name`: string, not null (ej: 'Postre', 'Entrada', 'Snack')
 - `description`: text, nullable
 - `icon`: string, nullable (nombre de icono o emoji)
+- `color`: string, not null, default '#FB923C' — **Hex color** para badge UI (Tailwind 400 tones)
 - `sort_order`: integer, default 0
 - `is_active`: boolean, default true
 
-**Valores semilla (seed data)**:
-| slug | name | icon |
-|------|------|------|
-| postre | Postre | 🍰 |
-| entrada | Entrada | 🥗 |
-| snack | Snack | 🍿 |
-| plato-principal | Plato principal | 🍽️ |
-| acompañamiento | Acompañamiento | 🥔 |
-| bebida | Bebida | 🥤 |
-| desayuno | Desayuno | ☕ |
-| otro | Otro | 📦 |
+**Valores semilla (seed data)** — 10 categorías, colores Tailwind 400:
+| slug | name | icon | color |
+|------|------|------|-------|
+| postre | Postre | 🍰 | #FB923C |
+| entrada | Entrada | 🥗 | #4ADE80 |
+| snack | Snack | 🍿 | #FACC15 |
+| plato-principal | Plato principal | 🍽️ | #60A5FA |
+| acompañamiento | Acompañamiento | 🥔 | #C084FC |
+| bebida | Bebida | 🥤 | #22D3EE |
+| desayuno | Desayuno | ☕ | #FB7185 |
+| sopa-crema | Sopa / Crema | 🍲 | #A3E635 |
+| ensalada | Ensalada | 🥗 | #34D399 |
+| horneados | Horneados | 🍞 | #F87171 |
 
 ### Ingrediente (Catálogo Normalizado — 300 items seed)
 - `id`: UUID (PK)

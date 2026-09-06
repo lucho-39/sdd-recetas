@@ -14,6 +14,9 @@
 | Q17 | **Visualización de calificación promedio** | **Estrellas fraccionales**: promedio 4.15 → 4 estrellas llenas + 15% de la 5ta estrella rellena | 2026-09-05 | UI precisa; `avg_rating` decimal(3,2) ya soporta; frontend renderiza fill % |
 | Q18 | **Alcance social** | **Compartir SÍ** (Web Share API, link copiar); **Seguimiento NO**; **Perfil público** solo muestra recetas publicadas del autor | 2026-09-05 | Simplifica social graph; no followers/following; perfil = card autor + grid recetas |
 | Q19 | **Búsqueda por ingrediente** | **Parcial (ILIKE/trigram)** en `ingredients.name`; **Recetas con slug** para SEO (`/receta/<slug>`) | 2026-09-05 | `data-model.md`: slug unique en receta; búsqueda ingredientes usa `jsonb_path_query` + trigram |
+| Q3 | **Stack tecnológico** | **Frontend**: SvelteKit (última versión, Svelte 5 runes) — PWA nativo, Vite<br>**Backend**: FastAPI (última versión, Python 3.12+) — REST, Pydantic v2, async<br>**DB**: PostgreSQL 16+ (pg_trgm, pgcrypto, btree_gin)<br>**Auth**: JWT RS256 (access 15min) + Refresh Token opaque (30d, HttpOnly cookie, rotation obligatoria)<br>**Sesiones**: Duración redes sociales (access 15min, refresh 30d rolling, sliding window)<br>**Imágenes**: Preparado (campo `image_url` nullable, esquema S3-compatible) — NO implementado MVP<br>**API**: REST (OpenAPI/Swagger auto-generado por FastAPI)<br>**Contenedores**: Podman — imágenes base AWS (public.ecr.aws/...) — NO Docker Hub<br>**Despliegue**: Podman Compose / Quadlet en VPS | 2026-09-05 | Define todo el stack: lenguaje, framework, DB, auth, contenedores, deployment. Base para ADR-001, ADR-002, ADR-003, ADR-004 |
+| Q20 | **Sistema Admin** | **Proyecto separado SvelteKit** (independiente del frontend usuario)<br>**Auth independiente**: usuarios admin ≠ usuarios frontend<br>**Bootstrap admin**: Variables de entorno `ADMIN_INITIAL_EMAIL`, `ADMIN_INITIAL_PASSWORD` → en primer arranque backend crea admin, `force_password_change=true`<br>**Primer login**: Fuerza cambio de contraseña obligatorio<br>**Auth admin**: JWT separado (claims `role: "admin"`), cookies HttpOnly propias, refresh rotation propia | 2026-09-05 | Admin desacoplado del frontend; bootstrap por env (container-friendly); force password change; auth aislado |
+| Q22 | **Color por categoría** | Campo `color` VARCHAR(7) Hex (#RRGGBB) en `categoria` — seed data con colores shadcn-svelte compatibles light/dark mode | 2026-09-05 | Badge UI consistente en cards y detalle; shadcn-svelte `Badge` component usa color para variant custom |
 
 ---
 
@@ -21,11 +24,7 @@
 
 | # | Pregunta | Opciones | Impacto | Recomendación |
 |---|----------|----------|---------|---------------|
-| **Q3** | **Stack tecnológico** (Frontend + Backend) | **A.** SvelteKit + FastAPI (Python)<br>**B.** Next.js (App Router) + NestJS/Express (TypeScript)<br>**C.** Remix + Go (Chi/Gin)<br>**D.** Astro + Hono (edge) + Go/Python<br>**E.** Vue/Nuxt + Laravel/Django | **TODO**: framework choice, language, ecosystem, hiring, DX, performance | **A o B** por madurez, TypeScript end-to-end, buena DX, PWA support nativo |
-| **Q4** | **Estrategia de autenticación** | **A.** Custom JWT (RS256) + refresh rotation + OAuth (Lucia/Auth.js helpers)<br>**B.** Auth.js (NextAuth) completo<br>**C.** Clerk / Supabase Auth / Firebase Auth (managed)<br>**D.** Ory Kratos (self-hosted identity) | **authentication.md**, `02-security.md`, `ADR-003`, session mgmt, OAuth | **A** (custom con Lucia/Auth.js helpers) = control total, sin vendor lock-in, RS256 + rotation ya especificado |
-| **Q5** | **Búsqueda unificada** (categoría + tags + texto + ingredientes) | **A.** PostgreSQL nativo (pg_trgm + GIN JSONB) — MVP<br>**B.** Meilisearch (self-hosted) — mejor relevancia, typo-tolerance<br>**C.** Typesense (self-hosted) — similar Meilisearch, más ligero<br>**D.** Elasticsearch/OpenSearch — overkill MVP | `data-model.md` (función `buscar_recetas`), `01-api-design.md`, `search.md`, infra | **A para MVP** (ya implementado en SQL), **B/C evaluar en M3** si UX lo requiere |
-| **Q6** | **Deployment target** | **A.** Vercel (FE) + Railway/Render/Fly.io (BE) — managed, scale-to-zero<br>**B.** Docker Compose en VPS (Hetzner/DigitalOcean) — control total, costo fijo<br>**C.** Kubernetes (k3s/managed) — overkill MVP<br>**D.** Cloudflare Pages + Workers — edge, nuevo paradigma | `03-deployment.md`, CI/CD, costs, observabilidad, migrations | **A** para velocidad + costo bajo inicio; **B** si se prefiere control/privacidad |
-| **Q7** | **ORM / Data Access** | **A.** Prisma (TypeScript, migraciones, type-safe)<br>**B.** Drizzle ORM (ligero, SQL-like, TypeScript)<br>**C.** sqlc (Go) / PgTyped (TS) — SQL raw + type gen<br>**D.** Raw SQL + migraciones manuales (golang-migrate, dbmate) | `data-model.md`, repositorios, DX, migraciones, team skills | **B (Drizzle)** si TS stack; **A (Prisma)** si prioridad DX/migraciones; **D** si equipo prefiere SQL puro |
+| **Q7** | **ORM / Data Access (Python/FastAPI)** | **A.** SQLAlchemy 2.0 (async) + Alembic — estándar, maduro, type hints<br>**B.** SQLModel (basado en SQLAlchemy + Pydantic) — integra bien con FastAPI<br>**C.** Raw SQL + asyncpg + migraciones manuales (golang-migrate/dbmate) — control total<br>**D.** Prisma/Drizzle — no son Python-native | `data-model.md`, repositorios, DX, migraciones, team skills | **A** (SQLAlchemy 2.0 async + Alembic) = estándar Python, maduro, type hints, integra con Pydantic v2/FastAPI, Alembic para migraciones |
 
 ---
 
@@ -35,12 +34,13 @@
 |---|----------|----------|---------|
 | Q8 | **IA Generation Provider** | OpenAI (GPT-4o-mini), Anthropic (Haiku), Ollama local, self-hosted (vLLM) | Costos, latencia, privacidad, `ai-generation.md` |
 | Q9 | **Almacenamiento de imágenes** (v2+) | S3 (R2/MinIO), Cloudinary, Uploadcare, local filesystem | `data-model.md` (image_url), `03-deployment.md`, costos |
-| Q10 | **Monorepo vs Multi-repo** | Turborepo/Nx monorepo (FE+BE+shared), repos separados | CI/CD, type sharing, deploy independence |
+| Q10 | **Monorepo vs Multi-repo** | **A.** Monorepo (Turborepo/Nx) — FE usuario + FE admin + BE + shared types<br>**B.** Multi-repo — 3 repos separados (frontend, admin, backend)<br>**C.** Mono-repo parcial — FE+BE juntos, admin separado | CI/CD, type sharing, deploy independence, admin auth isolation |
 | Q11 | **Internacionalización (i18n)** | Solo ES MVP; estructura para EN/PT/IT en v2 (next-intl, i18next, Paraglide) | `ui/`, routing, content, SEO |
 | Q12 | **Analytics / Telemetría** | PostHog (self-hosted), Plausible, Umami, custom events (opt-in only) | `02-security.md`, `non-functional-requirements.md` (RNF-05) |
 | Q13 | **Email Service** (verificación, reset password) | Resend, SendGrid, Mailgun, AWS SES, Postmark, self-hosted (Postal) | `authentication.md`, infra, costos, deliverability |
 | Q14 | **Rate Limiting / WAF** | Arcjet, Cloudflare, custom middleware (Redis), nginx + lua | `02-security.md`, `authentication.md` (RB-AUTH-04) |
 | Q15 | **Observabilidad Stack** | Prometheus+Grafana, Datadog, Honeycomb, OpenTelemetry + Tempo/Loki | `03-deployment.md`, `non-functional` (RNF-09) |
+| Q21 | **Estructura proyecto Admin** | **A.** SvelteKit app separada en monorepo (compartir types/utils con frontend)<br>**B.** SvelteKit app en repo aparte (deploy independiente, auth totalmente aislado) | Q10, `03-deployment.md`, CI/CD, shared types |
 
 ---
 
@@ -48,7 +48,20 @@
 
 | Área | Decisión | Documentada en |
 |------|----------|----------------|
-| Base de datos | PostgreSQL 16+ con pg_trgm, pgcrypto, btree_gin | `data-model.md` |
+| **Frontend** | SvelteKit (Svelte 5 runes) — PWA nativo, Vite, TypeScript | `vision.md`, `planning/02-open-questions.md` (Q3) |
+| **Backend** | FastAPI (Python 3.12+) — REST, Pydantic v2, async, OpenAPI auto | `planning/02-open-questions.md` (Q3) |
+| **Base de datos** | PostgreSQL 16+ con pg_trgm, pgcrypto, btree_gin | `data-model.md` |
+| **Auth (Frontend)** | JWT RS256 (access 15min) + Refresh Token opaque (30d, HttpOnly cookie, rotación obligatoria) | `authentication.md`, `planning/02-open-questions.md` (Q3) |
+| **Auth (Admin)** | **Proyecto SvelteKit separado** — JWT RS256 independiente (`role: "admin"`), cookies HttpOnly propias, refresh rotation propia | `planning/02-open-questions.md` (Q20) |
+| **OAuth** | Google + GitHub (FastAPI backend callback + Lucia en SvelteKit frontend) | `planning/02-open-questions.md` (Q4) |
+| **Bootstrap Admin** | Variables de entorno `ADMIN_INITIAL_EMAIL`, `ADMIN_INITIAL_PASSWORD` → crea admin en primer arranque, `force_password_change=true` | `planning/02-open-questions.md` (Q20) |
+| **Sesiones** | Duración redes sociales: access 15min, refresh 30d rolling, sliding window | `planning/02-open-questions.md` (Q3) |
+| **Imágenes** | Preparado (`image_url` nullable, esquema S3-compatible) — NO implementado MVP | `entities.md`, `planning/02-open-questions.md` (Q3) |
+| **API** | REST (OpenAPI/Swagger auto-generado por FastAPI) | `planning/02-open-questions.md` (Q3) |
+| **Contenedores** | Podman — imágenes base AWS ECR Public (`public.ecr.aws/...`) — NO Docker Hub | `planning/02-open-questions.md` (Q3) |
+| **Deployment** | VPS (Hetzner/DigitalOcean) + Podman Compose / Quadlet | `planning/02-open-questions.md` (Q6) |
+| **ORM** | **SQLAlchemy 2.0 async + Alembic** (estándar Python, maduro, type hints, migraciones) | `planning/02-open-questions.md` (Q7) |
+| **Búsqueda** | PostgreSQL nativo (pg_trgm + GIN JSONB) — MVP | `data-model.md`, `planning/02-open-questions.md` (Q5) |
 | Soft delete | `deleted_at` en recetas; usuario sistema para anonimización | `entities.md`, `data-model.md` |
 | Baja usuario | Lógica (`is_active`), reactivable, GDPR irreversible | `business-rules.md` (RB-AUTH-08/09/10) |
 | Visitas | Únicas por día por visitante (fingerprint/cookie + salt diario) | `business-rules.md` (RB-04), `data-model.md` |
@@ -63,12 +76,12 @@
 
 ## 📝 PRÓXIMOS PASOS INMEDIATOS
 
-1. **Decidir Q3 (Stack) + Q4 (Auth) + Q5 (Search) + Q6 (Deploy) + Q7 (ORM)** → permite escribir ADR-001 a ADR-004
-2. **Escribir ADRs** en `docs/decisions/`
-3. **Arquitectura** en `docs/architecture/00-architecture.md` + `01-api-design.md` + `02-security.md`
-4. **Completar casos de uso** faltantes en `docs/use-cases/`
-5. **UI/UX** en `docs/ui/`
-6. **Primera Delta Spec** en `docs/specs/`
+1. **Definir Q10 (Monorepo vs Multi-repo) + Q21 (Estructura Admin)** → impacta estructura de repos, CI/CD, shared types
+2. **Escribir ADRs** en `docs/decisions/`: ADR-001 (Tech Stack), ADR-002 (Database), ADR-003 (Auth + Admin Auth), ADR-004 (Search), ADR-005 (Deployment), ADR-006 (ORM)
+3. **Arquitectura** en `docs/architecture/`: `00-architecture.md` (C4 nivel 1-2), `01-api-design.md` (OpenAPI), `02-security.md` (authN/authZ user + admin), `03-deployment.md` (Podman + VPS)
+4. **Completar casos de uso** faltantes en `docs/use-cases/`: `recipes.md`, `favorites.md`, `social.md`, `ratings.md`, `auth.md`, `admin.md`, `ai-generation.md`, `cooking-mode.md`, `visit-tracking.md`, `ingredients.md`
+5. **UI/UX** en `docs/ui/`: `00-ui-overview.md`, `01-pages.md`, `02-components.md`, `03-design-system.md`
+6. **Primera Delta Spec** en `docs/specs/`: `TEMPLATE.md` + `auth-system.md` (primer change)
 
 ---
 
