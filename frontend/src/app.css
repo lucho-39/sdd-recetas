@@ -1,0 +1,185 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #FAF9F6;
+    --foreground: #2D2B28;
+    --muted: #F0EDE8;
+    --muted-foreground: #6B6762;
+    --border: #E8E4DF;
+    --ring: #3D4034;
+    --primary: #3D4034;
+    --primary-hover: #4A4E40;
+    --destructive: #B84A3A;
+    --destructive-hover: #A03A2A;
+    --success: #5A7D4A;
+    --warning: #C47A2A;
+    --rating: #FBBF24;
+    --surface: #F5F3F0;
+    --title-color: #3D4034;
+  }
+
+  .dark {
+    --background: #1C1A18;
+    --foreground: #E8E5E1;
+    --muted: #2A2724;
+    --muted-foreground: #A8A4A0;
+    --border: #3D3935;
+    --ring: #8F8C84;
+    --primary: #C8C4BC;
+    --primary-hover: #D8D4D0;
+    --destructive: #D47A6A;
+    --destructive-hover: #E88A7A;
+    --success: #7AB86A;
+    --warning: #D4A84A;
+    --rating: #FBBF24;
+    --surface: #24211F;
+    --title-color: #C8C4BC;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
+  }
+
+  ::selection {
+    @apply bg-primary/20 text-primary;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary text-primary-foreground hover:bg-primary-hover h-10 px-4 py-2;
+  }
+
+  .btn-secondary {
+    @apply btn bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2;
+  }
+
+  .btn-destructive {
+    @apply btn bg-destructive text-destructive-foreground hover:bg-destructive-hover h-10 px-4 py-2;
+  }
+
+  .btn-outline {
+    @apply btn border border-border bg-transparent hover:bg-accent h-10 px-4 py-2;
+  }
+
+  .btn-ghost {
+    @apply btn hover:bg-accent h-10 px-4 py-2;
+  }
+
+  .btn-sm {
+    @apply h-8 px-3 text-sm;
+  }
+
+  .btn-lg {
+    @apply h-12 px-6 text-lg;
+  }
+
+  .input {
+    @apply w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .label {
+    @apply text-sm font-medium text-foreground mb-1.5 block;
+  }
+
+  .card {
+    @apply bg-card rounded-xl border border-border shadow-sm transition-shadow hover:shadow-lg;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 font-medium rounded-full px-2.5 py-0.5 text-sm;
+  }
+
+  .badge-category {
+    @apply inline-flex items-center gap-1 font-medium rounded-full px-2.5 py-0.5 text-sm;
+  }
+
+  .input-base {
+    @apply w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .link {
+    @apply text-primary hover:text-primary-hover underline-offset-2 hover:underline transition-colors;
+  }
+
+  .container {
+    @apply mx-auto px-4 md:px-6 lg:px-8 max-w-7xl;
+  }
+
+  .section {
+    @apply py-10 md:py-14 lg:py-20;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 200ms ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 300ms ease-out;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 1.8s infinite linear;
+    background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--muted-foreground) / 0.08) 50%, hsl(var(--muted)) 75%);
+    background-size: 200% 100%;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-in {
+    animation: fadeIn 200ms ease-out, slideUp 300ms ease-out;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

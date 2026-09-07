@@ -1,0 +1,118 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: public.ecr.aws/docker/library/postgres:16-alpine
+    container_name: recetario-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-recetario}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-recetario}
+    volumes:
+      - ./.data/postgres:/var/lib/postgresql/data:Z
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-recetario} -d ${POSTGRES_DB:-recetario}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - recetario-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Containerfile
+    container_name: recetario-backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-recetario}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-recetario}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: RS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 15
+      REFRESH_TOKEN_EXPIRE_DAYS: 30
+      ADMIN_INITIAL_USER: ${ADMIN_INITIAL_USER}
+      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:3001}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - recetario-network
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app:Z
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Containerfile
+    container_name: recetario-frontend
+    environment:
+      PORT: 3000
+      HOST: 0.0.0.0
+      ORIGIN: http://localhost:3000
+      PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - recetario-network
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app:Z
+      - /app/node_modules
+      - /app/.svelte-kit
+      - /app/build
+
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Containerfile
+    container_name: recetario-admin
+    environment:
+      PORT: 3001
+      HOST: 0.0.0.0
+      ORIGIN: http://localhost:3001
+      PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3001:3001"
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - recetario-network
+    restart: unless-stopped
+    volumes:
+      - ./admin:/app:Z
+      - /app/node_modules
+      - /app/.svelte-kit
+      - /app/build
+
+networks:
+  recetario-network:
+    driver: bridge
+    name: recetario-network
