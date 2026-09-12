@@ -4,37 +4,52 @@
 
 @layer base {
   :root {
-    --background: #FAF9F6;
-    --foreground: #2D2B28;
-    --muted: #F0EDE8;
-    --muted-foreground: #6B6762;
-    --border: #E8E4DF;
-    --ring: #3D4034;
-    --primary: #3D4034;
-    --primary-hover: #4A4E40;
-    --destructive: #B84A3A;
-    --destructive-hover: #A03A2A;
-    --success: #5A7D4A;
-    --warning: #C47A2A;
-    --rating: #FBBF24;
-    --surface: #F5F3F0;
-    --title-color: #3D4034;
+    /* Warm palette — valores en canales RGB para soportar modificadores de opacidad */
+    --background: 250 249 246;
+    --foreground: 45 43 40;
+    --muted: 240 237 232;
+    --muted-foreground: 107 103 98;
+    --border: 232 228 223;
+    --ring: 61 64 52;
+    --primary: 61 64 52;
+    --primary-hover: 74 78 64;
+    --primary-foreground: 250 249 246;
+    --destructive: 184 74 58;
+    --destructive-hover: 160 58 42;
+    --destructive-foreground: 250 249 246;
+    --success: 90 125 74;
+    --warning: 196 122 42;
+    --rating: 251 191 36;
+    --surface: 245 243 240;
+    --card: 255 255 255;
+    --card-foreground: 45 43 40;
+    --accent: 240 237 232;
+    --accent-foreground: 45 43 40;
+    --title-color: 61 64 52;
   }
 
   .dark {
-    --background: #1C1A18;
-    --foreground: #E8E5E1;
-    --muted: #2A2724;
-    --muted-foreground: #A8A4A0;
-    --border: #3D3935;
-    --ring: #8F8C84;
-    --primary: #C8C4BC;
-    --destructive: #D47A6A;
-    --success: #7AB86A;
-    --warning: #D4A84A;
-    --rating: #FBBF24;
-    --surface: #24211F;
-    --title-color: #C8C4BC;
+    --background: 28 26 24;
+    --foreground: 232 229 225;
+    --muted: 42 39 36;
+    --muted-foreground: 168 164 160;
+    --border: 61 57 53;
+    --ring: 143 140 132;
+    --primary: 200 196 188;
+    --primary-hover: 216 212 208;
+    --primary-foreground: 28 26 24;
+    --destructive: 212 122 106;
+    --destructive-hover: 232 138 122;
+    --destructive-foreground: 28 26 24;
+    --success: 122 184 106;
+    --warning: 212 168 74;
+    --rating: 251 191 36;
+    --surface: 36 33 31;
+    --card: 36 33 31;
+    --card-foreground: 232 229 225;
+    --accent: 42 39 36;
+    --accent-foreground: 232 229 225;
+    --title-color: 200 196 188;
   }
 
   * {
@@ -94,7 +109,7 @@
   }
 
   .input {
-    @apply w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50;
+    @apply w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .label {
@@ -102,14 +117,10 @@
   }
 
   .card {
-    @apply bg-card rounded-xl border border-border shadow-sm transition-shadow hover:shadow-lg;
+    @apply bg-card text-card-foreground rounded-lg border border-border shadow-sm transition-shadow hover:shadow-lg;
   }
 
   .badge {
-    @apply inline-flex items-center gap-1 font-medium rounded-full px-2.5 py-0.5 text-sm;
-  }
-
-  .badge-category {
     @apply inline-flex items-center gap-1 font-medium rounded-full px-2.5 py-0.5 text-sm;
   }
 
@@ -132,6 +143,10 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  .font-playfair {
+    font-family: 'Playfair Display', Georgia, serif;
+  }
 }
 
 @layer utilities {
@@ -145,10 +160,11 @@
 
   .animate-shimmer {
     animation: shimmer 1.8s infinite linear;
-    background: linear-gradient(90deg,
-      hsl(var(--muted)) 25%,
-      hsl(var(--muted-foreground) / 0.08) 50%,
-      hsl(var(--muted)) 75%
+    background: linear-gradient(
+      90deg,
+      rgb(var(--muted)) 25%,
+      rgb(var(--muted-foreground) / 0.08) 50%,
+      rgb(var(--muted)) 75%
     );
     background-size: 200% 100%;
   }
@@ -166,10 +182,6 @@
   @keyframes shimmer {
     0% { background-position: -200% 0; }
     100% { background-position: 200% 0; }
-  }
-
-  .text-balance {
-    text-wrap: balance;
   }
 
   .animate-in {

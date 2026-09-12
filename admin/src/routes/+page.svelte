@@ -1,127 +1,72 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { Users, BookOpen, List, Star, TrendingUp } from 'lucide-svelte';
 
-	let ready = false;
+	const stats = [
+		{ label: 'Usuarios activos (30d)', value: '—', icon: Users },
+		{ label: 'Recetas publicadas', value: '—', icon: BookOpen },
+		{ label: 'Ingredientes pendientes', value: '—', icon: List },
+		{ label: 'Rating promedio', value: '—', icon: Star }
+	];
 
-	onMount(() => {
-		ready = true;
-	});
+	const activity = [
+		{ user: 'María García', action: 'publicó', target: 'Torta de chocolate', time: 'hace 10 min' },
+		{ user: 'Carlos López', action: 'calificó', target: 'Gazpacho andaluz', time: 'hace 25 min' },
+		{ user: 'Ana Martín', action: 'guardó', target: 'Bizcocho de yogur', time: 'hace 1 hora' }
+	];
 </script>
 
 <svelte:head>
-	<title>Recetario IA — Admin</title>
+	<title>Dashboard — Recetario Admin</title>
 </svelte:head>
 
-<main class="splash">
-	<div class="splash-card">
-		<span class="splash-badge">Admin</span>
-		<h1 class="splash-title">Panel de Administración</h1>
-		<p class="splash-subtitle">
-			Gestión de categorías, usuarios, ingredientes y métricas de Recetario IA.
-		</p>
-		<p class="splash-status" class:is-ready={ready}>
-			{ready ? 'Admin en línea' : 'Iniciando…'}
-		</p>
-		<div class="splash-actions">
-			<a class="splash-link" href="http://localhost:3000">Ir a la app</a>
-			<a class="splash-link" href="http://localhost:8000/docs">API Docs</a>
+<div class="space-y-6">
+	<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+		<div>
+			<h1 class="font-playfair text-2xl font-medium text-foreground md:text-3xl">Dashboard</h1>
+			<p class="mt-1 text-muted-foreground">Resumen del panel de administración</p>
 		</div>
+		<button type="button" class="btn btn-outline btn-sm self-start">Actualizar</button>
 	</div>
-</main>
 
-<style>
-	.splash {
-		min-height: 100vh;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 2rem;
-		background: #1c1a18;
-		color: #e8e5e1;
-		font-family: 'Inter', system-ui, -apple-system, sans-serif;
-	}
+	<div
+		class="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-sm text-foreground"
+		role="status"
+	>
+		<TrendingUp class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+		<p>Los endpoints de administración (<code>/api/admin/*</code>) están pendientes; estas métricas son de ejemplo.</p>
+	</div>
 
-	.splash-card {
-		max-width: 32rem;
-		text-align: center;
-		background: #24211f;
-		border: 1px solid #3d3935;
-		border-radius: 6px;
-		padding: 3rem 2rem;
-	}
+	<!-- Stat cards -->
+	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+		{#each stats as stat (stat.label)}
+			<div class="card p-5">
+				<div class="flex items-center justify-between">
+					<p class="text-sm text-muted-foreground">{stat.label}</p>
+					<stat.icon class="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+				</div>
+				<p class="mt-2 text-3xl font-semibold text-foreground">{stat.value}</p>
+			</div>
+		{/each}
+	</div>
 
-	.splash-badge {
-		display: inline-block;
-		font-size: 0.75rem;
-		font-weight: 600;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: #c8c4bc;
-		background: #2a2724;
-		border-radius: 2px;
-		padding: 0.25rem 0.6rem;
-	}
-
-	.splash-title {
-		font-family: 'Playfair Display', Georgia, serif;
-		font-size: 2.25rem;
-		font-weight: 500;
-		margin: 1.25rem 0 0.75rem;
-		color: #c8c4bc;
-	}
-
-	.splash-subtitle {
-		font-size: 1rem;
-		line-height: 1.6;
-		color: #a8a4a0;
-		margin: 0 0 1.5rem;
-	}
-
-	.splash-status {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-		font-size: 0.875rem;
-		color: #d4a84a;
-		margin-bottom: 2rem;
-	}
-
-	.splash-status::before {
-		content: '';
-		width: 0.5rem;
-		height: 0.5rem;
-		border-radius: 9999px;
-		background: #d4a84a;
-	}
-
-	.splash-status.is-ready {
-		color: #7ab86a;
-	}
-
-	.splash-status.is-ready::before {
-		background: #7ab86a;
-	}
-
-	.splash-actions {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: center;
-		gap: 0.75rem;
-	}
-
-	.splash-link {
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: #c8c4bc;
-		text-decoration: none;
-		border: 1px solid #3d3935;
-		border-radius: 4px;
-		padding: 0.5rem 1rem;
-		transition: background 0.15s ease, border-color 0.15s ease;
-	}
-
-	.splash-link:hover {
-		background: #2a2724;
-		border-color: #8f8c84;
-	}
-</style>
+	<!-- Recent activity -->
+	<div class="card p-6">
+		<h2 class="mb-4 text-lg font-medium text-foreground">Actividad reciente</h2>
+		<ul class="divide-y divide-border">
+			{#each activity as item (item.user + item.target)}
+				<li class="flex items-center justify-between gap-4 py-3">
+					<div class="flex items-center gap-3">
+						<span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+							{item.user.charAt(0)}
+						</span>
+						<div>
+							<p class="text-sm font-medium text-foreground">{item.user}</p>
+							<p class="text-xs text-muted-foreground">{item.action} {item.target}</p>
+						</div>
+					</div>
+					<time class="whitespace-nowrap text-xs text-muted-foreground">{item.time}</time>
+				</li>
+			{/each}
+		</ul>
+	</div>
+</div>
