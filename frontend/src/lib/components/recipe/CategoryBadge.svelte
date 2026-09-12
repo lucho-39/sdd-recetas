@@ -8,7 +8,7 @@
 	};
 	export let variant: 'outline' | 'solid' = 'outline';
 	export let size: 'sm' | 'md' | 'lg' = 'md';
-	export let class: string = '';
+	export let className: string = '';
 </script>
 
 <span
@@ -19,7 +19,7 @@
 			? 'bg-transparent border-[{category.color}] text-white [&>svg]:stroke-[{category.color}]'
 			: 'bg-[{category.color}] text-white'}"
 	style="--badge-color: {category.color};"
-	class={class}
+	class={className}
 >
 	{#if category.icon}
 		<span aria-hidden="true">{category.icon}</span>

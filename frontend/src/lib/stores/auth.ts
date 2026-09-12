@@ -38,7 +38,8 @@ function createAuthStore() {
           }
         }
         update(state => ({ ...state, loading: false }));
-      },
+      }
+    },
     login: async (email: string, password: string) => {
       const response = await fetch('/api/v1/auth/login', {
         method: 'POST',

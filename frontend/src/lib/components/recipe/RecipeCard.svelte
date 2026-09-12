@@ -50,7 +50,7 @@
 					<span class="badge bg-muted text-muted-foreground px-2 py-0.5 rounded-full text-xs">{tag.name}</span>
 				{/each}
 				{#if recipe.tags.length > 2}
-					<span class="badge variant="outline" text-muted-foreground px-2 py-0.5 rounded-full text-xs">+{recipe.tags.length - 2}</span>
+					<span class="badge variant='outline' text-muted-foreground px-2 py-0.5 rounded-full text-xs">+{recipe.tags.length - 2}</span>
 				{/if}
 			</div>
 		{/if}

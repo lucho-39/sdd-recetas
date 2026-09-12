@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 
-	export let variant: 'primary' | 'secondary' | 'destructive' | 'outline' | 'ghost' = 'primary';
-	export let size: 'sm' | 'md' | 'lg' = 'md';
+	export let variant: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' = 'default';
+	export let size: 'default' | 'sm' | 'lg' | 'icon' = 'default';
 	export let disabled = false;
 	export let loading = false;
 	export let type: 'button' | 'submit' | 'reset' = 'button';
 	export let href: string | undefined = undefined;
-	export let class: string = '';
+	export let className: string = '';
 	export let fullWidth = false;
 
 	const dispatch = createEventDispatcher();
@@ -30,6 +30,7 @@
 		class:btn-destructive={variant === 'destructive'}
 		class:btn-outline={variant === 'outline'}
 		class:btn-ghost={variant === 'ghost'}
+		class:btn-link={variant === 'link'}
 		class:btn-sm={size === 'sm'}
 		class:btn-lg={size === 'lg'}
 		class:w-full={fullWidth}
@@ -38,6 +39,7 @@
 		aria-disabled={disabled}
 		aria-busy={loading}
 		on:click={handleClick}
+		class={className}
 	>
 		{#if loading}
 			<svg class="mr-2 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -56,6 +58,7 @@
 		class:btn-destructive={variant === 'destructive'}
 		class:btn-outline={variant === 'outline'}
 		class:btn-ghost={variant === 'ghost'}
+		class:btn-link={variant === 'link'}
 		class:btn-sm={size === 'sm'}
 		class:btn-lg={size === 'lg'}
 		class:w-full={fullWidth}
@@ -63,6 +66,7 @@
 		aria-disabled={disabled || loading}
 		aria-busy={loading}
 		on:click={handleClick}
+		class={className}
 	>
 		{#if loading}
 			<svg class="mr-2 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -76,13 +80,13 @@
 
 <style>
 	:global(.btn) {
-		@apply inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors
-			focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary
+		@apply inline-flex items-center justify-center gap-2 rounded-md font-medium
+			transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary
 			disabled:pointer-events-none disabled:opacity-50;
 	}
 
 	:global(.btn-primary) {
-		@apply bg-primary text-primary-foreground hover:bg-primary-hover;
+		@apply bg-primary text-primary-foreground hover:bg-primary/90;
 	}
 
 	:global(.btn-secondary) {
@@ -90,7 +94,7 @@
 	}
 
 	:global(.btn-destructive) {
-		@apply bg-destructive text-destructive-foreground hover:bg-destructive-hover;
+		@apply bg-destructive text-destructive-foreground hover:bg-destructive/90;
 	}
 
 	:global(.btn-outline) {
