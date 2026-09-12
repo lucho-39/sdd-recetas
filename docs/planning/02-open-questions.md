@@ -15,7 +15,7 @@
 | Q18 | **Alcance social** | **Compartir SÍ** (Web Share API, link copiar); **Seguimiento NO**; **Perfil público** solo muestra recetas publicadas del autor | 2026-09-05 | Simplifica social graph; no followers/following; perfil = card autor + grid recetas |
 | Q19 | **Búsqueda por ingrediente** | **Parcial (ILIKE/trigram)** en `ingredients.name`; **Recetas con slug** para SEO (`/receta/<slug>`) | 2026-09-05 | `data-model.md`: slug unique en receta; búsqueda ingredientes usa `jsonb_path_query` + trigram |
 | Q3 | **Stack tecnológico** | **Frontend**: SvelteKit (última versión, Svelte 5 runes) — PWA nativo, Vite<br>**Backend**: FastAPI (última versión, Python 3.12+) — REST, Pydantic v2, async<br>**DB**: PostgreSQL 16+ (pg_trgm, pgcrypto, btree_gin)<br>**Auth**: JWT RS256 (access 15min) + Refresh Token opaque (30d, HttpOnly cookie, rotation obligatoria)<br>**Sesiones**: Duración redes sociales (access 15min, refresh 30d rolling, sliding window)<br>**Imágenes**: Preparado (campo `image_url` nullable, esquema S3-compatible) — NO implementado MVP<br>**API**: REST (OpenAPI/Swagger auto-generado por FastAPI)<br>**Contenedores**: Podman — imágenes base AWS (public.ecr.aws/...) — NO Docker Hub<br>**Despliegue**: Podman Compose / Quadlet en VPS | 2026-09-05 | Define todo el stack: lenguaje, framework, DB, auth, contenedores, deployment. Base para ADR-001, ADR-002, ADR-003, ADR-004 |
-| Q20 | **Sistema Admin** | **Proyecto separado SvelteKit** (independiente del frontend usuario)<br>**Auth independiente**: usuarios admin ≠ usuarios frontend<br>**Bootstrap admin**: Variables de entorno `ADMIN_INITIAL_EMAIL`, `ADMIN_INITIAL_PASSWORD` → en primer arranque backend crea admin, `force_password_change=true`<br>**Primer login**: Fuerza cambio de contraseña obligatorio<br>**Auth admin**: JWT separado (claims `role: "admin"`), cookies HttpOnly propias, refresh rotation propia | 2026-09-05 | Admin desacoplado del frontend; bootstrap por env (container-friendly); force password change; auth aislado |
+| Q20 | **Sistema Admin** | **Proyecto separado SvelteKit** (independiente del frontend usuario)<br>**Auth independiente**: usuarios admin ≠ usuarios frontend<br>**Bootstrap admin**: Variables de entorno `ADMIN_INITIAL_USER`, `ADMIN_INITIAL_PASSWORD` → en primer arranque backend crea admin, `must_change_password=true`<br>**Primer login**: Fuerza cambio de contraseña obligatorio<br>**Auth admin**: JWT propio (claims `role: "admin"`), cookies HttpOnly propias, refresh rotation propia **[endpoints /api/admin/* pendientes]** | 2026-09-05 | Admin desacoplado del frontend; bootstrap por env (container-friendly); force password change; auth aislado |
 | Q22 | **Color por categoría** | Campo `color` VARCHAR(7) Hex (#RRGGBB) en `categoria` — seed data con colores shadcn-svelte compatibles light/dark mode | 2026-09-05 | Badge UI consistente en cards y detalle; shadcn-svelte `Badge` component usa color para variant custom |
 
 ---
@@ -24,7 +24,7 @@
 
 | # | Pregunta | Opciones | Impacto | Recomendación |
 |---|----------|----------|---------|---------------|
-| **Q7** | **ORM / Data Access (Python/FastAPI)** | **A.** SQLAlchemy 2.0 (async) + Alembic — estándar, maduro, type hints<br>**B.** SQLModel (basado en SQLAlchemy + Pydantic) — integra bien con FastAPI<br>**C.** Raw SQL + asyncpg + migraciones manuales (golang-migrate/dbmate) — control total<br>**D.** Prisma/Drizzle — no son Python-native | `data-model.md`, repositorios, DX, migraciones, team skills | **A** (SQLAlchemy 2.0 async + Alembic) = estándar Python, maduro, type hints, integra con Pydantic v2/FastAPI, Alembic para migraciones |
+| **Q7** | **ORM / Data Access (Python/FastAPI)** ✅ RESUELTA | **A.** SQLAlchemy 2.0 (async) + Alembic — estándar, maduro, type hints<br>**B.** SQLModel (basado en SQLAlchemy + Pydantic) — integra bien con FastAPI<br>**C.** Raw SQL + asyncpg + migraciones manuales (golang-migrate/dbmate) — control total<br>**D.** Prisma/Drizzle — no son Python-native | `data-model.md`, repositorios, DX, migraciones, team skills | **A** (SQLAlchemy 2.0 async + Alembic) = estándar Python, maduro, type hints, integra con Pydantic v2/FastAPI, Alembic para migraciones |
 
 ---
 
@@ -51,8 +51,8 @@
 | **Frontend** | SvelteKit (Svelte 5 runes) — PWA nativo, Vite, TypeScript | `vision.md`, `planning/02-open-questions.md` (Q3) |
 | **Backend** | FastAPI (Python 3.12+) — REST, Pydantic v2, async, OpenAPI auto | `planning/02-open-questions.md` (Q3) |
 | **Base de datos** | PostgreSQL 16+ con pg_trgm, pgcrypto, btree_gin | `data-model.md` |
-| **Auth (Frontend)** | JWT RS256 (access 15min) + Refresh Token opaque (30d, HttpOnly cookie, rotación obligatoria) | `authentication.md`, `planning/02-open-questions.md` (Q3) |
-| **Auth (Admin)** | **Proyecto SvelteKit separado** — JWT RS256 independiente (`role: "admin"`), cookies HttpOnly propias, refresh rotation propia | `planning/02-open-questions.md` (Q20) |
+| **Auth (Frontend)** | JWT **HS256** (access 15min) + Refresh Token **JWT HS256** (30d, HttpOnly cookie, rotación). RS256 + opaque quedan v2 (ver ADR-000) | `authentication.md`, `decisions/ADR-000-source-of-truth.md` |
+| **Auth (Admin)** | **Proyecto SvelteKit separado** — auth propia; los endpoints `/api/admin/*` están pendientes | `planning/02-open-questions.md` (Q20), `use-cases/admin.md` |
 | **OAuth** | Google + GitHub (FastAPI backend callback + Lucia en SvelteKit frontend) | `planning/02-open-questions.md` (Q4) |
 | **Bootstrap Admin** | Variables de entorno `ADMIN_INITIAL_EMAIL`, `ADMIN_INITIAL_PASSWORD` → crea admin en primer arranque, `force_password_change=true` | `planning/02-open-questions.md` (Q20) |
 | **Sesiones** | Duración redes sociales: access 15min, refresh 30d rolling, sliding window | `planning/02-open-questions.md` (Q3) |

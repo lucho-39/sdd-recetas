@@ -39,7 +39,7 @@
 | Búsquedas con filtros combinados (≥2 dimensiones) | > 25% | Query params analysis |
 | Tiempo medio búsqueda → primer click | < 8 s | Timestamp diff |
 
-### OBJ-05: Generación IA como diferenciador
+### OBJ-05: Generación IA como diferenciador **[v2 — no implementado]**
 **Descripción**: Feature IA genera engagement y contenido.
 | Métrica | Target MVP | Medición |
 |---------|------------|----------|

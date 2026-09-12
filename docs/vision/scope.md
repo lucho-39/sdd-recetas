@@ -1,20 +1,24 @@
 # Alcance y Límites (Scope)
 
 > Delimitación explícita de qué está DENTRO y qué está FUERA del MVP. Evita scope creep.
+>
+> **Estado**: `[x]` significa "definido dentro del alcance", **no** necesariamente
+> implementado. Los ítems no implementados están marcados **[v2]** abajo.
+> Ver `docs/decisions/ADR-000-source-of-truth.md`.
 
 ---
 
 ## ✅ DENTRO del MVP (In Scope)
 
 ### Autenticación y Cuenta
-- [x] Registro email + password con verificación email
+- [x] Registro email + password (el gate de verificación existe; el envío de email es **[v2]**)
 - [x] Login email + password + JWT (access 15min, refresh 30d)
-- [x] OAuth Google (SHOULD)
-- [x] OAuth GitHub (SHOULD)
-- [x] Recuperar password (email reset)
+- [ ] OAuth Google (SHOULD) **[v2]**
+- [ ] OAuth GitHub (SHOULD) **[v2]**
+- [ ] Recuperar password (email reset) **[v2 — stub]**
 - [x] Perfil: nombre, avatar
-- [x] Rate limiting auth endpoints
-- [x] Soft delete cuenta + anonimización PII
+- [ ] Rate limiting auth endpoints **[v2]**
+- [ ] Soft delete cuenta + anonimización PII **[v2]**
 
 ### Recetas (CRUD Autor)
 - [x] Crear receta completa (todos los campos)
@@ -25,15 +29,15 @@
 - [x] Validaciones: categoría obligatoria, ingredients JSONB schema, tags normalizados
 
 ### Búsqueda y Descubrimiento Público
-- [x] Búsqueda texto libre (título + descripción, trigram)
-- [x] Filtro categoría (single select, 8 categorías seed)
+- [x] Búsqueda texto libre (título + descripción, `ILIKE`)
+- [x] Filtro categoría (single select, 10 categorías seed)
 - [x] Filtro tags (multi-select, autocomplete prefix + ranking usage_count)
-- [x] Filtro ingredientes (multi-select, búsqueda en JSONB)
+- [x] Filtro ingredientes (multi-select, coincidencia exacta por `ingredient_id`)
 - [x] **Búsqueda unificada**: todos los filtros combinados (AND lógico entre dimensiones)
 - [x] Ordenamiento: recientes, visitadas, guardadas, calificadas
-- [x] Paginación (cursor-based infinite scroll)
+- [x] Paginación (offset `page`/`limit` + infinite scroll)
 - [x] Detalle receta pública (visita registrada anti-F5)
-- [x] URL deep-linkable con todos los filtros
+- [ ] URL deep-linkable con todos los filtros **[v2]**
 
 ### Favoritos y Colecciones
 - [x] Guardar/quitar en "Favoritos" (colección default)
@@ -49,36 +53,36 @@
 - [x] Promedio + distribución en detalle (denormalizado `avg_rating`, `rating_count`)
 - [x] Lista paginada de reseñas
 
-### Generación por IA
-- [x] Generar receta desde ingredientes + tags preferencias
-- [x] Vista previa editable antes de guardar
-- [x] Guardar como receta propia
+### Generación por IA **[v2 — no implementado]**
+- [ ] Generar receta desde ingredientes + tags preferencias
+- [ ] Vista previa editable antes de guardar
+- [ ] Guardar como receta propia
 
-### Modo Cocinando
-- [x] Vista fullscreen + wake lock
-- [x] Pasos grandes, navegación swipe
-- [x] Timer por paso (opcional)
+### Modo Cocinando **[v2 — no implementado]**
+- [ ] Vista fullscreen + wake lock
+- [ ] Pasos grandes, navegación swipe
+- [ ] Timer por paso (opcional)
 
 ### Tags y Categorías
-- [x] 8 categorías seed (postre, entrada, snack, plato-principal, acompañamiento, bebida, desayuno, otro)
+- [x] 10 categorías seed (postre, entrada, snack, plato-principal, acompañamiento, bebida, desayuno, sopa-crema, ensalada, horneados)
 - [x] Tags abiertos user-generated con autocomplete
 - [x] Admin: CRUD categorías (solo admins)
 
 ### Contadores y Métricas
-- [x] Visitas únicas anti-F5 (fingerprint/cookie + daily salt)
-- [x] Guardados (save_count)
+- [x] Visitas únicas anti-F5 (fingerprint SHA256(IP+UA))
+- [ ] Guardados (`save_count`) **[v2 — pendiente de actualización]**
 - [x] Visibilidad contadores en listado y detalle
 
 ### Técnico / Plataforma
-- [x] PWA instalable (manifest, service worker, offline para guardados)
-- [x] Responsive 320px–1920px+
-- [x] Accesibilidad WCAG 2.1 AA (contraste, teclado, ARIA, touch targets)
-- [x] Skeleton loaders, CLS < 0.1
-- [x] Logging estructurado + correlation ID
-- [x] Métricas RED (Prometheus/Grafana)
-- [x] Tests unit + integration > 80% coverage
-- [x] CI/CD zero-downtime deploy
-- [x] Documentación API OpenAPI
+- [ ] PWA instalable (manifest, service worker, offline para guardados) **[v2]**
+- [x] Responsive 320px–1920px+ (parcial: frontend en reparación)
+- [x] Accesibilidad WCAG 2.1 AA (objetivo; verificación parcial)
+- [x] Skeleton loaders
+- [x] Logging estructurado (básico de uvicorn)
+- [ ] Métricas RED (Prometheus/Grafana) **[v2]**
+- [x] Tests de endpoints backend (81 tests; cobertura >80% aún no medida) 
+- [ ] CI/CD zero-downtime deploy **[v2]**
+- [x] Documentación API OpenAPI (auto-generada por FastAPI)
 
 ---
 

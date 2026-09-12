@@ -164,7 +164,7 @@
 
 ### US-20: Filtrar por categoría
 **Como** usuario, **quiero** filtrar por una categoría **para** acotar resultados.
-- **AC1**: Select/radio group con 8 categorías (icon + nombre); solo una seleccionable
+- **AC1**: Select/radio group con 10 categorías (icon + nombre); solo una seleccionable
 - **AC2**: Combinable con texto, tags, ingredientes (AND lógico)
 - **AC3**: URL refleja filtro (`?category=postre`) → shareable/bookmarkable
 - **Ref**: RF-03.2, RB-01,03
@@ -203,7 +203,7 @@
 - **AC2**: Si autor → botones editar/borrar/toggle público
 - **AC3**: Si logueado → botones guardar, calificar, compartir; si anónimo → login prompt
 - **AC4**: Visita registrada (anti-F5 RB-04)
-- **AC5**: URL usa slug SEO (`/receta/tortilla-patatas-clasica-a1b2`)
+- **AC5**: URL usa slug SEO (`/receta/tortilla-de-patatas`; si ya existe: `/receta/tortilla-de-patatas-2`)
 - **AC6**: Botón compartir (Web Share API nativo + fallback copiar link)
 - **Ref**: RF-03.8, RF-03.9, RB-04,05,06,15,17
 
@@ -345,17 +345,15 @@
 
 ## Priorización MVP (Story Points estimados)
 
-| Must (MVP) | Should (MVP si tiempo) | Won't (v2) |
-|------------|------------------------|------------|
-| US-01, 02, 04, 05, 06, 07 | US-03 (OAuth) | US-08 (GDPR delete) |
-| US-09, 10, 11, 12, 13 | — | — |
-| US-14, 15, 16, 17, 18 | — | — |
-| US-19, 20, 21, 22, 23, 24, 25 | — | — |
-| US-26, 27, 28, 29 | US-30 (mover) | — |
+| Must (MVP) | Should (MVP si tiempo) | Won't / [v2] |
+|------------|------------------------|--------------|
+| US-01, 02, 04, 05, 06, 07 | US-30 (mover entre colecciones) | US-03 (OAuth) |
+| US-09, 10, 11, 12, 13 | — | US-08 (GDPR delete) |
+| US-14, 15, 16, 17, 18 | — | US-37 (IA gen) |
+| US-19, 20, 21, 22, 23, 24, 25 | — | US-38 (modo cocina) |
+| US-26, 27, 28, 29 | — | — |
 | US-31, 32, 33 | — | — |
 | US-34, 35, 36 | — | — |
-| — | US-37 (IA gen) | — |
-| — | US-38 (modo cocina) | — |
 | US-39 (admin) | — | — |
 
-**Total estimado MVP**: ~23 stories must + 4 should = ~27 stories
+**Total MVP**: 34 stories Must + 1 Should = 35; 4 stories diferidas a v2 (US-03, US-08, US-37, US-38).

@@ -7,8 +7,8 @@
 |----|-----------|-----------|-----|
 | RF-01.1 | Registrarse con email + contraseña | MUST | — |
 | RF-01.2 | Iniciar sesión con email + contraseña | MUST | — |
-| RF-01.3 | Registrarse/iniciar sesión con OAuth Google | SHOULD | — |
-| RF-01.4 | Registrarse/iniciar sesión con OAuth GitHub | SHOULD | — |
+| RF-01.3 | Registrarse/iniciar sesión con OAuth Google **[v2]** | SHOULD | — |
+| RF-01.4 | Registrarse/iniciar sesión con OAuth GitHub **[v2]** | SHOULD | — |
 | RF-01.5 | Cerrar sesión | MUST | — |
 | RF-01.6 | Recuperar contraseña (email reset) | SHOULD | — |
 | RF-01.7 | Sesión persistente (refresh token, 30 días) | SHOULD | — |
@@ -29,7 +29,7 @@
 | RF-03.1 | Buscar recetas públicas por texto libre (título/descripción) | MUST | RB-03 |
 | RF-03.2 | Filtrar por categoría (selector single) | MUST | RB-01,03 |
 | RF-03.3 | Filtrar por tags (multi-select con autocomplete) | MUST | RB-02,03,07 |
-| RF-03.4 | Filtrar por ingredientes (multi-select, **coincidencia parcial** ILIKE/trigram) | MUST | RB-03,11,16 |
+| RF-03.4 | Filtrar por ingredientes (multi-select, coincidencia exacta por `ingredient_id`) | MUST | RB-03,11,16 |
 | RF-03.5 | Combinar todos los filtros simultáneamente (AND lógico) | MUST | RB-03 |
 | RF-03.6 | Ordenar resultados: más recientes, más visitadas, más guardadas, mejor calificadas | SHOULD | — |
 | RF-03.7 | Paginación (cursor o offset) | MUST | — |
@@ -56,7 +56,7 @@
 | RF-05.5 | Ver promedio y distribución de estrellas en detalle (estrellas fraccionales) | MUST | RB-06 |
 | RF-05.6 | Listar reseñas con paginación | SHOULD | — |
 
-## RF-06: Generación de recetas por IA
+## RF-06: Generación de recetas por IA **[v2 — no implementado]**
 | ID | Requisito | Fortaleza | RB |
 |----|-----------|-----------|-----|
 | RF-06.1 | Generar receta a partir de lista de ingredientes disponibles | SHOULD | — |
@@ -64,7 +64,7 @@
 | RF-06.3 | Editar receta generada antes de guardar | SHOULD | RF-02.1 |
 | RF-06.4 | Guardar receta generada como propia | SHOULD | RF-02.1 |
 
-## RF-07: Modo "Cocinando"
+## RF-07: Modo "Cocinando" **[v2 — no implementado]**
 | ID | Requisito | Fortaleza | RB |
 |----|-----------|-----------|-----|
 | RF-07.1 | Activar modo cocinando en detalle de receta | SHOULD | — |
@@ -90,7 +90,7 @@
 | ID | Requisito | Fortaleza | RB |
 |----|-----------|-----------|-----|
 | RF-10.1 | CRUD categorías (solo admins) | SHOULD | RB-01 |
-| RF-10.2 | Seed data inicial con 8 categorías | MUST | RB-01 |
+| RF-10.2 | Seed data inicial con 10 categorías | MUST | RB-01 |
 
 ## RF-11: Perfil público y social (MVP)
 | ID | Requisito | Fortaleza | RB |
@@ -117,15 +117,19 @@
 
 ## Matriz de cobertura (RF → Casos de uso en docs/use-cases/)
 
+> Los casos de uso marcados **pendientes** aún no existen como documento.
+> Ver `docs/use-cases/README.md`.
+
 | RF | Caso de uso |
 |----|-------------|
-| RF-01 | `auth.md` |
-| RF-02 | `recipes.md` (CRUD autor) |
-| RF-03 | `search.md` |
-| RF-04 | `favorites.md` |
-| RF-05 | `ratings.md` |
-| RF-06 | `ai-generation.md` |
-| RF-07 | `cooking-mode.md` |
-| RF-08 | `metrics.md` (transversal) |
-| RF-09 | `tags.md` |
-| RF-10 | `admin-categories.md` |
+| RF-01 | `auth.md` (pendiente) |
+| RF-02 | `recipes.md` (pendiente) |
+| RF-03 | `search.md` ✅ |
+| RF-04 | `favorites.md` (pendiente) |
+| RF-05 | `ratings.md` (pendiente) |
+| RF-06 | `ai-generation.md` (pendiente, v2) |
+| RF-07 | `cooking-mode.md` (pendiente, v2) |
+| RF-08 | `metrics.md` (pendiente) |
+| RF-09 | `tags.md` (pendiente) |
+| RF-10 | `admin.md` ✅ |
+| RF-12 | `ingredients.md` ✅ |

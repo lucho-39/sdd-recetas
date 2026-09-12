@@ -33,7 +33,7 @@ Los cocineros caseros y entusiastas de la cocina necesitan una forma organizada 
 |----------|----------------------|
 | Registro/login (email + OAuth Google/GitHub) | Suscripciones pagas / premium |
 | CRUD de recetas (crear, leer, actualizar, borrar propias) | Marketplace de recetas / monetización |
-| **Categorías cerradas** (postre, entrada, snack, plato principal, acompañamiento, bebida, desayuno, otro) | Seguimiento nutricional avanzado / macros |
+| **Categorías cerradas** (postre, entrada, snack, plato principal, acompañamiento, bebida, desayuno, sopa/crema, ensalada, horneados) | Seguimiento nutricional avanzado / macros |
 | **Etiquetas/tags abiertas** con autocompletado (sin TACC, keto, vegano, vegetariano, bajo-carb, alto-proteina, etc.) | Planificación de menús semanales / lista de compras automática |
 | **Búsqueda unificada**: categoría + tags + nombre + ingredientes | Compartir social / feed de actividad |
 | Favoritos y colecciones personales (+ contador de guardados) | Modo colaborativo / recetas multi-autor |

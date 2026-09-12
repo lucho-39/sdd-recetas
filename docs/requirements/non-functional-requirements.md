@@ -1,6 +1,14 @@
 # Requisitos No Funcionales
 
 > Cualidad, restricciones técnicas y operativas. Cada uno medible/verificable.
+>
+> **Estado (MVP actual)**: muchos RNF son objetivos de producción aún no
+> implementados. Ver implementados y pendientes en
+> `docs/decisions/ADR-000-source-of-truth.md`. Resumen: implementados el
+> rendimiento básico, accesibilidad parcial y logging; **pendientes** rate
+> limiting (RNF-04.5/04.6), Redis/read replicas/CDN (RNF-02), PWA offline
+> (RNF-07.2), observabilidad Prometheus/OpenTelemetry (RNF-09), cobertura >80%
+> medida (RNF-08.1) y CI/SonarQube (RNF-08.2/08.3).
 
 ## RNF-01: Rendimiento
 | ID | Requisito | Métrica objetivo | Verificación |

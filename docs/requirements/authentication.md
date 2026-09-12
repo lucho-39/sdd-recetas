@@ -10,23 +10,27 @@
 ### Tokens
 | Token | Tipo | Expiración | Almacenamiento | Uso |
 |-------|------|------------|----------------|-----|
-| Access Token | JWT (RS256) | 15 min | Memoria (JS variable) / HttpOnly cookie opcional | Authorization header `Bearer <token>` |
-| Refresh Token | Opaque (random 64 bytes) | 30 días | HttpOnly cookie (Secure, SameSite=Lax, path=/auth/refresh) | POST `/auth/refresh` → nuevo access + refresh rotado |
-| Email Verification | JWT (HS256) | 24 h | Email link | GET `/auth/verify-email?token=...` |
-| Password Reset | JWT (HS256) | 1 h | Email link | POST `/auth/reset-password` |
+| Access Token | JWT (HS256) | 15 min | Memoria (JS variable) | Authorization header `Bearer <token>` |
+| Refresh Token | JWT (HS256) con `jti` | 30 días | HttpOnly cookie (Secure, SameSite=Lax, path=/api/v1/auth/refresh) | POST `/auth/refresh` → nuevo access + refresh rotado |
+| Email Verification | JWT (HS256) | 24 h | Email link | **[v2]** GET `/auth/verify-email?token=...` |
+| Password Reset | JWT (HS256) | 1 h | Email link | **[v2]** POST `/auth/reset-password` |
+
+> **Nota**: la spec original definía access RS256 + refresh *opaque*. El MVP
+> implementa **HS256 + refresh JWT** (ver `docs/decisions/ADR-000-source-of-truth.md`).
 
 ### JWT Claims (Access Token)
 ```json
 {
   "sub": "uuid-usuario",
-  "email": "user@example.com",
-  "provider": "email|google|github",
-  "name": "Display Name",
+  "type": "access",
   "iat": 1234567890,
   "exp": 1234567890,
-  "jti": "unique-token-id"  // para revocación si needed
+  "jti": "unique-token-id"
 }
 ```
+> Los claims `email`, `provider` y `name` **no** se incluyen hoy (se obtienen
+> de la BD al resolver la dependencia de auth). El claim `role` se reserva para
+> la auth admin **[v2]**. El refresh token usa la misma forma con `type: "refresh"`.
 
 ## Endpoints de Auth
 
@@ -34,16 +38,16 @@
 |--------|------|-------------|------|
 | POST | `/auth/register` | Registro email + password | Público |
 | POST | `/auth/login` | Login email + password | Público |
-| POST | `/auth/oauth/google` | Iniciar OAuth Google | Público |
-| GET | `/auth/oauth/google/callback` | Callback Google | Público |
-| POST | `/auth/oauth/github` | Iniciar OAuth GitHub | Público |
-| GET | `/auth/oauth/github/callback` | Callback GitHub | Público |
+| POST | `/auth/oauth/google` | Iniciar OAuth Google **[v2]** | Público |
+| GET | `/auth/oauth/google/callback` | Callback Google **[v2]** | Público |
+| POST | `/auth/oauth/github` | Iniciar OAuth GitHub **[v2]** | Público |
+| GET | `/auth/oauth/github/callback` | Callback GitHub **[v2]** | Público |
 | POST | `/auth/refresh` | Renovar access token (cookie refresh) | Refresh token |
 | POST | `/auth/logout` | Revocar refresh token | Access token |
 | POST | `/auth/forgot-password` | Solicitar reset email | Público |
 | POST | `/auth/reset-password` | Confirmar reset con token | Público |
-| GET | `/auth/verify-email` | Verificar email con token | Público |
-| POST | `/auth/resend-verification` | Reenviar email verificación | Access token |
+| GET | `/auth/verify-email` | Verificar email con token **[v2]** | Público |
+| POST | `/auth/resend-verification` | Reenviar email verificación **[v2]** | Access token |
 | GET | `/auth/me` | Perfil usuario actual | Access token |
 | PATCH | `/auth/me` | Actualizar perfil (name, avatar) | Access token |
 | POST | `/auth/change-password` | Cambiar password (usuario logueado) | Access token |
@@ -82,9 +86,9 @@ Campos clave:
 
 | Método | Ruta | Descripción | Auth |
 |--------|------|-------------|------|
-| POST | `/auth/deactivate` | Baja lógica (soft delete) con opción `delete_recipes: boolean` | Access token |
-| POST | `/auth/reactivate` | Reactivar cuenta (requiere nuevo display_name) | Access token (o magic link) |
-| POST | `/auth/delete-account` | Eliminación definitiva GDPR (irreversible) | Access token + confirmación expresa |
+| POST | `/auth/deactivate` | Baja lógica (soft delete) con opción `delete_recipes: boolean` **[v2]** | Access token |
+| POST | `/auth/reactivate` | Reactivar cuenta (requiere nuevo display_name) **[v2]** | Access token (o magic link) |
+| POST | `/auth/delete-account` | Eliminación definitiva GDPR (irreversible) **[v2]** | Access token + confirmación expresa |
 
 ### POST `/auth/deactivate` — Baja Lógica
 **Request**:
@@ -237,7 +241,9 @@ Si usuario existente (email) hace login con OAuth nuevo:
 
 ## Matriz de Permisos (RBAC simple)
 
-> **Nota**: MVP sin rol Admin de moderación. Admin solo gestiona categorías (seed data).
+> **Nota**: existe un panel admin separado (proyecto SvelteKit con auth propia),
+> pero **sin funciones de moderación**. Solo gestiona categorías y datos.
+> Ver `docs/decisions/ADR-000-source-of-truth.md`.
 
 | Acción | Anónimo | Usuario | Autor de receta | Admin (categorías) |
 |--------|---------|---------|-----------------|-------------------|
@@ -259,16 +265,19 @@ Si usuario existente (email) hace login con OAuth nuevo:
 
 ## Checklist de Implementación
 
-- [ ] Endpoints registro/login/refresh/logout
-- [ ] OAuth Google + GitHub
-- [ ] JWT RS256 (clave rota periódicamente)
-- [ ] Refresh token rotación + detección reuso
-- [ ] Rate limiting en auth endpoints
-- [ ] Email verification flow
-- [ ] Password reset flow
-- [ ] Password strength validation
-- [ ] Account linking (email match)
-- [ ] Soft delete + anonimización
-- [ ] Middleware auth (validate JWT, attach user a request)
-- [ ] Middleware ownership (recipe.author_id === user.id)
-- [ ] Tests: unit + integration auth flows
+- [x] Endpoints registro/login/refresh/logout
+- [x] Middleware auth (validate JWT, attach user a request)
+- [x] Password hashing (bcrypt directo)
+- [x] Refresh token rotación (nuevo par en cada refresh) + `jti`
+- [x] Bootstrap admin por variables de entorno
+- [x] Tests de integración de auth (`backend/tests/test_auth.py`)
+- [ ] Middleware ownership explícito (hoy la verificación es por consulta `author_id == user.id`)
+- [ ] OAuth Google + GitHub **[v2]**
+- [ ] JWT RS256 con par de claves **[v2]**
+- [ ] Refresh token opaque + detección de reuso por familia **[v2]**
+- [ ] Rate limiting en auth endpoints **[v2]**
+- [ ] Email verification flow (envío) **[v2]**
+- [ ] Password reset flow real **[v2]**
+- [ ] Password strength validation (complejidad) **[v2]**
+- [ ] Account linking (email match) **[v2]**
+- [ ] Soft delete + anonimización **[v2]**
