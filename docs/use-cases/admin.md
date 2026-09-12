@@ -70,21 +70,21 @@
 - **AC3**: Estado cuenta: Activo / Inactivo / Eliminado (GDPR) con badge semántico
 - **AC4**: Acciones rápidas: Activar/Desactivar, Ver detalle completo, Forzar reactivación, GDPR
 
-### UC-ADMIN-007: Forzar reactivación de usuario
+### UC-ADMIN-009: Forzar reactivación de usuario
 **Como** admin, **quiero** reactivar un usuario desactivado **para** restaurar su acceso (soporte).
 - **AC1**: Solo usuarios con `is_active=false` y `deactivated_at` not null
 - **AC2**: Modal confirmación: "Reactivar a usuario X? Se le enviará email para definir nuevo display_name"
 - **AC3**: Al confirmar → `is_active=true`, `deactivated_at=NULL`, `must_change_password=false`, genera magic link reactivación → email
 - **AC4**: Log de auditoría: admin_id, user_id, action="force_reactivate", timestamp
 
-### UC-ADMIN-008: Forzar eliminación GDPR (Right to Erasure)
+### UC-ADMIN-010: Forzar eliminación GDPR (Right to Erasure)
 **Como** admin, **quiero** ejecutar eliminación GDPR inmediata **para** cumplimiento legal.
 - **AC1**: Solo usuarios con `is_active=false` (ya desactivados)
 - **AC2**: Modal doble confirmación: "ELIMINAR DEFINITIVAMENTE a usuario X? Esta acción es IRREVERSIBLE: PII anonimizada, recetas → system user, FKs → NULL"
 - **AC3**: Ejecuta `usuario_eliminar_definitivo(user_id)` (ver `data-model.md`)
 - **AC4**: Log auditoría: admin_id, user_id, action="force_gdpr_erasure", timestamp
 
-### UC-ADMIN-009: Cambiar rol (user ↔ admin)
+### UC-ADMIN-011: Cambiar rol (user ↔ admin)
 **Como** admin, **quiero** promover/degradar usuarios **para** gestión de permisos.
 - **AC1**: Usuario destino debe tener `is_active=true`
 - **AC2**: No puede degradarse a sí mismo (protección)
@@ -96,27 +96,27 @@
 
 ## Epic A3: Gestión de Ingredientes (Validación Catálogo)
 
-### UC-ADMIN-010: Listar ingredientes pendientes de validación
+### UC-ADMIN-012: Listar ingredientes pendientes de validación
 **Como** admin, **quiero** ver ingredientes creados por usuarios **para** validar/mergear al catálogo oficial.
 - **AC1**: Tabla: ingredientes con `validated_by_admin=false` (paginada, orden: usage_count DESC)
 - **AC2**: Columnas: name, slug, category, default_unit, usage_count, created_by (link a usuario), created_at, aliases
 - **AC3**: Filtros: categoría, búsqueda nombre/slug
 - **AC4**: Acciones: Validar, Editar + Validar, Mergear, Rechazar
 
-### UC-ADMIN-011: Validar ingrediente
+### UC-ADMIN-013: Validar ingrediente
 **Como** admin, **quiero** aprobar un ingrediente usuario **para** que pase al catálogo oficial.
 - **AC1**: Click "Validar" → modal confirma: name, slug, category, default_unit, aliases
 - **AC2**: Opción editar antes de validar
 - **AC3**: Al validar → `validated_by_admin=true`, `validated_at=now()`, `validated_by=admin_id`
 - **AC4**: Ingrediente pasa a catálogo oficial (aparece en autocomplete frontend)
 
-### UC-ADMIN-012: Editar + Validar ingrediente
+### UC-ADMIN-014: Editar + Validar ingrediente
 **Como** admin, **quiero** corregir un ingrediente antes de validar **para** calidad del catálogo.
 - **AC1**: Modal prellenado con datos usuario: name, slug, category, default_unit, aliases (editable)
 - **AC2**: Validación: slug único (si cambia), categoría válida, unidad válida
 - **AC3**: Al guardar → `validated_by_admin=true` + campos actualizados
 
-### UC-ADMIN-013: Mergear ingrediente (deduplicación)
+### UC-ADMIN-015: Mergear ingrediente (deduplicación)
 **Como** admin, **quiero** fusionar ingrediente duplicado con catálogo oficial **para** evitar fragmentación.
 - **AC1**: Select "Mergear con..." → busca en catálogo oficial (`validated_by_admin=true`)
 - **AC2**: Al mergear:
@@ -126,25 +126,25 @@
   - Duplicado → soft delete (`is_active=false`, `merged_into=oficial_id`)
 - **AC3**: Log auditoría
 
-### UC-ADMIN-014: Rechazar ingrediente
+### UC-ADMIN-016: Rechazar ingrediente
 **Como** admin, **quiero** rechazar ingrediente inapropiado **para** mantener catálogo limpio.
 - **AC1**: Modal razón: "Inapropiado", "Duplicado", "Spam", "Otro" + texto libre
 - **AC2**: Al rechazar → `is_active=false`, `rejected_by=admin_id`, `rejected_at=now()`, `rejection_reason=...`
 - **AC3**: Usuario creador recibe notificación (email/in-app) con razón
 
-### UC-ADMIN-015: Listar ingredientes validados (Catálogo oficial)
+### UC-ADMIN-017: Listar ingredientes validados (Catálogo oficial)
 **Como** admin, **quiero** ver todos los ingredientes validados **para** gestionar el catálogo oficial.
 - **AC1**: Tabla paginada: name, slug, category, default_unit, usage_count, validated_by, validated_at, aliases
 - **AC2**: Filtros: categoría, búsqueda nombre/slug, validado por
 - **AC3**: Acciones: Editar, Desvalidar (mover a pendientes), Ver uso en recetas
 
-### UC-ADMIN-016: Listar ingredientes rechazados
+### UC-ADMIN-018: Listar ingredientes rechazados
 **Como** admin, **quiero** ver ingredientes rechazados **para** auditoría y posibles recuperaciones.
 - **AC1**: Tabla: name, slug, category, rejection_reason, rejected_by, rejected_at, created_by
 - **AC2**: Filtros: razón rechazo, fecha rango, rechazado por
 - **AC3**: Acción: Recuperar (mover a pendientes con razón)
 
-### UC-ADMIN-017: Normalizar ingrediente (Unidad / Nombre)
+### UC-ADMIN-019: Normalizar ingrediente (Unidad / Nombre)
 **Como** admin, **quiero** normalizar nombre y unidad de ingrediente **para** consistencia del catálogo.
 - **AC1**: Modal: name (editable, slug auto), category, default_unit (selector unidades válidas), aliases (textarea)
 - **AC2**: Validación: slug único, categoría válida, unidad en whitelist (g, kg, ml, l, unidad, cucharada, cucharadita, taza, pizca)
@@ -154,7 +154,7 @@
 
 ## Epic A4: Gestión de Recetas (Admin)
 
-### UC-ADMIN-018: Listar recetas
+### UC-ADMIN-020: Listar recetas
 **Como** admin, **quiero** ver todas las recetas **para** gestionar el contenido de la plataforma.
 - **AC1**: Tabla paginada (20/pág): título, slug, autor (link), categoría, tags, estado (pública/privada/borrada), visitas, favoritos, rating, created_at, updated_at
 - **AC2**: Filtros: estado (pública/privada/borrada), categoría, autor (autocomplete), tags, rango fechas creación, rango rating
@@ -162,14 +162,14 @@
 - **AC4**: Ordenamiento: created_at (default), updated_at, visitas, favoritos, rating, título
 - **AC5**: Acciones por fila: ver detalle, editar, eliminar, ocultar/publicar, ver autor
 
-### UC-ADMIN-019: Buscar recetas (Admin)
+### UC-ADMIN-021: Buscar recetas (Admin)
 **Como** admin, **quiero** buscar recetas con filtros avanzados **para** encontrar contenido específico.
 - **AC1**: Buscador unificado: título, slug, autor, ingredientes (live search debounce 300ms)
 - **AC2**: Filtros combinados (AND): categoría (single), tags (multi), autor, estado, rango fechas, rango rating
 - **AC3**: Chips activos removibles + "Limpiar todo"
 - **AC4**: Resultados en tabla con paginación + columnas configurables
 
-### UC-ADMIN-019: Ver detalle de receta (Admin)
+### UC-ADMIN-022: Ver detalle de receta (Admin)
 **Como** admin, **quiero** ver el detalle completo de una receta **para** moderación y auditoría.
 - **AC1**: Vista completa: título, slug, imagen, autor (link), categoría, tags, tiempos, porciones, dificultad
 - **AC2**: Ingredientes: lista con cantidad, unidad, notas + ingrediente_id (link a catálogo)
@@ -177,28 +177,28 @@
 - **AC4**: Meta: estado (pública/privada/borrada), visitas, favoritos, rating avg/count, created_at, updated_at, deleted_at
 - **AC5**: Acciones: Editar, Eliminar, Ocultar/Publicar, Ver autor, Copiar slug
 
-### UC-ADMIN-020: Editar receta (Admin)
+### UC-ADMIN-023: Editar receta (Admin)
 **Como** admin, **quiero** editar cualquier receta **para** corregir errores o moderar contenido.
 - **AC1**: Formulario prellenado con todos los campos (título, descripción, categoría, tags, ingredientes, instrucciones, tiempos, porciones, dificultad)
 - **AC2**: Validación: categoría activa, tags normalizados, ingredientes válidos (ingredient_id existe y activo)
 - **AC3**: Toggle estado: pública ↔ privada (sin borrar)
 - **AC4**: Al guardar → `updated_at=now()`, log auditoría (admin_id, receta_id, action="update", diff JSON)
 
-### UC-ADMIN-021: Eliminar receta (Admin)
+### UC-ADMIN-024: Eliminar receta (Admin)
 **Como** admin, **quiero** eliminar una receta definitivamente **para** remover contenido inapropiado.
 - **AC1**: Solo si `deleted_at IS NULL` (no borradas previamente)
 - **AC2**: Modal doble confirmación: "ELIMINAR DEFINITIVAMENTE receta X? Esta acción es IRREVERSIBLE: receta → soft delete, author_id → system user, contadores preservados"
 - **AC3**: Al confirmar → `deleted_at=now()`, `author_id=system_user`, log auditoría
 - **AC4**: Toast confirmación + tabla actualizada
 
-### UC-ADMIN-022: Ocultar / Publicar receta
+### UC-ADMIN-025: Ocultar / Publicar receta
 **Como** admin, **quiero** ocultar o publicar una receta **para** moderar visibilidad sin borrar.
 - **AC1**: Toggle `is_public` (true ↔ false) con confirmación simple
 - **AC2**: Ocultar: receta no aparece en búsquedas públicas, solo autor y admins la ven
 - **AC3**: Publicar: receta visible en búsquedas y listados públicos
 - **AC4**: Toast + actualización inmediata + log auditoría
 
-### UC-ADMIN-023: Ver estadísticas de receta
+### UC-ADMIN-026: Ver estadísticas de receta
 **Como** admin, **quiero** ver métricas de una receta **para** evaluar su rendimiento.
 - **AC1**: Cards: Visitas totales, Visitas 30d, Favoritos, Rating avg, Rating count, Compartidos
 - **AC2**: Gráfico visitas 30d (línea) + distribución ratings (barras 5★→1★)
@@ -207,23 +207,23 @@
 
 ---
 
-## Epic A4: Métricas y Dashboard
+## Epic A5: Métricas y Dashboard
 
-### UC-ADMIN-015: Dashboard global
+### UC-ADMIN-027: Dashboard global
 **Como** admin, **quiero** ver KPIs globales **para** monitorear salud del producto.
 - **AC1**: Cards: Usuarios activos (7d/30d), Recetas publicadas, Recetas/mes, Búsquedas/día, Visitas/día, Ratings/día, Avg rating global
 - **AC2**: Gráficos: Usuarios nuevos/semana (30d), Recetas publicadas/semana, Engagement (guardados/visitas ratio)
 - **AC3**: Top 10: Categorías, Tags, Ingredientes, Autores (por recetas/visitas/ratings)
 - **AC4**: Alertas: Usuarios pendientes reactivación, Ingredientes pendientes validación, Errores 5xx última hora
 
-### UC-ADMIN-016: Métricas de contenido
+### UC-ADMIN-028: Métricas de contenido
 **Como** admin, **quiero** analizar contenido **para** decisiones editoriales.
 - **AC1**: Recetas: publicadas/privadas/borradas por mes, por categoría, por autor
 - **AC2**: Calidad: % recetas con rating ≥3, % con rating ≥4, distribución ratings
 - **AC3**: Engagement: Top recetas por visitas, guardados, ratings; Recetas "fantasma" (0 visitas 30d)
 - **AC4**: Exportar CSV (últimos 90d)
 
-### UC-ADMIN-017: Métricas de usuarios
+### UC-ADMIN-029: Métricas de usuarios
 **Como** admin, **quiero** analizar comportamiento usuarios **para** retención.
 - **AC1**: Cohort retention (semana 1, 2, 4, 8, 12)
 - **AC2**: Funnel activación: Registro → Verificación → 1ra búsqueda → 1er guardado → 1er rating
@@ -232,27 +232,27 @@
 
 ---
 
-## Epic A5: Configuración del Sistema
+## Epic A6: Configuración del Sistema
 
-### UC-ADMIN-018: Feature Flags
+### UC-ADMIN-030: Feature Flags
 **Como** admin, **quiero** activar/desactivar features **para** releases graduales.
 - **AC1**: Lista flags: `ai_generation_enabled`, `cooking_mode_enabled`, `social_sharing_enabled`, `ingredients_creation_enabled`, `ratings_enabled`
 - **AC2**: Toggle por flag + % rollout (0-100%) + targeting (all, beta_users, admins)
 - **AC3**: Auditoría: quién cambió, cuándo, valor anterior/nuevo
 
-### UC-ADMIN-019: Límites de Rate Limiting
+### UC-ADMIN-031: Límites de Rate Limiting
 **Como** admin, **quiero** configurar rate limits **para** proteger la API.
 - **AC1**: Config por endpoint: login, register, search, create_recipe, rate_recipe, ai_generate
 - **AC2**: Parámetros: requests, window (segundos), burst allowance
 - **AC3**: Override por IP/usuario (whitelist/blacklist)
 
-### UC-ADMIN-020: Templates de Email
+### UC-ADMIN-032: Templates de Email
 **Como** admin, **quiero** editar templates de email **para** comunicación.
 - **AC1**: Templates: verification, password_reset, reactivation_magic_link, gdpr_confirmation, welcome
 - **AC2**: Editor: subject, HTML body, text body, variables disponibles ({{user_name}}, {{link}}, {{code}})
 - **AC3**: Preview + test send (a email admin)
 
-### UC-ADMIN-021: Modo Mantenimiento
+### UC-ADMIN-033: Modo Mantenimiento
 **Como** admin, **quiero** activar modo mantenimiento **para** deploys/emergencias.
 - **AC1**: Toggle ON/OFF + mensaje personalizado + ETA opcional
 - **AC2**: ON → API devuelve 503 (excepto `/health`, `/admin/*` con bypass), frontend muestra banner
@@ -260,16 +260,16 @@
 
 ---
 
-## Epic A6: Auditoría y Logs
+## Epic A7: Auditoría y Logs
 
-### UC-ADMIN-022: Log de auditoría
+### UC-ADMIN-034: Log de auditoría
 **Como** admin, **quiero** ver historial de acciones admin **para** trazabilidad.
 - **AC1**: Tabla: timestamp, admin_id, admin_email, action, target_type, target_id, details (JSON), ip_address
 - **AC2**: Filtros: admin, action, target_type, rango fechas
 - **AC3**: Acciones logadas: todos los CRUD admin, force_reactivate, force_gdpr_erasure, role_change, flag_change, maintenance_toggle
 - **AC4**: Export CSV (últimos 90d)
 
-### UC-ADMIN-023: Logs de errores (5xx)
+### UC-ADMIN-035: Logs de errores (5xx)
 **Como** admin, **quiero** ver errores del backend **para** debugging.
 - **AC1**: Lista: timestamp, endpoint, method, status_code, error_message, stack_trace (truncado), user_id (si autenticado), request_id
 - **AC2**: Filtros: status_code, endpoint, rango fechas

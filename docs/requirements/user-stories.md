@@ -193,7 +193,7 @@
 ### US-24: Ordenar y paginar resultados
 **Como** usuario, **quiero** ordenar resultados y navegar páginas **para** explorar eficientemente.
 - **AC1**: Select: "Más recientes", "Más visitadas", "Más guardadas", "Mejor calificadas"
-- **AC2**: Paginación cursor-based (infinite scroll) o offset con page numbers
+- **AC2**: Paginación por offset (`page`/`limit`) con infinite scroll (cursor-based queda **[v2]**)
 - **AC3**: Estado de orden+página en URL
 - **Ref**: RF-03.6, RF-03.7
 
