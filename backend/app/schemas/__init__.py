@@ -13,6 +13,16 @@ from app.schemas.auth import (
     PasswordResetConfirm,
     PasswordChange as PasswordChangeSchema,
 )
+from app.schemas.recipe import (
+    RecipeBase,
+    RecipeCreate,
+    RecipeUpdate,
+    RecipeResponse,
+    RecipeListItem,
+    SimilarRecipe,
+    CategoryResponse,
+    TagResponse,
+)
 
 __all__ = [
     "Token",
@@ -25,4 +35,12 @@ __all__ = [
     "PasswordResetRequest",
     "PasswordResetConfirm",
     "PasswordChangeSchema",
+    "RecipeBase",
+    "RecipeCreate",
+    "RecipeUpdate",
+    "RecipeResponse",
+    "RecipeListItem",
+    "SimilarRecipe",
+    "CategoryResponse",
+    "TagResponse",
 ]

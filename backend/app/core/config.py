@@ -3,8 +3,8 @@ Recetario IA - Backend Configuration
 """
 from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, PostgresDsn
-from typing import List
+from pydantic import Field, PostgresDsn, field_validator
+from typing import List, Union
 
 
 class Settings(BaseSettings):
@@ -35,7 +35,9 @@ class Settings(BaseSettings):
     ADMIN_INITIAL_PASSWORD: str = Field(default="ChangeMeOnFirstLogin123!")
 
     # CORS
-    CORS_ORIGINS: List[str] = Field(default_factory=lambda: ["http://localhost:3000", "http://localhost:3001"])
+    CORS_ORIGINS: Union[List[str], str] = Field(
+        default="http://localhost:3000,http://localhost:3001"
+    )
 
     # API
     API_V1_PREFIX: str = "/api/v1"
@@ -45,8 +47,12 @@ class Settings(BaseSettings):
     ADMIN_INITIAL_USER: str = "admin@recetario.local"
     ADMIN_INITIAL_PASSWORD: str = "ChangeMeOnFirstLogin123!"
 
-    # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:3001"]
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(",")]
+        return v
 
 
 @lru_cache

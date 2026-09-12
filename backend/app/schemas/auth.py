@@ -34,6 +34,9 @@ class UserUpdate(BaseModel):
 class UserResponse(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
+    # Responses never re-validate already-persisted values; bootstrap accounts
+    # may legitimately use reserved TLDs such as ``.local``.
+    email: str
     id: UUID
     avatar_url: Optional[str] = None
     role: str

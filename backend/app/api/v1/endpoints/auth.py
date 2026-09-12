@@ -22,7 +22,7 @@ from app.core.security import (
     decode_token,
     blacklist_token,
 )
-from app.models import User
+from app.models import User, UserRole
 from app.schemas.auth import (
     Token,
     TokenRefresh,
@@ -60,10 +60,13 @@ async def get_current_user(
     if not user_id:
         raise credentials_exception
 
+    try:
+        user_uuid = UUID(str(user_id))
+    except (ValueError, TypeError):
+        raise credentials_exception
+
     result = await db.execute(
-        select(User)
-        .where(User.id == uuid4(payload.get("sub")))
-        .options(selectinload(User.recipes))
+        select(User).where(User.id == user_uuid)
     )
     user = result.scalar_one_or_none()
 
@@ -106,7 +109,7 @@ async def create_admin_user(db: AsyncSession) -> None:
         email=settings.ADMIN_INITIAL_USER,
         password_hash=get_password_hash(settings.ADMIN_INITIAL_PASSWORD),
         display_name="Administrador",
-        role="admin",
+        role=UserRole.ADMIN,
         is_active=True,
         is_verified=True,
         must_change_password=True,
@@ -185,7 +188,7 @@ async def login(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=True,
+        secure=settings.ENVIRONMENT == "production",
         samesite="lax",
         max_age=60 * 60 * 24 * 30,  # 30 days
         path="/api/v1/auth/refresh",
@@ -223,7 +226,15 @@ async def refresh_token(
     # TODO: Implement token blacklist check
 
     user_id = payload.get("sub")
-    result = await db.execute(select(User).where(User.id == user_id))
+    try:
+        user_uuid = UUID(str(user_id))
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+
+    result = await db.execute(select(User).where(User.id == user_uuid))
     user = result.scalar_one_or_none()
 
     if not user or not user.is_active:
@@ -233,7 +244,7 @@ async def refresh_token(
         )
 
     # Blacklist old refresh token
-    await blacklist_token(refresh_token)
+    blacklist_token(refresh_token)
 
     # Create new tokens
     new_access_token = create_access_token(subject=str(user.id))
@@ -243,7 +254,7 @@ async def refresh_token(
         key="refresh_token",
         value=new_refresh_token,
         httponly=True,
-        secure=True,
+        secure=settings.ENVIRONMENT == "production",
         samesite="lax",
         max_age=60 * 60 * 24 * 30,
         path="/api/v1/auth/refresh",
@@ -261,7 +272,7 @@ async def logout(response: Response, request: Request):
     """Logout - revoke refresh token."""
     refresh_token = request.cookies.get("refresh_token")
     if refresh_token:
-        await blacklist_token(refresh_token)
+        blacklist_token(refresh_token)
 
     response.delete_cookie(key="refresh_token", path="/api/v1/auth/refresh")
     return {"message": "Successfully logged out"}

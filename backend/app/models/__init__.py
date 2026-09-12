@@ -3,6 +3,7 @@ Recetario IA - Database Models
 """
 import enum
 from datetime import datetime
+from typing import List, Optional
 from uuid import uuid4
 
 from sqlalchemy import (
@@ -60,10 +61,13 @@ class User(Base):
     ratings: Mapped[List["Rating"]] = relationship(back_populates="user", lazy="dynamic")
     visits: Mapped[List["Visit"]] = relationship(back_populates="user", lazy="dynamic")
     tags_created: Mapped[List["Tag"]] = relationship(back_populates="created_by_user", lazy="dynamic")
-    ingredients_created: Mapped[List["Ingredient"]] = relationship(back_populates="created_by_user", lazy="dynamic")
+    ingredients_created: Mapped[List["Ingredient"]] = relationship(
+        back_populates="created_by_user",
+        foreign_keys="Ingredient.created_by",
+        lazy="dynamic",
+    )
 
     __table_args__ = (
-        Index("ix_users_email", "email"),
         Index("ix_users_is_active", "is_active"),
     )
 
@@ -134,8 +138,6 @@ class Recipe(Base):
 
     __table_args__ = (
         Index("ix_recipes_is_public_created", "is_public", "created_at"),
-        Index("ix_recipes_author_id", "author_id"),
-        Index("ix_recipes_category_id", "category_id"),
         Index("ix_recipes_deleted_at", "deleted_at"),
     )
 
@@ -219,7 +221,9 @@ class Ingredient(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
-    created_by_user: Mapped[Optional["User"]] = relationship(back_populates="ingredients_created")
+    created_by_user: Mapped[Optional["User"]] = relationship(
+        back_populates="ingredients_created", foreign_keys=[created_by]
+    )
     validated_by_user: Mapped[Optional["User"]] = relationship(foreign_keys=[validated_by])
     rejected_by_user: Mapped[Optional["User"]] = relationship(foreign_keys=[rejected_by])
 
