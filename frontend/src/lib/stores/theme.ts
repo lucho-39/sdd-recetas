@@ -1,47 +1,50 @@
-import { writable, derived } from 'svelte/store';
-import { persisted } from 'svelte-local-storage-store';
+import { derived, get, writable } from 'svelte/store';
 
 export type Theme = 'light' | 'dark' | 'system';
 
-function createThemeStore() {
-  const { subscribe, set, update } = persisted<Theme>('theme', 'system');
+const STORAGE_KEY = 'theme';
+const themeState = writable<Theme>('system');
 
-  return {
-    subscribe,
-    init: () => {
-      if (typeof window !== 'undefined') {
-        const stored = subscribe.get();
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const isDark = stored === 'dark' || (stored === 'system' && prefersDark);
-        document.documentElement.classList.toggle('dark', isDark);
-      }
-    },
-    setTheme: (theme: Theme) => {
-      set(theme);
-      if (typeof window !== 'undefined') {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const isDark = theme === 'dark' || (theme === 'system' && prefersDark);
-        document.documentElement.classList.toggle('dark', isDark);
-      }
-    },
-    toggle: () => {
-      update(current => {
-        const next = current === 'light' ? 'dark' : current === 'dark' ? 'system' : 'light';
-        if (typeof window !== 'undefined') {
-          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          const isDark = next === 'dark' || (next === 'system' && prefersDark);
-          document.documentElement.classList.toggle('dark', isDark);
-        }
-        return next;
-      });
-    },
-  };
+function applyTheme(value: Theme): void {
+	if (typeof document === 'undefined') return;
+	const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+	const isDark = value === 'dark' || (value === 'system' && prefersDark);
+	document.documentElement.classList.toggle('dark', isDark);
+}
 
-export const theme = createThemeStore();
+function persist(value: Theme): void {
+	if (typeof localStorage !== 'undefined') localStorage.setItem(STORAGE_KEY, value);
+}
 
-export const isDark = derived(theme, $theme => {
-  if (typeof window === 'undefined') return false;
-  if ($theme === 'dark') return true;
-  if ($theme === 'light') return false;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+export const theme = {
+	subscribe: themeState.subscribe,
+	init: () => {
+		if (typeof localStorage !== 'undefined') {
+			const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
+			if (stored === 'light' || stored === 'dark' || stored === 'system') {
+				themeState.set(stored);
+			}
+		}
+		applyTheme(get(themeState));
+	},
+	setTheme: (value: Theme) => {
+		themeState.set(value);
+		persist(value);
+		applyTheme(value);
+	},
+	toggle: () => {
+		const current = get(themeState);
+		const next: Theme = current === 'light' ? 'dark' : current === 'dark' ? 'system' : 'light';
+		themeState.set(next);
+		persist(next);
+		applyTheme(next);
+		return next;
+	}
+};
+
+export const isDark = derived(theme, ($theme) => {
+	if (typeof window === 'undefined') return false;
+	if ($theme === 'dark') return true;
+	if ($theme === 'light') return false;
+	return window.matchMedia('(prefers-color-scheme: dark)').matches;
 });

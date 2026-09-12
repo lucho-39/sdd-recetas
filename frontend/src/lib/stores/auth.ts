@@ -86,6 +86,7 @@ function createAuthStore() {
       isAuthenticated: !!accessToken,
     })),
   };
+}
 
 export const auth = createAuthStore();
 

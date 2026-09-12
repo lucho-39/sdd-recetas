@@ -1,79 +1,45 @@
 <script lang="ts">
-	export let value: number = 0;
-	export let count: number = 0;
+	export let value = 0;
+	export let count = 0;
 	export let size: 'xs' | 'sm' | 'md' | 'lg' = 'sm';
 	export let showCount = false;
-	export let interactive = false;
-	export let onChange: (value: number) => void = () => {};
 
-	const sizes = {
-		xs: 'w-3 h-3',
-		sm: 'w-4 h-4',
-		md: 'w-5 h-5',
-		lg: 'w-6 h-6',
-	};
+	const sizeMap = {
+		xs: 'h-3 w-3',
+		sm: 'h-4 w-4',
+		md: 'h-5 w-5',
+		lg: 'h-6 w-6'
+	} as const;
 
-	$: fullStars = Math.floor(value);
-	$: fraction = value % 1;
-	$: hasHalf = fraction >= 0.25 && fraction < 0.75;
-	$: hasPartial = fraction >= 0.75;
+	const starPath =
+		'M12 2.5l2.95 5.98 6.6.96-4.78 4.66 1.13 6.57L12 17.77l-5.9 3.9 1.13-6.57L2.45 9.44l6.6-.96L12 2.5z';
 
-	function getStarAriaLabel(index: number): string {
-		if (index < fullStars) return 'Estrella completa';
-		if (index === fullStars && hasHalf) return 'Media estrella';
-		if (index === fullStars && hasPartial) return 'Estrella casi completa';
-		return 'Estrella vacía';
-	}
-
-	function handleClick(index: number) {
-		if (!interactive) return;
-		const newValue = index + 1;
-		onChange(newValue);
+	function starFill(index: number): number {
+		const diff = value - index;
+		if (diff >= 1) return 100;
+		if (diff <= 0) return 0;
+		return Math.round(diff * 100);
 	}
 </script>
 
 <div
 	class="inline-flex items-center gap-0.5"
 	role="img"
-	aria-label="Calificación: {value.toFixed(2)} de 5 estrellas{count ? ', ' + count + ' reseñas' : ''}"
+	aria-label={`Calificación: ${value.toFixed(2)} de 5${count ? `, ${count} reseñas` : ''}`}
 >
-	{#each Array(5) as _, index}
-		<button
-			type="button"
-			class={sizes[size]}
-			aria-label={getStarAriaLabel(index)}
-			aria-pressed={interactive && index < value}
-			on:click={() => handleClick(index)}
-			disabled={!interactive}
-			style="color: {index < fullStars || (index === fullStars && (hasHalf || hasPartial)) ? 'var(--rating)' : 'currentColor'}"
-		>
-			{#if index < fullStars}
-				<svg class={sizes[size]} fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L24 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7.19 18.7l5.58-.94L6.09 9.42 12 3.27z"/></svg>
-			{:else if index === fullStars && hasHalf}
-				<svg class={sizes[size]} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L24 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7.19 18.7l5.58-.94L6.09 9.42 12 3.27z"/></svg>
-			{:else if index === fullStars && hasPartial}
-				<svg class={sizes[size]} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L24 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7.19 18.7l5.58-.94L6.09 9.42 12 3.27z"/></svg>
-			{:else}
-				<svg class={sizes[size]} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L24 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7.19 18.7l5.58-.94L6.09 9.42 12 3.27z"/></svg>
-			{/if}
-		<button>
+	{#each [0, 1, 2, 3, 4] as i}
+		<span class="relative inline-block {sizeMap[size]}">
+			<svg class="{sizeMap[size]} absolute inset-0 text-muted-foreground/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+				<path d={starPath} />
+			</svg>
+			<span class="absolute inset-0 overflow-hidden" style="width: {starFill(i)}%">
+				<svg class="{sizeMap[size]} text-rating" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+					<path d={starPath} />
+				</svg>
+			</span>
+		</span>
 	{/each}
-
-	{#if showCount && count > 0}
+	{#if showCount}
 		<span class="ml-1 text-sm text-muted-foreground">({count})</span>
 	{/if}
-
-<style>
-	:global(.rating-stars) {
-		@apply inline-flex items-center gap-0.5;
-	}
-	:global(.rating-stars button) {
-		@apply transition-colors duration-150;
-	}
-	:global(.rating-stars button:disabled) {
-		@apply cursor-not-allowed;
-	}
-	:global(.rating-stars button:not(:disabled):hover) {
-		@apply scale-110;
-	}
-</style>
+</div>

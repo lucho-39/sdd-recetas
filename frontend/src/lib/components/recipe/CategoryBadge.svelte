@@ -2,37 +2,17 @@
 	export let category: {
 		id: string;
 		name: string;
-		icon?: string;
+		icon?: string | null;
 		color: string;
 		slug: string;
 	};
-	export let variant: 'outline' | 'solid' = 'outline';
-	export let size: 'sm' | 'md' | 'lg' = 'md';
-	export let className: string = '';
+	export let className = '';
 </script>
 
 <span
-	class:badge
-	class:badge-category
-	class="inline-flex items-center gap-1 font-medium rounded-full px-2.5 py-0.5 text-sm
-		{variant === 'outline'
-			? 'bg-transparent border-[{category.color}] text-white [&>svg]:stroke-[{category.color}]'
-			: 'bg-[{category.color}] text-white'}"
-	style="--badge-color: {category.color};"
-	class={className}
+	class="badge {className}"
+	style="background-color: {category.color}1f; color: {category.color}; border: 1px solid {category.color}40;"
 >
-	{#if category.icon}
-		<span aria-hidden="true">{category.icon}</span>
-	{/if}
+	{#if category.icon}<span aria-hidden="true">{category.icon}</span>{/if}
 	{category.name}
 </span>
-
-<style>
-	:global(.badge) {
-		@apply inline-flex items-center gap-1 font-medium rounded-full px-2.5 py-0.5 text-sm;
-	}
-
-	:global(.badge-category) {
-		@apply transition-colors;
-	}
-</style>

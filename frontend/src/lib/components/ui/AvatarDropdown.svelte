@@ -1,65 +1,73 @@
 <script lang="ts">
+	import { User, LogOut, Settings, ChevronDown, BookOpen, Heart } from 'lucide-svelte';
 	import { auth } from '$lib/stores/auth';
-	import { Button } from '$components/ui/Button.svelte';
-	import { User, LogOut, Settings, ChevronDown } from 'lucide-svelte';
 
-	export let user: import('$lib/types').User | null = $derived($auth.currentUser);
+	let open = false;
+
+	$: user = $auth.user;
+
+	async function handleLogout() {
+		open = false;
+		await auth.logout();
+	}
+
+	function close() {
+		open = false;
+	}
 </script>
+
+<svelte:window on:click={() => (open = false)} />
 
 <div class="relative">
 	<button
-		class="flex items-center gap-2 p-1.5 rounded-full hover:bg-accent transition-colors"
-		on:click={() => open = !open}
+		type="button"
+		class="flex items-center gap-1.5 rounded-full p-1 transition-colors hover:bg-accent"
+		on:click|stopPropagation={() => (open = !open)}
 		aria-expanded={open}
-		aria-haspopup="true"
+		aria-haspopup="menu"
 		aria-label="Menú de usuario"
 	>
 		{#if user?.avatar_url}
-			<img src={user.avatar_url} alt="" class="w-8 h-8 rounded-full" />
+			<img src={user.avatar_url} alt="" class="h-8 w-8 rounded-full object-cover" />
 		{:else}
-			<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium text-sm">
-				{user?.display_name?.charAt(0).toUpperCase() || 'U'}
-			</div>
+			<span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">
+				{user?.display_name?.charAt(0).toUpperCase() ?? 'U'}
+			</span>
 		{/if}
-		<ChevronDown class="w-4 h-4 text-muted-foreground" />
+		<ChevronDown class="h-4 w-4 text-muted-foreground" aria-hidden="true" />
 	</button>
 
 	{#if open}
-	<div class="absolute right-0 top-full mt-2 w-48 bg-popover border border-border rounded-lg shadow-lg py-1 z-50 animate-fade-in">
-		<div class="px-3 py-2 border-b border-border">
-			<p class="text-sm font-medium truncate">{user?.display_name}</p>
-			<p class="text-xs text-muted-foreground truncate">{user?.email}</p>
+		<div
+			class="animate-fade-in absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border border-border bg-popover py-1 shadow-lg"
+			role="menu"
+			on:click|stopPropagation
+		>
+			<div class="border-b border-border px-3 py-2">
+				<p class="truncate text-sm font-medium">{user?.display_name}</p>
+				<p class="truncate text-xs text-muted-foreground">{user?.email}</p>
+			</div>
+			<a href="/perfil" class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" role="menuitem" on:click={close}>
+				<User class="h-4 w-4" aria-hidden="true" /> Perfil
+			</a>
+			<a href="/mis-recetas" class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" role="menuitem" on:click={close}>
+				<BookOpen class="h-4 w-4" aria-hidden="true" /> Mis Recetas
+			</a>
+			<a href="/mis-favoritos" class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" role="menuitem" on:click={close}>
+				<Heart class="h-4 w-4" aria-hidden="true" /> Favoritos
+			</a>
+			<a href="/perfil" class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" role="menuitem" on:click={close}>
+				<Settings class="h-4 w-4" aria-hidden="true" /> Configuración
+			</a>
+			<hr class="my-1 border-border" />
+			<button
+				type="button"
+				class="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
+				role="menuitem"
+				on:click={handleLogout}
+			>
+				<LogOut class="h-4 w-4" aria-hidden="true" /> Cerrar sesión
+			</button>
 		</div>
-		<a href="/perfil" class="flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent" on:click={() => open = false}>
-			<User class="w-4 h-4" />
-			Perfil
-		</a>
-		<a href="/mis-recetas" class="flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent" on:click={() => open = false}>
-			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
-			Mis Recetas
-		</a>
-		<a href="/mis-favoritos" class="flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent" on:click={() => open = false}>
-			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
-			Favoritos
-		</a>
-		<hr class="border-border my-1" />
-		<button class="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent" on:click={() => { /* open settings */ }}>
-			<Settings class="w-4 h-4" />
-			Configuración
-		</button>
-		<hr class="border-border my-1" />
-		<button class="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10" on:click={() => { logout(); }}>
-			<LogOut class="w-4 h-4" />
-			Cerrar sesión
-		</button>
-	</div>
-{/if}
-
-<script lang="ts">
-	let open = false;
-	import { ChevronDown } from 'lucide-svelte';
-
-	function logout() {
-		// TODO: Implement logout
-	}
-</script>
+	{/if}
+</div>
