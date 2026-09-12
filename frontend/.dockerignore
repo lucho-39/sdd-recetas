@@ -1,0 +1,53 @@
+# Node.js
+node_modules/
+.pnpm-store/
+.pnpm-store/
+.npm/
+.npmrc
+
+# Build outputs
+build/
+dist/
+*.local
+
+# SvelteKit
+.svelte-kit/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# Test
+coverage/
+.nyc_output/
+
+# CI/CD
+.github/
+!.github/workflows/
+
+# Misc
+*.tmp
+*.temp
+.tmp/
+temp/
+tmp/
+*.bak
+*.backup
