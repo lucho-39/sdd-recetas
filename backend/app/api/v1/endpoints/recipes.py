@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
-from app.core.security import get_current_active_user
+from app.core.security import get_current_active_user, get_current_user_optional
 from app.models import Recipe, Category, Tag, User, Favorite, Rating, Visit
 from app.schemas import (
     RecipeCreate,
@@ -101,9 +101,9 @@ async def list_recipes(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    current_user = Depends(get_current_user_optional),
 ):
-    """List recipes with filtering and pagination."""
+    """List recipes with filtering and pagination (public read)."""
     filters = [Recipe.is_public == True, Recipe.deleted_at.is_(None)]
 
     # Apply filters
@@ -165,9 +165,9 @@ async def list_recipes(
 async def get_recipe(
     slug: str,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    current_user = Depends(get_current_user_optional),
 ):
-    """Get recipe by slug."""
+    """Get recipe by slug (public read)."""
     result = await db.execute(
         select(Recipe)
         .where(Recipe.slug == slug, Recipe.deleted_at.is_(None))

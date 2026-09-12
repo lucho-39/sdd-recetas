@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import get_settings
 from app.core.database import init_db, async_session_maker
+from app.core.seed import seed_initial_data
 from app.api.v1.router import api_router
 from app.api.v1.endpoints.auth import create_admin_user
 
@@ -16,10 +17,11 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: create schema and idempotently seed the initial admin user
+    # Startup: create schema and idempotently seed initial data
     await init_db()
     async with async_session_maker() as session:
         await create_admin_user(session)
+        await seed_initial_data(session)
     yield
     # Shutdown (if needed)
 

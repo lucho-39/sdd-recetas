@@ -178,6 +178,43 @@ async def require_admin(
     return current_user
 
 
+oauth2_scheme_optional = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_PREFIX}/auth/login", auto_error=False
+)
+
+
+async def get_current_user_optional(
+    token: Optional[str] = Depends(oauth2_scheme_optional),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    """Return the authenticated user if a valid token is present, otherwise None.
+
+    Used by public read endpoints that behave differently for logged-in users
+    but must not require authentication (anonymous browsing).
+    """
+    if not token:
+        return None
+
+    payload = decode_token(token)
+    if not payload or payload.get("type") != "access":
+        return None
+
+    user_id = payload.get("sub")
+    if not user_id:
+        return None
+
+    try:
+        user_uuid = UUID(str(user_id))
+    except (ValueError, TypeError):
+        return None
+
+    result = await db.execute(select(User).where(User.id == user_uuid))
+    user = result.scalar_one_or_none()
+    if user and user.is_active:
+        return user
+    return None
+
+
 def create_visitor_fingerprint(request: Request) -> str:
     """Create a unique fingerprint for anonymous visitors based on IP and User-Agent."""
     ip = request.client.host if request.client else "unknown"

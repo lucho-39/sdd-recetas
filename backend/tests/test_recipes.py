@@ -20,9 +20,10 @@ def _recipe_payload(category: Category, **overrides: object) -> dict:
     return payload
 
 
-async def test_list_recipes_requires_authentication(client: AsyncClient) -> None:
+async def test_list_recipes_is_public(client: AsyncClient) -> None:
     response = await client.get("/api/v1/recipes")
-    assert response.status_code == 401
+    assert response.status_code == 200
+    assert "recipes" in response.json()
 
 
 async def test_list_recipes_returns_public_recipes(
