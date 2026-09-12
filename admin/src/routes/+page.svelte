@@ -1,113 +1,127 @@
 <script lang="ts">
-	import { Card } from '$components/ui/Card.svelte';
-	import { Button } from '$components/ui/Button.svelte';
-	import { Users, BookOpen, List, BarChart, TrendingUp, AlertCircle } from 'lucide-svelte';
+	import { onMount } from 'svelte';
+
+	let ready = false;
+
+	onMount(() => {
+		ready = true;
+	});
 </script>
 
-<div class="space-y-6">
-	<!-- Header -->
-	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-		<div>
-			<h1 class="text-3xl font-playfair font-medium text-foreground">Dashboard</h1>
-			<p class="text-muted-foreground mt-1">Bienvenido al panel de administración</p>
-		</div>
-		<div class="flex gap-2">
-			<Button variant="outline">Exportar CSV</Button>
-			<Button>Actualizar</Button>
+<svelte:head>
+	<title>Recetario IA — Admin</title>
+</svelte:head>
+
+<main class="splash">
+	<div class="splash-card">
+		<span class="splash-badge">Admin</span>
+		<h1 class="splash-title">Panel de Administración</h1>
+		<p class="splash-subtitle">
+			Gestión de categorías, usuarios, ingredientes y métricas de Recetario IA.
+		</p>
+		<p class="splash-status" class:is-ready={ready}>
+			{ready ? 'Admin en línea' : 'Iniciando…'}
+		</p>
+		<div class="splash-actions">
+			<a class="splash-link" href="http://localhost:3000">Ir a la app</a>
+			<a class="splash-link" href="http://localhost:8000/docs">API Docs</a>
 		</div>
 	</div>
+</main>
 
-	<!-- Stats Cards -->
-	<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-		<StatCard title="Usuarios activos (30d)" value="1,234" change="+12%" trend="up" icon={Users} />
-		<StatCard title="Recetas publicadas" value="5,678" change="+8%" trend="up" icon={BookOpen} />
-		<StatCard title="Ingredientes pendientes" value="42" change="-3" trend="down" icon={AlertCircle} variant="destructive" />
-		<StatCard title="Rating promedio" value="4.7" change="+0.2" trend="up" icon={TrendingUp} />
-	</div>
-
-	<!-- Charts placeholder -->
-	<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-		<Card class="p-6">
-			<h3 class="text-lg font-semibold mb-4">Usuarios nuevos por semana</h3>
-			<div class="h-64 flex items-center justify-center text-muted-foreground">
-				[Gráfico de líneas - Usuarios nuevos/semana]
-			</div>
-		</Card>
-		<Card class="p-6">
-			<h3 class="text-lg font-semibold mb-4">Recetas publicadas por categoría</h3>
-			<div class="h-64 flex items-center justify-center text-muted-foreground">
-				[Gráfico de barras - Recetas por categoría]
-			</div>
-		</Card>
-	</div>
-
-	<!-- Recent activity -->
-	<Card class="p-6">
-		<h3 class="text-lg font-semibold mb-4">Actividad reciente</h3>
-		<div class="space-y-3">
-			<ActivityItem user="María García" action="publicó" target="Tortilla de Patatas" time="hace 10 min" />
-			<ActivityItem user="Carlos López" action="calificó" target="Gazpacho Andaluz" rating={5} time="hace 25 min" />
-			<ActivityItem user="Ana Martín" action="guardó" target="Bizcocho de Yogur" time="hace 1 hora" />
-			<ActivityItem user="Pedro Ruiz" action="creó" target="Ensalada César" time="hace 3 horas" />
-		</div>
-	</Card>
-</div>
-
-<script lang="ts">
-	interface StatCardProps {
-		title: string;
-		value: string;
-		change: string;
-		trend: 'up' | 'down';
-		icon: any;
-		variant?: 'default' | 'destructive';
+<style>
+	.splash {
+		min-height: 100vh;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 2rem;
+		background: #1c1a18;
+		color: #e8e5e1;
+		font-family: 'Inter', system-ui, -apple-system, sans-serif;
 	}
-</script>
 
-{#render statCard()}
-{#snippet statCard({title, value, change, trend, icon: Icon, variant = 'default'})}
-	<div class="card p-6 {variant === 'destructive' ? 'border-destructive/20' : ''}">
-		<div class="flex items-center justify-between">
-			<div>
-				<p class="text-sm text-muted-foreground">{title}</p>
-				<p class="text-3xl font-bold text-foreground mt-1">{value}</p>
-			</div>
-			<div class="flex items-center gap-1 text-sm {trend === 'up' ? 'text-success' : 'text-destructive'}">
-				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					{#if trend === 'up'}
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7 7v10" />
-					{:else}
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 14l7 7m0 0l7-7m-7-7v-10" />
-					{/if}
-				</svg>
-				{change}
-			</div>
-		</div>
-	</div>
-{/snippet}
-
-<script>
-	interface ActivityItemProps {
-		user: string;
-		action: string;
-		target: string;
-		rating?: number;
-		time: string;
+	.splash-card {
+		max-width: 32rem;
+		text-align: center;
+		background: #24211f;
+		border: 1px solid #3d3935;
+		border-radius: 6px;
+		padding: 3rem 2rem;
 	}
-</script>
 
-{#render activityItem()}
-{#snippet activityItem({user, action, target, rating, time})}
-	<div class="flex items-center justify-between py-3 border-b border-border last:border-0">
-		<div class="flex items-center gap-3">
-			<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-medium">
-				{user.charAt(0)}
-			</div>
-			<div>
-				<p class="text-sm font-medium">{user}</p>
-				<p class="text-xs text-muted-foreground">{action} <span class="font-medium">{target}</span> {rating ? `· ⭐ ${rating}/5` : ''}</p>
-			</div>
-		</div>
-		<time class="text-xs text-muted-foreground whitespace-nowrap">{time}</time>
-	</div>
-{/snippet}
+	.splash-badge {
+		display: inline-block;
+		font-size: 0.75rem;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: #c8c4bc;
+		background: #2a2724;
+		border-radius: 2px;
+		padding: 0.25rem 0.6rem;
+	}
+
+	.splash-title {
+		font-family: 'Playfair Display', Georgia, serif;
+		font-size: 2.25rem;
+		font-weight: 500;
+		margin: 1.25rem 0 0.75rem;
+		color: #c8c4bc;
+	}
+
+	.splash-subtitle {
+		font-size: 1rem;
+		line-height: 1.6;
+		color: #a8a4a0;
+		margin: 0 0 1.5rem;
+	}
+
+	.splash-status {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.875rem;
+		color: #d4a84a;
+		margin-bottom: 2rem;
+	}
+
+	.splash-status::before {
+		content: '';
+		width: 0.5rem;
+		height: 0.5rem;
+		border-radius: 9999px;
+		background: #d4a84a;
+	}
+
+	.splash-status.is-ready {
+		color: #7ab86a;
+	}
+
+	.splash-status.is-ready::before {
+		background: #7ab86a;
+	}
+
+	.splash-actions {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0.75rem;
+	}
+
+	.splash-link {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: #c8c4bc;
+		text-decoration: none;
+		border: 1px solid #3d3935;
+		border-radius: 4px;
+		padding: 0.5rem 1rem;
+		transition: background 0.15s ease, border-color 0.15s ease;
+	}
+
+	.splash-link:hover {
+		background: #2a2724;
+		border-color: #8f8c84;
+	}
+</style>
