@@ -6,19 +6,22 @@ objetivo concreto.
 ---
 ## Índice de Casos de Uso
 
+> Solo los marcados **✅** existen como documento. Los **🔲** están pendientes
+> de escribir (el estado refleja el documento, no la implementación).
+
 | Archivo | Caso de Uso | Estado | Épica |
 |---------|-------------|--------|-------|
 | `search.md` | Búsqueda Unificada de Recetas | ✅ Completado | Epic 3: Búsqueda |
+| `ingredients.md` | Catálogo Ingredientes (seed, autocomplete, búsqueda) | ✅ Completado | Epic 2: Recetas |
+| `admin.md` | Panel Admin (categorías, usuarios, ingredientes, métricas) | ✅ Completado | Epic 9: Admin |
 | `recipes.md` | CRUD Recetas (Crear, Editar, Borrar, Listar propias) | 🔲 Pendiente | Epic 2: Recetas |
-| `favorites.md` | Favoritos y Colecciones (Guardar, Quitar, Colecciones) | 🔲 Pendiente | Epic 4: Favoritos |
-| `social.md` | Perfil Público + Compartir (Sin seguimiento/feed) | 🔲 Pendiente | Epic 5: Social |
+| `favorites.md` | Favoritos y Colecciones | 🔲 Pendiente | Epic 4: Favoritos |
 | `ratings.md` | Calificaciones y Reseñas | 🔲 Pendiente | Epic 6: Ratings |
-| `auth.md` | Autenticación y Cuenta (Registro, Login, OAuth, Perfil, Baja/Reactivación) | 🔲 Pendiente | Epic 1: Auth |
-| `ai-generation.md` | Generación de Recetas por IA | 🔲 Pendiente | Epic 7: IA |
-| `cooking-mode.md` | Modo Cocinando | 🔲 Pendiente | Epic 8: Cocinando |
-| `visit-tracking.md` | Tracking de Visitas (Anti-F5, Anónimos) | 🔲 Pendiente | Transversal |
-| `admin-categories.md` | Admin: Gestión de Categorías | 🔲 Pendiente | Epic 9: Admin |
-| `ingredients.md` | Catálogo Ingredientes (300 seed, autocomplete, búsqueda) | 🔲 Pendiente | Epic 2: Recetas |
+| `auth.md` | Autenticación y Cuenta | 🔲 Pendiente | Epic 1: Auth |
+| `social.md` | Perfil Público + Compartir | 🔲 Pendiente **[v2]** | Epic 5: Social |
+| `ai-generation.md` | Generación de Recetas por IA | 🔲 Pendiente **[v2]** | Epic 7: IA |
+| `cooking-mode.md` | Modo Cocinando | 🔲 Pendiente **[v2]** | Epic 8: Cocinando |
+| `visit-tracking.md` | Tracking de Visitas (Anti-F5) | 🔲 Pendiente | Transversal |
 
 ## Documentos esperados
 

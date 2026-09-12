@@ -755,16 +755,18 @@ export function showServerError(retryAction?: () => void) {
 ### Colors (Tailwind config extend)
 ```js
 colors: {
-  primary: { 500: '#6366f1', 600: '#4f46e5', ... },
+  primary: { 500: '#4A4E40', 600: '#3D4034', ... }, // dark olive
   category: { // dinámico desde BD
-    postre: '#f97316',
-    entrada: '#22c55e',
-    snack: '#eab308',
-    'plato-principal': '#3b82f6',
-    acompañamiento: '#a855f7',
-    bebida: '#06b6d4',
-    desayuno: '#f43f5e',
-    otro: '#64748b',
+    postre: '#FB923C',
+    entrada: '#4ADE80',
+    snack: '#FACC15',
+    'plato-principal': '#60A5FA',
+    acompañamiento: '#C084FC',
+    bebida: '#22D3EE',
+    desayuno: '#FB7185',
+    'sopa-crema': '#A3E635',
+    ensalada: '#34D399',
+    horneados: '#F87171',
   },
   rating: '#fbbf24', // amber-400 para estrellas
 }

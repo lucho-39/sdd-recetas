@@ -1,5 +1,19 @@
 # Modelo de Datos Físico (PostgreSQL)
 
+> ⚠️ **DESACTUALIZADO (ver `docs/decisions/ADR-000-source-of-truth.md`).**
+> Este archivo se escribió como spec previa a la implementación y **no refleja
+> el esquema real**. La fuente de verdad del esquema son los modelos
+> SQLAlchemy en `backend/app/models/__init__.py` (nombres físicos en inglés:
+> `users`, `recipes`, `categories`, `ingredients`, `tags`, `recipe_tags`,
+> `favorites`, `visits`, `ratings`).
+>
+> Diferencias conocidas: el SQL de abajo usa nombres en español; define
+> triggers que **no existen** en la implementación; la generación de slug usa
+> hash aleatorio (**la implementación usa sufijo numérico**); el seed de
+> ingredientes está incompleto (257 filas con slugs duplicados, no 300); y el
+> script inserta datos antes de crear las tablas. Se conserva como referencia
+> histórica.
+
 > Esquema SQL listo para migraciones. Compatible con Prisma, Drizzle, sqlc, o migraciones raw.
 
 ```sql

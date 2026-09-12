@@ -60,8 +60,8 @@ flowchart TD
 - **Acción**: Usuario escribe "brownie" en input búsqueda principal
 - **Sistema**:
   - Debounce 300ms
-  - URL: `?category=postre&tags=vegano,sin-tacc&q=brownie&page=1`
-  - API: búsqueda trigram en `title` + `description` (OR)
+  - URL: `?category=postre&tags=vegano,sin-tacc&query=brownie&page=1`
+  - API: búsqueda `ILIKE` en `title` + `description` (OR)
 - **Regla**: Combina con filtros existentes (AND global) (RB-03)
 
 ### 5. Filtro por Ingredientes (Coincidencia Parcial)
@@ -69,27 +69,27 @@ flowchart TD
 - **Sistema**:
   - Chip "Almendra ✕"
   - URL: `?category=postre&tags=vegano,sin-tacc&q=brownie&ingredients=almendra&page=1`
-  - API: busca en `ingredients.name` con **coincidencia parcial** (ILIKE/trigram) — OR entre ingredientes seleccionados
-  - Ejemplo: "pollo" coincide con "pechuga de pollo", "pollo al horno", "caldo de pollo"
+  - API: `ingredients @> [{"ingredient_id": "..."}]` — OR entre ingredientes seleccionados
+  - **Pendiente [v2]**: coincidencia parcial por nombre (ILIKE/trigram)
 - **Regla**: Combina con todo (AND global) (RB-03, RB-16)
 
 ### 6. Cambiar Ordenamiento
 - **Acción**: Usuario selecciona "Mejor calificadas" en dropdown
 - **Sistema**:
   - URL añade `&sort=top_rated`
-  - API re-ejecuta con `ORDER BY avg_rating DESC, rating_count DESC`
+  - API re-ejecuta con `ORDER BY avg_rating DESC` (desempate por `rating_count` pendiente **[v2]**)
 
 ### 7. Paginación / Infinite Scroll
 - **Acción**: Usuario hace scroll cerca del final
 - **Sistema**:
-  - Cursor-based: `GET /api/recipes?...&cursor=<opaque_token>`
+  - Offset: `GET /api/v1/recipes?page=N&limit=M` (cursor-based queda **[v2]**)
   - Append resultados al grid (no replace)
   - Skeleton loader solo en nuevos items
 
 ### 8. Click en Receta → Detalle
 - **Acción**: Usuario click tarjeta receta
 - **Sistema**:
-  - Navega a `/receta/<slug>` (SEO-friendly, ej: `/receta/tortilla-patatas-clasica-a1b2`)
+  - Navega a `/receta/<slug>` (SEO-friendly, ej: `/receta/tortilla-de-patatas`, o `...-2` si colisiona)
   - Registra visita (ver UC-VISIT-001)
   - Muestra detalle completo
 

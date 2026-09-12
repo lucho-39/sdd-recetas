@@ -56,7 +56,7 @@
 - `servings`: integer, nullable
 - `difficulty`: enum('facil', 'medio', 'dificil'), nullable
 - `instructions`: text, not null (pasos numerados o markdown)
-- `ingredients`: jsonb, not null (array de objetos: `{name, amount, unit, notes?}`)
+- `ingredients`: jsonb, not null (array de objetos: `{ingredient_id, amount, unit, notes?}`)
 - `is_public`: boolean, default true
 - `visit_count`: integer, default 0
 - `save_count`: integer, default 0

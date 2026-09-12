@@ -8,10 +8,10 @@ Aplicación mobile-first PWA para gestión de recetas de cocina con:
 - **Búsqueda unificada** (nombre, ingredientes, categorías, tags)
 - **Sistema de favoritos y colecciones**
 - **Calificaciones y reseñas** con estrellas fraccionales
-- **Modo cocinando** (fullscreen, wake lock, comandos de voz, timers)
-- **Generación de recetas por IA** a partir de ingredientes
-- **Panel de administración** independiente con auth separado
-- **Catálogo de 300 ingredientes normalizados** con autocomplete
+- **Modo cocinando** (fullscreen, wake lock, comandos de voz, timers) — **[v2]**
+- **Generación de recetas por IA** a partir de ingredientes — **[v2]**
+- **Panel de administración** independiente con auth separado *(endpoints /api/admin/* pendientes)*
+- **Catálogo de ingredientes normalizados** con autocomplete *(seed objetivo 300; actual incompleto)*
 
 ## 🏗️ Stack Tecnológico
 
@@ -22,12 +22,12 @@ Aplicación mobile-first PWA para gestión de recetas de cocina con:
 | **Backend** | FastAPI 0.115+ (Python 3.12+) |
 | **Base de Datos** | PostgreSQL 16+ (pg_trgm, pgcrypto, btree_gin) |
 | **ORM** | SQLAlchemy 2.0 async + Alembic |
-| **Auth** | JWT RS256 (access 15min) + Refresh opaque 30d (HttpOnly cookie) |
-| **OAuth** | Google + GitHub |
+| **Auth** | JWT HS256 (access 15min) + Refresh JWT 30d (HttpOnly cookie) |
+| **OAuth** | Google + GitHub — **[v2]** |
 | **Contenedores** | Podman + Podman Compose / Quadlet |
 | **Imágenes Base** | AWS ECR Public (`public.ecr.aws/...`) |
 | **Deployment** | VPS (Hetzner/DigitalOcean) + Podman Compose / Quadlet |
-| **Monorepo** | Turborepo (`apps/frontend`, `apps/admin`, `apps/backend`, `packages/shared`) |
+| **Monorepo** | pnpm workspaces por app (`frontend/`, `admin/`) + `backend/` |
 
 ## 🎨 Diseño & UX
 
@@ -151,23 +151,21 @@ sdd-recetas/
 │   │   │   └── types/
 │   │   └── app.css / app.html
 │   └── Containerfile
-└── .data/                      # Persistencia PostgreSQL (bind mount)
-    └── postgres/
+└── (volumen nombrado)          # Persistencia PostgreSQL: volumen `postgres_data`
 ```
 
 ## 🔐 Autenticación
 
 ### Usuario (Frontend)
-- **Access Token**: JWT RS256, 15 min, en memoria
-- **Refresh Token**: Opaco 30 días, HttpOnly cookie, rotación obligatoria
-- **OAuth**: Google + GitHub (backend callback)
-- **Bootstrap Admin**: Variables `ADMIN_INITIAL_USER` + `ADMIN_INITIAL_PASSWORD` → `force_password_change=true`
+- **Access Token**: JWT HS256, 15 min, en memoria
+- **Refresh Token**: JWT HS256 con `jti`, 30 días, HttpOnly cookie, rotación
+- **OAuth**: Google + GitHub — **[v2]**
+- **Bootstrap Admin**: Variables `ADMIN_INITIAL_USER` + `ADMIN_INITIAL_PASSWORD` → `must_change_password=true`
 
 ### Admin (Proyecto Separado)
-- **Proyecto SvelteKit independiente** (`recetario-admin`)
-- **Auth independiente**: JWT RS256 propio (`role: "admin"`)
-- **Cookies separadas**: `Path=/admin` o subdominio `admin.recetario.com`
-- **Bootstrap**: Variables `ADMIN_INITIAL_*` → force password change en primer login
+- **Proyecto SvelteKit independiente** (`admin/`)
+- **Auth independiente**: cookies propias; endpoints `/api/admin/*` pendientes
+- **Bootstrap**: Variables `ADMIN_INITIAL_*` → cambio de contraseña forzado en primer login
 
 ## 🗄️ Base de Datos - Esquema Principal
 
@@ -181,10 +179,10 @@ users, categories, tags, recipes, recipe_tags, favorites, visits, ratings, ingre
 -- Características clave
 - UUID primary keys
 - Soft deletes (deleted_at)
-- JSONB para ingredients (FK a catálogo)
-- Full-text search con pg_trgm
-- Triggers para contadores denormalizados (visit_count, save_count, avg_rating)
-- Soft delete admin con anonimización GDPR
+- JSONB para ingredients (referencia al catálogo por ingredient_id)
+- Búsqueda por ILIKE (pg_trgm queda v2)
+- Contadores denormalizados calculados en la app (visit_count, avg_rating); save_count pendiente
+- Soft delete admin con anonimización GDPR (v2)
 ```
 
 ## 🔍 Búsqueda Unificada
@@ -197,7 +195,7 @@ GET /api/recipes?category=postre&tags=vegano,sin-tacc&ingredients=almendra&q=bro
 - **OR** dentro de cada dimensión multi-valor
 - **Debounce 300ms** en frontend
 - **Chips removibles** + "Limpiar todo"
-- **Slug SEO**: `/receta/<slug>` (ej: `/receta/tortilla-patatas-clasica-a1b2`)
+- **Slug SEO**: `/receta/<slug>` (ej: `/receta/tortilla-de-patatas`, o `...-2` si colisiona)
 
 ## 🧪 Testing
 
@@ -240,15 +238,14 @@ cd backend && uv run ruff format .
 
 ## 🔐 Seguridad
 
-- ✅ JWT RS256 (asymmetric) con rotación de claves
-- ✅ Refresh token rotación + detección robo (blacklist)
+- ✅ JWT HS256 (simétrico) con `jti` y expiración 15 min (RS256 queda v2)
+- ⚠️ Refresh token rotación (nuevo par en cada refresh); detección de reuso por familia **pendiente [v2]**
 - ✅ HttpOnly + Secure + SameSite=Lax cookies
-- ✅ Rate limiting (login: 5/15min, register: 5/15min)
 - ✅ CORS restringido a orígenes permitidos
-- ✅ Rate limiting por IP/usuario
-- ✅ Password policy: 8 chars, 1 mayús, 1 minús, 1 num, 1 especial
-- ✅ Bcrypt/Argon2 para hash de contraseñas
-- ✅ CSP, HSTS, X-Frame-Options headers
+- ⚠️ Rate limiting **pendiente [v2]**
+- ⚠️ Password policy: solo longitud mínima 8 (complejidad **pendiente [v2]**)
+- ✅ bcrypt para hash de contraseñas
+- ⚠️ CSP/HSTS/X-Frame-Options **pendientes [v2]** (terminación TLS a cargo del proxy)
 - ✅ No secrets en repo (`.gitignore` exhaustivo)
 
 ## 📚 Documentación SDD

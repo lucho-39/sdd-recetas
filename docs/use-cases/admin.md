@@ -1,7 +1,7 @@
 # Casos de Uso: Administración (Proyecto Independiente)
 
 **Proyecto**: `recetario-admin` (SvelteKit separado)  
-**Auth**: Independiente del frontend usuario — JWT RS256 propio (`role: "admin"`), cookies HttpOnly, refresh rotation propia  
+**Auth**: Independiente del frontend usuario — JWT propio (HS256 en MVP; RS256 queda v2) (`role: "admin"`), cookies HttpOnly, refresh rotation propia. **Endpoints `/api/admin/*` pendientes de implementar.**
 **Actores**: Administrador (usuario con `role: "admin"`)  
 **API**: Consume misma API backend (`/api/admin/*` endpoints con scope `admin`)
 
@@ -74,7 +74,7 @@
 **Como** admin, **quiero** reactivar un usuario desactivado **para** restaurar su acceso (soporte).
 - **AC1**: Solo usuarios con `is_active=false` y `deactivated_at` not null
 - **AC2**: Modal confirmación: "Reactivar a usuario X? Se le enviará email para definir nuevo display_name"
-- **AC3**: Al confirmar → `is_active=true`, `deactivated_at=NULL`, `force_password_change=false`, genera magic link reactivación → email
+- **AC3**: Al confirmar → `is_active=true`, `deactivated_at=NULL`, `must_change_password=false`, genera magic link reactivación → email
 - **AC4**: Log de auditoría: admin_id, user_id, action="force_reactivate", timestamp
 
 ### UC-ADMIN-008: Forzar eliminación GDPR (Right to Erasure)
@@ -353,7 +353,7 @@
    Claims: { sub, email, role: "admin", admin_id, jti }
 5. SvelteKit store guarda access token (memoria), refresh en cookie
 6. Requests a /api/admin/* → Authorization: Bearer <access>
-7. Backend valida JWT (RS256) + claim role="admin" + acceso a /api/admin/*
+7. Backend valida JWT (HS256 en MVP) + claim role="admin" + acceso a /api/admin/* **[endpoints pendientes]**
 6. Refresh: POST /auth/refresh (cookie) → nuevo pair (rotación)
 7. Logout: POST /auth/logout → revoca refresh actual + access token blacklist (opcional)
 ```
@@ -366,7 +366,7 @@
 - **Shared types**: Monorepo `packages/api-types` (generado desde OpenAPI backend)
 - **UI**: Mismos design tokens que frontend usuario (consistencia visual)
 - **Deploy**: Mismo VPS, contenedor Podman separado (`recetario-admin`), mismo dominio subpath `/admin` o subdominio `admin.recetario.com`
-- **Auth isolation**: Claves JWT separadas (par de claves RS256 distinto del frontend), cookies con `Path=/admin` o dominio separado
+- **Auth isolation**: Cookies separadas con `Path=/admin` o dominio separado (claves JWT propias en v2 con RS256)
 
 ---
 

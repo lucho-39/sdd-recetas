@@ -73,15 +73,17 @@ Aplicación **mobile-first PWA** para descubrir, guardar y cocinar recetas. Inte
 | Token | Valor | Uso |
 |-------|-------|-----|
 | **Colores categoría** | Ver `domain/entities.md` → Categoría.color | Badges, chips, acentos |
-| **Primary** | `indigo-600` / `indigo-500` (dark) | CTAs principales, links |
-| **Secondary** | `slate-600` / `slate-400` | Botones secundarios, bordes |
-| **Destructive** | `rose-600` / `rose-500` | Eliminar, acciones peligrosas |
-| **Success** | `green-600` / `green-500` | Guardado, confirmaciones |
-| **Warning** | `amber-600` / `amber-500` | Advertencias, baja cuenta |
-| **Radius** | `rounded-lg` (8px) cards, `rounded-full` badges/avatar | Consistencia visual |
+| **Primary** | `#3D4034` / `#A8A4A0` (dark olive) | CTAs principales, links |
+| **Destructive** | `#B84A3A` / `#D47A6A` | Eliminar, acciones peligrosas |
+| **Success** | `#5A7D4A` / `#7AB86A` | Guardado, confirmaciones |
+| **Warning** | `#C47A2A` / `#D4A84A` | Advertencias, baja cuenta |
+| **Radius** | `2px` badges, `4px` inputs/botones, `6px` cards | Consistencia visual |
 | **Shadow** | `shadow-sm` cards, `shadow-lg` modales/dropdowns | Jerarquía profundidad |
-| **Spacing** | `space-y-4` vertical, `gap-4` grid | Ritmo visual |
-| **Typography** | `font-sans` (Inter), `font-mono` (JetBrains Mono) | Legibilidad |
+| **Spacing** | base 4px; `space-y-4` vertical, `gap-4` grid | Ritmo visual |
+| **Typography** | `Playfair Display` (títulos), `Inter` (cuerpo) | Legibilidad |
+
+> Estos tokens siguen a `03-design-system.md` (paleta warm/olive). Una versión
+> anterior de este archivo proponía indigo/slate; quedó obsoleta.
 
 ---
 

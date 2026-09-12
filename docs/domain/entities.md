@@ -37,7 +37,7 @@
 | id | UUID | PK, default gen_random_uuid() | |
 | author_id | UUID | NOT NULL, FK → usuario.id | Autor/creador |
 | title | varchar(200) | NOT NULL | Título de la receta |
-| slug | varchar(220) | NOT NULL, UNIQUE | SEO-friendly: título normalizado + sufijo aleatorio corto (ej: "tortilla-patatas-clasica-a1b2") |
+| slug | varchar(220) | NOT NULL, UNIQUE | SEO-friendly: título normalizado, con sufijo numérico si colisiona (ej: "tortilla-de-patatas", "tortilla-de-patatas-2") |
 | description | text | NULLABLE | Descripción breve |
 | category_id | UUID | NOT NULL, FK → categoria.id | Categoría (cerrada) |
 | image_url | varchar(500) | NULLABLE | MVP: siempre NULL |
@@ -64,7 +64,11 @@
 - `idx_receta_ingredients_gin` (ingredients) — GIN jsonb para búsqueda por ingrediente_id
 - `idx_receta_slug` (slug) — UNIQUE, lookup por URL
 
-**Generación de slug**: `slugify(title) + '-' + nanoid(4)` → único, legible, SEO-friendly. Ej: "Tortilla de Patatas" → "tortilla-de-patatas-a1b2".
+**Generación de slug**: `slugify(title)` con **desambiguación numérica** si el slug ya existe → único, legible, SEO-friendly. Ej: "Tortilla de Patatas" → "tortilla-de-patatas"; si ya existe → "tortilla-de-patatas-2".
+> **Nota**: los nombres físicos de tablas/columnas en la base y en los modelos
+> son en **inglés** (`users`, `recipes`, `categories`, `ingredients`, `tags`,
+> `recipe_tags`, `favorites`, `visits`, `ratings`). Este documento usa nombres
+> en español a modo conceptual. Ver `docs/decisions/ADR-000-source-of-truth.md`.
 
 **Estructura ingredients (JSONB normalizado)**:
 ```json
