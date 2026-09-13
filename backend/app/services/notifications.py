@@ -69,18 +69,29 @@ def build_payload(
     }
 
 
+def _message(type: str, actor: User, recipe: Recipe, detail: Optional[dict]) -> str:
+    """Human-readable notification message (shared wording with the UI)."""
+    who = actor.display_name
+    title = recipe.title
+    if type == "rating":
+        score = (detail or {}).get("score")
+        if score:
+            stars = "estrella" if score == 1 else "estrellas"
+            return (
+                f"Tu receta '{title}' recibió una calificación de {score} {stars} "
+                f"de parte de '{who}'"
+            )
+        return f"Tu receta '{title}' recibió una calificación de parte de '{who}'"
+    return f"'{who}' guardó tu receta '{title}'"
+
+
 def _email_content(
     type: str, actor: User, recipe: Recipe, detail: Optional[dict]
 ) -> tuple[str, str]:
-    who = actor.display_name
-    if type == "rating":
-        score = (detail or {}).get("score")
-        action = f"{who} calificó tu receta" + (f" con {score}★" if score else "")
-    else:
-        action = f"{who} guardó tu receta"
-    subject = f"{action}: {recipe.title}"
+    message = _message(type, actor, recipe, detail)
+    subject = message[:200]
     body = (
-        f"Hola,\n\n{action}: \"{recipe.title}\".\n\n"
+        f"Hola,\n\n{message}.\n\n"
         f"Podés verla en /receta/{recipe.slug}\n\n"
         "— Recetario IA"
     )

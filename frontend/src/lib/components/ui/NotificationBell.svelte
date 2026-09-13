@@ -15,10 +15,15 @@
 
 	function describe(notification: AppNotification): string {
 		const who = notification.actor?.display_name ?? 'Alguien';
+		const title = notification.recipe_title ?? 'tu receta';
 		if (notification.type === 'favorite') return `${who} guardó tu receta`;
 		if (notification.type === 'rating') {
 			const score = notification.detail?.score;
-			return score ? `${who} calificó tu receta con ${score}★` : `${who} calificó tu receta`;
+			if (score) {
+				const stars = score === 1 ? 'estrella' : 'estrellas';
+				return `Tu receta '${title}' recibió una calificación de ${score} ${stars} de parte de '${who}'`;
+			}
+			return `Tu receta '${title}' recibió una calificación de parte de '${who}'`;
 		}
 		return `${who} interactuó con tu receta`;
 	}

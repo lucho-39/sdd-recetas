@@ -180,3 +180,34 @@ async def test_disabled_event_notifies_nothing(
 
     listing = await client.get("/api/v1/notifications", headers=auth_headers)
     assert listing.json()["total"] == 0
+
+
+async def test_rating_email_message(
+    client: AsyncClient,
+    db_session,
+    user,
+    recipe: Recipe,
+    auth_headers: dict,
+    admin_headers: dict,
+) -> None:
+    from sqlalchemy import select
+
+    from app.models import EmailOutbox
+
+    await client.put(
+        "/api/v1/users/me/notification-preferences",
+        headers=auth_headers,
+        json={"email_enabled": True},
+    )
+    await client.post(f"/api/v1/ratings/{recipe.id}?score=4", headers=admin_headers)
+
+    rows = (
+        await db_session.execute(
+            select(EmailOutbox).where(EmailOutbox.to_email == user.email)
+        )
+    ).scalars().all()
+    assert len(rows) == 1
+    subject = rows[0].subject
+    assert "recibió una calificación de 4 estrellas" in subject
+    assert "'Admin'" in subject
+    assert recipe.title in subject
