@@ -163,8 +163,11 @@
 **Estado**: Implementado.
 
 ## RB-AUTH-06: Verificación de email
-**Descripción**: Email debe verificarse antes de permitir login completo. Nuevos usuarios se crean `is_verified=false` y el login los rechaza (403).
-**Estado**: Parcial. El gate de verificación está implementado; el **envío** del email de verificación es **[v2]**.
+**Descripción**: El login rechaza cuentas con `is_verified=false` (403).
+**MVP**: como el **envío** del email de verificación es **[v2]**, el registro crea
+cuentas **verificadas** (`REQUIRE_EMAIL_VERIFICATION=false`) para que sean usables
+de inmediato. Al implementar el envío, poner `REQUIRE_EMAIL_VERIFICATION=true`.
+**Estado**: Parcial. El gate está implementado; el envío del email es **[v2]**.
 
 ## RB-AUTH-07: Recuperación de contraseña
 **Descripción**: Flujo "olvidé mi contraseña" por email con token de 1 hora, un solo uso.

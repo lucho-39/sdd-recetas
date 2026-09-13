@@ -137,6 +137,7 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
         email=user_data.email,
         password_hash=get_password_hash(user_data.password),
         display_name=user_data.display_name,
+        is_verified=not settings.REQUIRE_EMAIL_VERIFICATION,
     )
 
     db.add(user)

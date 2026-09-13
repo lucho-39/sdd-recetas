@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = Field(default="development")
     DEBUG: bool = Field(default=True)
 
+    # Auth: email verification email delivery is v2, so in the MVP new
+    # registrations are auto-verified. Flip to true once email is wired.
+    REQUIRE_EMAIL_VERIFICATION: bool = Field(default=False)
+
     # Database
     DATABASE_URL: PostgresDsn = Field(
         default="postgresql+asyncpg://recetario:changeme@postgres:5432/recetario"

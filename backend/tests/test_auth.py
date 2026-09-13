@@ -9,7 +9,7 @@ from app.models import User, UserRole
 from conftest import TEST_PASSWORD, create_user
 
 
-async def test_register_creates_unverified_user(client: AsyncClient) -> None:
+async def test_register_creates_account(client: AsyncClient) -> None:
     response = await client.post(
         "/api/v1/auth/register",
         json={
@@ -22,7 +22,8 @@ async def test_register_creates_unverified_user(client: AsyncClient) -> None:
     body = response.json()
     assert body["email"] == "newuser@example.com"
     assert body["display_name"] == "New User"
-    assert body["is_verified"] is False
+    # Email verification delivery is v2, so MVP auto-verifies on register.
+    assert body["is_verified"] is True
 
 
 async def test_register_rejects_duplicate_email(client: AsyncClient, user: User) -> None:
