@@ -64,13 +64,18 @@
 | RF-06.3 | Editar receta generada antes de guardar | SHOULD | RF-02.1 |
 | RF-06.4 | Guardar receta generada como propia | SHOULD | RF-02.1 |
 
-## RF-07: Modo "Cocinando" **[v2 — no implementado]**
+## RF-07: Modo "Cocinando" **[implementado]**
 | ID | Requisito | Fortaleza | RB |
 |----|-----------|-----------|-----|
 | RF-07.1 | Activar modo cocinando en detalle de receta | SHOULD | — |
 | RF-07.2 | Pantalla siempre activa (wake lock) | SHOULD | — |
 | RF-07.3 | Pasos grandes, navegación swipe/voz | SHOULD | — |
 | RF-07.4 | Timer integrado por paso | SHOULD | — |
+
+> `frontend/src/routes/cooking/[slug]` + `CookingStepper.svelte`. Wake Lock,
+> swipe, teclado, voz (cuando el navegador soporta `SpeechRecognition`), timer
+> por paso persistido en `localStorage` y fullscreen. La orientación forzada y
+> el prompt de instalación PWA quedan fuera de alcance.
 
 ## RF-08: Contadores y métricas
 | ID | Requisito | Fortaleza | RB |

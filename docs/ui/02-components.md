@@ -527,6 +527,9 @@ Footer: [◀ Anterior] [Siguiente ▶] (sticky bottom)
 
 **A11y**: `role="region" aria-label="Modo cocinando"`, comandos voz anunciados via `aria-live="polite"`
 
+**Estado**: implementado en `frontend/src/lib/components/cooking/CookingStepper.svelte`.
+La voz es opcional y degrada con aviso si el navegador no expone `SpeechRecognition`.
+
 ---
 
 ## 9. Common / Feedback

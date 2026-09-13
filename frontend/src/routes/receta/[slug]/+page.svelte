@@ -14,6 +14,7 @@
 	import CategoryBadge from '$components/recipe/CategoryBadge.svelte';
 	import RatingStars from '$components/recipe/RatingStars.svelte';
 	import AuthorAvatar from '$components/common/AuthorAvatar.svelte';
+	import ReviewList from '$components/recipe/ReviewList.svelte';
 	import { auth } from '$lib/stores/auth';
 
 	export let data;
@@ -240,5 +241,7 @@
 				</div>
 			</section>
 		</div>
+
+		<ReviewList recipeId={recipe.id} />
 	</article>
 </div>

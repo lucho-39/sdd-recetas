@@ -247,10 +247,11 @@ gap: 1.5rem;              /* gap-6 */
 **Implementado**: hero, breadcrumb, meta (autor enlazado, tiempo, porciones,
 dificultad, visitas), tags enlazados a `/buscar?tag=`, **rating interactivo**
 (1–5 estrellas → `POST /api/v1/ratings/:id`), botón **Guardar** (favorito),
-compartir (Web Share/copiar) y **nombres de ingredientes resueltos** desde el
-catálogo (`RecipeResponse.ingredients[].name`).
-**Pendiente**: lista paginada de reseñas + distribución de barras y trigger de
-Modo Cocinando.
+compartir (Web Share/copiar), **nombres de ingredientes resueltos** desde el
+catálogo (`RecipeResponse.ingredients[].name`) y **lista paginada de reseñas**
+(`GET /api/v1/ratings/:id`, con "cargar más").
+**Pendiente**: distribución de barras de calificaciones (5★→1★) y formulario de
+reseña con texto desde el detalle.
 
 ---
 
@@ -415,6 +416,15 @@ Modelo actual: un favorito pertenece a una sola colección (o ninguna).
 ```
 
 **Features**: Wake Lock API, swipe izq/der, comandos voz ("siguiente", "anterior", "repite"), timer por paso, pantalla siempre activa.
+
+**Implementado**: `CookingStepper.svelte` con overlay fullscreen, wake lock
+(con re-adquisición al volver a la pestaña), navegación por botones, teclado
+(← →), swipe táctil y voz (`SpeechRecognition`, comandos: siguiente, anterior,
+repite, pausa, continuar, "N minutos", salir). Timer por paso (1/5/10 min,
+iniciar/pausar/reset) con beep y notificación al terminar, persistido en
+`localStorage` junto con el paso actual. Ajuste de tamaño de texto y botón de
+pantalla completa (requiere gesto del usuario).
+**Pendiente**: `screen.orientation.lock('landscape')` y prompt de instalación PWA.
 
 ---
 
