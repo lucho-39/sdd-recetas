@@ -298,6 +298,40 @@ class Notification(Base):
     )
 
 
+class NotificationPreference(Base):
+    """Per-user notification settings (events + channels)."""
+
+    __tablename__ = "notification_preferences"
+
+    user_id: Mapped[uuid4] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    in_app_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    email_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    push_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    favorites_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    ratings_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+
+
+class EmailOutbox(Base):
+    """Outgoing email messages (sent via SMTP or queued when unconfigured)."""
+
+    __tablename__ = "email_outbox"
+
+    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    to_email: Mapped[str] = mapped_column(String(320), nullable=False)
+    subject: Mapped[str] = mapped_column(String(200), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="queued")
+    error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True
+    )
+
+
 # Import for type hints
 from typing import Optional, List
 from sqlalchemy import Index

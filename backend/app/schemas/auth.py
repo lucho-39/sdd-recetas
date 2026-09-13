@@ -85,3 +85,12 @@ class PublicProfileResponse(BaseModel):
     avatar_url: Optional[str] = None
     created_at: datetime
     recipe_count: int = 0
+
+class NotificationPreferenceUpdate(BaseModel):
+    """Partial update of the current user's notification settings."""
+
+    in_app_enabled: Optional[bool] = None
+    email_enabled: Optional[bool] = None
+    push_enabled: Optional[bool] = None
+    favorites_enabled: Optional[bool] = None
+    ratings_enabled: Optional[bool] = None

@@ -107,3 +107,76 @@ async def test_cannot_touch_another_users_notification(
     assert read.status_code == 404
     delete = await client.delete(f"/api/v1/notifications/{item_id}", headers=admin_headers)
     assert delete.status_code == 404
+
+
+async def test_default_preferences(client: AsyncClient, auth_headers: dict) -> None:
+    response = await client.get(
+        "/api/v1/users/me/notification-preferences", headers=auth_headers
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["in_app_enabled"] is True
+    assert body["email_enabled"] is False
+    assert body["push_enabled"] is False
+    assert body["favorites_enabled"] is True
+
+
+async def test_update_preferences_partial(client: AsyncClient, auth_headers: dict) -> None:
+    response = await client.put(
+        "/api/v1/users/me/notification-preferences",
+        headers=auth_headers,
+        json={"push_enabled": True, "ratings_enabled": False},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["push_enabled"] is True
+    assert body["ratings_enabled"] is False
+    assert body["in_app_enabled"] is True  # untouched
+
+
+async def test_email_channel_queues_outbox(
+    client: AsyncClient,
+    db_session,
+    user,
+    recipe: Recipe,
+    auth_headers: dict,
+    admin_headers: dict,
+) -> None:
+    from sqlalchemy import select
+
+    from app.models import EmailOutbox
+
+    # author opts into email and out of in-app
+    await client.put(
+        "/api/v1/users/me/notification-preferences",
+        headers=auth_headers,
+        json={"email_enabled": True, "in_app_enabled": False},
+    )
+
+    await client.post(f"/api/v1/favorites/{recipe.id}", headers=admin_headers)
+
+    listing = await client.get("/api/v1/notifications", headers=auth_headers)
+    assert listing.json()["total"] == 0
+
+    rows = (
+        await db_session.execute(
+            select(EmailOutbox).where(EmailOutbox.to_email == user.email)
+        )
+    ).scalars().all()
+    assert len(rows) == 1
+    assert rows[0].status == "queued"
+    assert "guardó tu receta" in rows[0].subject
+
+
+async def test_disabled_event_notifies_nothing(
+    client: AsyncClient, recipe: Recipe, auth_headers: dict, admin_headers: dict
+) -> None:
+    await client.put(
+        "/api/v1/users/me/notification-preferences",
+        headers=auth_headers,
+        json={"favorites_enabled": False},
+    )
+    await client.post(f"/api/v1/favorites/{recipe.id}", headers=admin_headers)
+
+    listing = await client.get("/api/v1/notifications", headers=auth_headers)
+    assert listing.json()["total"] == 0

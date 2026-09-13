@@ -10,9 +10,15 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.security import get_current_active_user
-from app.models import Recipe, User
-from app.schemas.auth import PublicProfileResponse, UserResponse, UserUpdate
+from app.models import NotificationPreference, Recipe, User
+from app.schemas.auth import (
+    NotificationPreferenceUpdate,
+    PublicProfileResponse,
+    UserResponse,
+    UserUpdate,
+)
 from app.schemas.recipe import RecipeListItem
+from app.services.notifications import get_preferences
 
 router = APIRouter()
 
@@ -83,6 +89,36 @@ async def list_my_recipes(
         "limit": limit,
         "has_more": (page * limit) < total,
     }
+
+
+@router.get(
+    "/me/notification-preferences",
+    summary="Get my notification preferences",
+)
+async def get_my_notification_preferences(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_preferences(db, current_user.id)
+
+
+@router.put(
+    "/me/notification-preferences",
+    summary="Update my notification preferences",
+)
+async def update_my_notification_preferences(
+    data: NotificationPreferenceUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    preference = await db.get(NotificationPreference, current_user.id)
+    if preference is None:
+        preference = NotificationPreference(user_id=current_user.id)
+        db.add(preference)
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(preference, field, value)
+    await db.commit()
+    return await get_preferences(db, current_user.id)
 
 
 @router.get("/{user_id}", response_model=PublicProfileResponse, summary="Public profile")

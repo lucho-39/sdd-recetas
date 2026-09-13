@@ -51,6 +51,15 @@ class Settings(BaseSettings):
     UPLOADS_DIR: str = Field(default="/app/uploads")
     MAX_UPLOAD_SIZE_MB: int = Field(default=5)
 
+    # Email (SMTP). When SMTP_HOST is empty, outgoing emails are persisted in
+    # the `email_outbox` table instead of being sent (dev transport).
+    SMTP_HOST: str = Field(default="")
+    SMTP_PORT: int = Field(default=587)
+    SMTP_USER: str = Field(default="")
+    SMTP_PASSWORD: str = Field(default="")
+    SMTP_FROM: str = Field(default="no-reply@recetario.local")
+    SMTP_USE_TLS: bool = Field(default=True)
+
     # Admin
     ADMIN_INITIAL_USER: str = "admin@recetario.local"
     ADMIN_INITIAL_PASSWORD: str = "ChangeMeOnFirstLogin123!"
