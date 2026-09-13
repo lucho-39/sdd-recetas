@@ -15,14 +15,14 @@ objetivo concreto.
 | `ingredients.md` | Catálogo Ingredientes (seed, autocomplete, búsqueda) | ✅ Completado | Epic 2: Recetas |
 | `admin.md` | Panel Admin (categorías, usuarios, ingredientes, métricas) | ✅ Completado | Epic 9: Admin |
 | `notifications.md` | Notificaciones en Tiempo Real (favoritos/ratings) | ✅ Completado | Epic 6/4 |
-| `recipes.md` | CRUD Recetas (Crear, Editar, Borrar, Listar propias) | 🔲 Pendiente | Epic 2: Recetas |
-| `favorites.md` | Favoritos y Colecciones | 🔲 Pendiente | Epic 4: Favoritos |
-| `ratings.md` | Calificaciones y Reseñas | 🔲 Pendiente | Epic 6: Ratings |
-| `auth.md` | Autenticación y Cuenta | 🔲 Pendiente | Epic 1: Auth |
+| `recipes.md` | CRUD Recetas (Crear, Editar, Borrar, Listar propias) | ✅ Completado | Epic 2: Recetas |
+| `favorites.md` | Favoritos y Colecciones | ✅ Completado | Epic 4: Favoritos |
+| `ratings.md` | Calificaciones y Reseñas | ✅ Completado | Epic 6: Ratings |
+| `auth.md` | Autenticación y Cuenta | ✅ Completado | Epic 1: Auth |
+| `visit-tracking.md` | Tracking de Visitas (Anti-F5) | ✅ Completado | Transversal |
 | `social.md` | Perfil Público + Compartir | 🔲 Pendiente **[v2]** | Epic 5: Social |
 | `ai-generation.md` | Generación de Recetas por IA | 🔲 Pendiente **[v2]** | Epic 7: IA |
 | `cooking-mode.md` | Modo Cocinando | 🔲 Pendiente **[v2]** | Epic 8: Cocinando |
-| `visit-tracking.md` | Tracking de Visitas (Anti-F5) | 🔲 Pendiente | Transversal |
 
 ## Documentos esperados
 

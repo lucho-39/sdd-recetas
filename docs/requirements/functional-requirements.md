@@ -160,14 +160,14 @@
 
 | RF | Caso de uso |
 |----|-------------|
-| RF-01 | `auth.md` (pendiente) |
-| RF-02 | `recipes.md` (pendiente) |
+| RF-01 | `auth.md` ✅ |
+| RF-02 | `recipes.md` ✅ |
 | RF-03 | `search.md` ✅ |
-| RF-04 | `favorites.md` (pendiente) |
-| RF-05 | `ratings.md` (pendiente) |
+| RF-04 | `favorites.md` ✅ |
+| RF-05 | `ratings.md` ✅ |
 | RF-06 | `ai-generation.md` (pendiente, v2) |
 | RF-07 | `cooking-mode.md` (doc pendiente; feature implementada) |
-| RF-08 | `metrics.md` (pendiente) |
+| RF-08 | `visit-tracking.md` ✅ |
 | RF-09 | `tags.md` (pendiente) |
 | RF-10 | `admin.md` ✅ |
 | RF-12 | `ingredients.md` ✅ |

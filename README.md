@@ -203,7 +203,7 @@ GET /api/recipes?category=postre&tags=vegano,sin-tacc&ingredients=almendra&q=bro
 ## 🧪 Testing
 
 ```bash
-# Backend (157 tests, incluida la integración de Socket.IO)
+# Backend (162 tests, incluida la integración de Socket.IO)
 cd backend && uv run pytest
 
 # CI: .github/workflows/ci.yml corre la suite de backend con Postgres

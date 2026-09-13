@@ -94,14 +94,28 @@ OFF, ambos eventos ON. Un evento desactivado no genera ninguna notificación.
 - **In-app**: crea `Notification` (dedupe) y emite por Socket.IO.
 - **Email**: `SMTP_HOST` configurado → envío SMTP; sin SMTP → fila `queued` en
   `email_outbox` (transporte de desarrollo persistente).
-- **Push**: notificación del navegador vía Service Worker (`showNotification`),
-  disparada por el evento de tiempo real cuando el usuario la habilitó y otorgó
-  permiso. Web Push con VAPID (en segundo plano, app cerrada) queda fuera de
-  alcance por ahora.
+- **Push**: **Web Push con VAPID** (funciona con la app cerrada). El navegador
+  se suscribe desde el Service Worker (`pushManager.subscribe` con la clave
+  pública VAPID) y el backend envía el mensaje. Si no hay suscripción activa, el
+  cliente cae a una notificación del navegador vía Socket.IO mientras la pestaña
+  está abierta.
 
 ### Configuración (env)
 `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`,
 `SMTP_USE_TLS` (true). Sin `SMTP_HOST`, los emails se encolan en `email_outbox`.
+
+### Web Push (VAPID)
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/push/public-key` | Clave pública VAPID (para `applicationServerKey`) |
+| POST | `/api/v1/push/subscribe` | Registrar la suscripción del navegador |
+| DELETE | `/api/v1/push/subscribe` | Quitar la suscripción (por `endpoint`) |
+| POST | `/api/v1/push/test` | Enviar un push de prueba al usuario |
+
+Las claves VAPID se toman de `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` (env); si
+están vacías se **generan y persisten en `app_settings`** (la privada nunca se
+expone). El backend firma con `pywebpush`; las suscripciones caducas (404/410) se
+eliminan. El Service Worker maneja `push` y `notificationclick`.
 
 ### Tiempo real
 - Servidor: `app/realtime/server.py` (`socketio.AsyncServer`), events
@@ -121,8 +135,8 @@ OFF, ambos eventos ON. Un evento desactivado no genera ninguna notificación.
 - ✅ Rechazo de sockets sin token; isolation por room `user:<id>`.
 - ✅ Preferencias por usuario (eventos + canales) desde `/perfil`.
 - ✅ Canal email (SMTP configurable, `email_outbox` como fallback persistente).
-- ✅ Canal push = notificación del navegador vía Service Worker.
+- ✅ Canal push = **Web Push (VAPID)** con Service Worker; fallback a notificación
+  del navegador vía Socket.IO si no hay suscripción.
 - ✅ CI (`.github/workflows/ci.yml`) corre la suite completa, incluyendo
   `tests/test_realtime_socket.py` (servidor ASGI real, sin DB).
-- 🔲 Web Push en segundo plano (VAPID) y notificaciones por respuestas/comentarios
-  (no aplica: sin comentarios en el MVP).
+- 🔲 Notificaciones por respuestas/comentarios (no aplica: sin comentarios en el MVP).

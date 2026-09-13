@@ -37,7 +37,8 @@ El proyecto está en fase **MVP (0.x)**.
 - **Preferencias por usuario**: eventos (favoritos/calificaciones) y canales
   (in-app, email, push), incluida la opción de no recibir nada.
 - **Email** vía SMTP configurable (`SMTP_HOST`, …) con `email_outbox` persistente como fallback.
-- **Push**: notificación del navegador vía Service Worker (`showNotification`).
+- **Push**: **Web Push con VAPID** (Service Worker, funciona con la app cerrada)
+  con fallback a notificación del navegador vía Socket.IO cuando no hay suscripción.
 - Mensaje de calificación: `Tu receta '{título}' recibió una calificación de {n} estrellas de parte
   de '{usuario}'`.
 
@@ -95,5 +96,5 @@ El proyecto está en fase **MVP (0.x)**.
   casos de uso (`search`, `ingredients`, `admin`, `notifications`), testing y este CHANGELOG.
 
 ### Tests
-- Suite de endpoints con Postgres real (`recetario_test`) y `ASGITransport`: **157 tests** verdes,
-  incluidos notificaciones (preferencias/email), administración v2 e integración de Socket.IO.
+- Suite de endpoints con Postgres real (`recetario_test`) y `ASGITransport`: **162 tests** verdes,
+  incluidos notificaciones (preferencias/email/Web Push), administración v2 e integración de Socket.IO.
