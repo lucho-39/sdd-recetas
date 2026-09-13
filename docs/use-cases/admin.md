@@ -351,13 +351,15 @@
 - Recetas: `GET` (listado/filtros/estado), `GET /{id}`, `PATCH /{id}`, `PATCH /{id}/visibility`, `DELETE /{id}` (soft delete).
 - Ingredientes: `GET /pending`, `GET /validated`, `GET /rejected`, `POST /{id}/validate`, `POST /{id}/reject`, `POST /{id}/normalize`.
 - Métricas extra: `GET /metrics/users-series?interval=month|week&periods=N`, `GET /metrics/overview` (top recetas, recetas por categoría, distribución de calificaciones, crecimiento de usuarios).
-- Config: `GET /config`, `PUT /config` (flags `registration_open`, `require_email_verification`, `max_upload_size_mb`; persisten en `app_settings`).
+- Config: `GET /config`, `PUT /config` (flags `registration_open`, `require_email_verification`, `max_upload_size_mb`, `maintenance_mode`, `rate_limit_per_minute` y plantillas de email; persisten en `app_settings`).
 - Audit log: `GET /audit-log` (filtros por `action` y `target_type`, paginado). Se registran acciones de categorías, tags, usuarios, recetas, ingredientes y config.
+- Usuarios: `POST /{id}/reactivate`, `POST /{id}/gdpr-erase` (`{delete_recipes: bool}`, anonimiza PII y desactiva).
+- Ingredientes: `POST /{id}/merge` (`{target_id}`, reasigna las recetas y borra el duplicado).
+- Recetas: `GET /{id}/stats` (visitas, guardados, favoritos, distribución y visitas por día).
+- Error log: `GET /error-log` (filtros por `status_code`/`path`); un middleware captura las respuestas 5xx.
+- Infra: modo mantenimiento (503 en tráfico público, admin accesible) y rate limiting por minuto (exento `/api/admin`).
 
-**Pendiente (v2 / no implementado)**: `POST /users/{id}/reactivate`,
-`POST /users/{id}/gdpr-erase`, `POST /ingredients/{id}/merge`,
-`GET /recipes/{id}/stats`, rate-limits, email-templates y error-log.
-(`audit-log` y feature flags del listado original ya están implementados.)
+**Pendiente (v2)**: `GET /recipes/{id}/stats` ya está; quedan reactivación por email, firma de documentos y otros extras no listados.
 
 ## Flujos de Autenticación Admin (Proyecto Separado)
 

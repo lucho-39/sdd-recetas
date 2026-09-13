@@ -463,11 +463,19 @@ formularios directos, sin ornamentos.
 **Implementado además**: `/metricas` (crecimiento de usuarios, recetas por
 categoría, distribución de calificaciones y top recetas desde
 `GET /api/admin/metrics/overview`), `/config` (flags editables:
-`registration_open`, `require_email_verification`, `max_upload_size_mb` vía
-`GET/PUT /api/admin/config`) y `/audit-log` (registro de acciones
-administrativas, `GET /api/admin/audit-log`).
+`registration_open`, `require_email_verification`, `max_upload_size_mb`,
+`maintenance_mode`, `rate_limit_per_minute` y **plantillas de email** vía
+`GET/PUT /api/admin/config`), `/audit-log` (registro de acciones
+administrativas) y `/errores` (respuestas 5xx, `GET /api/admin/error-log`).
+En `/recetas` hay una vista de estadísticas por receta; en `/usuarios`,
+reactivar y borrado GDPR; y en `/ingredientes`, fusión de duplicados.
 
-**Pendiente (v2)**: rate limits, email templates, mantenimiento y error-log.
+**Pendiente (v2)**: integraciones externas (Slack/email de alertas) y firma de
+documentos.
+
+---
+
+## 9. Estados Comunes (Todas las páginas)
 
 ---
 

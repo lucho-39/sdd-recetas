@@ -48,8 +48,13 @@ El proyecto está en fase **MVP (0.x)**.
   calificaciones y recetas más visitadas.
 - **Usuarios**, **Recetas**, **Ingredientes** (validar/rechazar/normalizar), **Categorías** y **Tags**.
 - **Configuración** (`/config`): flags `registration_open`, `require_email_verification`,
-  `max_upload_size_mb`.
+  `max_upload_size_mb`, `maintenance_mode`, `rate_limit_per_minute` y **plantillas de email**.
 - **Audit log** (`/audit-log`): registro de acciones administrativas.
+- **Errores** (`/errores`): respuestas 5xx capturadas por un middleware.
+- **Estadísticas por receta** (`GET /recipes/{id}/stats`) con vista expandible en `/recetas`.
+- **Reactivar** y **borrado GDPR** de usuarios (`/usuarios`); **fusión** de ingredientes duplicados (`/ingredientes`).
+- **Modo mantenimiento** (503 en tráfico público, panel admin accesible) y **rate limiting** por minuto
+  (configurable, exento para `/api/admin`).
 
 ### Added — PWA
 - Manifest, ícono, service worker (con fallback offline), botón de instalación y `orientation.lock`
@@ -90,5 +95,5 @@ El proyecto está en fase **MVP (0.x)**.
   casos de uso (`search`, `ingredients`, `admin`, `notifications`), testing y este CHANGELOG.
 
 ### Tests
-- Suite de endpoints con Postgres real (`recetario_test`) y `ASGITransport`: **146 tests** verdes,
-  incluidos notificaciones (preferencias/email) e integración de Socket.IO.
+- Suite de endpoints con Postgres real (`recetario_test`) y `ASGITransport`: **157 tests** verdes,
+  incluidos notificaciones (preferencias/email), administración v2 e integración de Socket.IO.
