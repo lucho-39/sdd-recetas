@@ -335,6 +335,11 @@ gap: 1.5rem;              /* gap-6 */
 - Acciones por fila: Editar, Toggle público/privado, Borrar/Restaurar
 - Empty state por tab
 
+**Implementado**: tabs Publicadas/Privadas/Borradas, grid de `RecipeCard`,
+toggle público/privado y borrado (soft delete). Datos desde
+`GET /api/v1/users/me/recipes?include_deleted=true`.
+**Pendiente**: editar (navegación al formulario) y restaurar borradas.
+
 ---
 
 ## 6. Favoritos — `/mis-favoritos`
@@ -343,6 +348,10 @@ gap: 1.5rem;              /* gap-6 */
 - Click colección → grid recetas (mismo RecipeGrid)
 - Header colección: nombre + contador + acciones (renombrar, borrar)
 - Vacío: CTA "Empieza a guardar recetas"
+
+**Implementado**: grid de recetas favoritas (receta anidada desde
+`GET /api/v1/favorites`) y quitar de favoritos.
+**Pendiente**: colecciones personalizadas y sidebar de colecciones.
 
 ---
 

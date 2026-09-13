@@ -78,6 +78,8 @@ class RecipeListItem(BaseModel):
     avg_rating: float
     rating_count: int
     author: UserResponse
+    is_public: bool = True
+    deleted_at: Optional[datetime] = None
     created_at: datetime
 
     class Config:

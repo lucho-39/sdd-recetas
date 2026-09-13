@@ -45,6 +45,8 @@ async def test_list_favorites_includes_recipe(
     body = response.json()
     assert len(body) == 1
     assert body[0]["recipe_id"] == str(recipe.id)
+    assert body[0]["recipe"]["slug"] == recipe.slug
+    assert body[0]["recipe"]["category"]["slug"] == "pastas"
 
 
 async def test_remove_favorite(

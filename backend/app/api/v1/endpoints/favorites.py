@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.core.security import get_current_active_user
 from app.models import Favorite, Recipe
+from app.schemas.recipe import RecipeListItem
 
 router = APIRouter()
 
@@ -25,10 +26,25 @@ async def list_favorites(
     if collection:
         query = query.where(Favorite.collection_name == collection)
 
-    result = await db.execute(query.options(selectinload(Favorite.recipe)))
+    result = await db.execute(
+        query.options(
+            selectinload(Favorite.recipe).selectinload(Recipe.category),
+            selectinload(Favorite.recipe).selectinload(Recipe.author),
+            selectinload(Favorite.recipe).selectinload(Recipe.tags),
+        )
+    )
     favorites = result.scalars().all()
 
-    return favorites
+    return [
+        {
+            "user_id": str(f.user_id),
+            "recipe_id": str(f.recipe_id),
+            "collection_name": f.collection_name,
+            "created_at": f.created_at,
+            "recipe": RecipeListItem.model_validate(f.recipe) if f.recipe else None,
+        }
+        for f in favorites
+    ]
 
 
 @router.post("/{recipe_id}", status_code=status.HTTP_201_CREATED)
