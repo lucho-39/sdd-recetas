@@ -9,6 +9,7 @@ from app.core.database import get_db
 from app.core.security import get_current_active_user
 from app.models import Rating, Recipe
 from app.schemas.auth import UserResponse
+from app.services.notifications import notify_recipe_author
 
 router = APIRouter()
 
@@ -64,6 +65,10 @@ async def rate_recipe(
     recipe.avg_rating = float(round(avg, 2)) if avg else 0
     recipe.rating_count = count
     await db.commit()
+
+    await notify_recipe_author(
+        db, actor=current_user, recipe=recipe, type="rating", detail={"score": score}
+    )
 
     return {
         "message": "Rating saved",

@@ -4,6 +4,7 @@ Recetario IA - Main Application
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import socketio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -15,6 +16,7 @@ from app.core.seed import seed_initial_data
 from app.api.v1.router import api_router
 from app.api.admin import admin_router
 from app.api.v1.endpoints.auth import create_admin_user
+from app.realtime.server import sio
 
 settings = get_settings()
 
@@ -76,3 +78,7 @@ async def healthz_check():
         status_code=200,
         content={"status": "ok"},
     )
+
+
+# Socket.IO shares the same port: run ``app.main:socket_app`` with uvicorn.
+socket_app = socketio.ASGIApp(sio, other_asgi_app=app)

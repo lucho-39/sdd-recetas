@@ -265,6 +265,39 @@ class AuditLog(Base):
     actor: Mapped[Optional["User"]] = relationship(foreign_keys=[actor_id])
 
 
+class Notification(Base):
+    """In-app notification for a recipe author (likes and ratings)."""
+
+    __tablename__ = "notifications"
+
+    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[uuid4] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    actor_id: Mapped[Optional[uuid4]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    type: Mapped[str] = mapped_column(String(30), nullable=False)
+    recipe_id: Mapped[uuid4] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("recipes.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    detail: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True
+    )
+
+    actor: Mapped[Optional["User"]] = relationship(foreign_keys=[actor_id])
+    recipe: Mapped["Recipe"] = relationship()
+
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id", "actor_id", "recipe_id", "type", name="uq_notification_dedupe"
+        ),
+        Index("ix_notifications_user_read", "user_id", "is_read"),
+    )
+
+
 # Import for type hints
 from typing import Optional, List
 from sqlalchemy import Index

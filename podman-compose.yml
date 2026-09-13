@@ -31,6 +31,9 @@ services:
       context: ./backend
       dockerfile: Containerfile
     container_name: recetario-backend
+    # Socket.IO comparte puerto con HTTP: el ASGI app es `socket_app`.
+    command:
+      ["uv", "run", "uvicorn", "app.main:socket_app", "--host", "0.0.0.0", "--port", "8000"]
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-recetario}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-recetario}
       JWT_SECRET: ${JWT_SECRET}

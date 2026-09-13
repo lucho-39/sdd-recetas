@@ -12,6 +12,7 @@ from app.core.database import get_db
 from app.core.security import get_current_active_user
 from app.models import Favorite, Recipe
 from app.schemas.recipe import RecipeListItem
+from app.services.notifications import notify_recipe_author
 
 router = APIRouter()
 
@@ -82,6 +83,8 @@ async def add_favorite(
     )
     db.add(favorite)
     await db.commit()
+
+    await notify_recipe_author(db, actor=current_user, recipe=recipe, type="favorite")
 
     return {"message": "Added to favorites"}
 
