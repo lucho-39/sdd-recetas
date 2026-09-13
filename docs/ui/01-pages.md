@@ -240,6 +240,8 @@ gap: 1.5rem;              /* gap-6 */
 
 **Componentes clave**: `RecipeHero`, `RecipeMeta`, `IngredientList`, `InstructionSteps`, `RatingSection`, `RatingStars` (fraccional), `CookingModeTrigger`.
 
+**Autor**: el nombre del autor es un **enlace** a su perfil público `/usuario/:id`.
+
 **Modo Cocinando**: Botón "Cocinar" → abre `/cooking/:slug` (pantalla completa, wake lock).
 
 ---
@@ -304,14 +306,25 @@ gap: 1.5rem;              /* gap-6 */
 
 ## 5. Perfil Usuario
 
-### `/perfil` (Autenticado)
-- Tabs: **Perfil** (nombre, avatar, email, fecha unión, cambiar password) | **Seguridad** (sesiones activas, logout all) | **Cuenta** (baja lógica, GDPR)
-- Avatar: preview + click → file picker (futuro upload)
+### `/perfil` (Autenticado, privado)
+- **Header**: foto de perfil (editable por el usuario), `display_name` (editable),
+  email y **"Miembro desde"** = `created_at` de la cuenta.
+- **Acciones**: el usuario puede cambiar su `display_name` y su avatar.
+- **Mis recetas**: lista de **todas las recetas creadas por el usuario**,
+  obtenidas de la base de datos (`GET /api/v1/users/me/recipes`).
+- **Al final**: cambiar contraseña, darse de baja (soft delete) y eliminar cuenta.
+- **NO** mostrar la fecha del último login ni la sección de "últimas sesiones"
+  (información no relevante para el usuario).
 
 ### `/usuario/:id` (Público)
-- Header: Avatar, display_name, bio, fecha unión, stats (recetas, favoritos, ratings)
-- Grid: Recetas públicas del autor (paginado)
-- Botón "Compartir perfil" (Web Share API)
+- **Header**: foto de perfil, `display_name` y **"Miembro desde"** (`created_at`).
+- **Grid**: recetas **públicas** del autor (paginado) — `GET /api/v1/users/:id/recipes`.
+- **NO** mostrar email, favoritos, ratings dados ni métricas privadas
+  (RB-17, RF-11.3).
+- Botón "Compartir perfil" (Web Share API).
+
+> El **nombre del autor** en el detalle de una receta es un **enlace** a
+> `/usuario/:id`.
 
 ---
 
