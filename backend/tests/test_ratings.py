@@ -13,7 +13,10 @@ async def test_rate_recipe(
         f"/api/v1/ratings/{recipe.id}?score=5", headers=auth_headers
     )
     assert response.status_code == 201
-    assert response.json()["message"] == "Rating saved"
+    body = response.json()
+    assert body["message"] == "Rating saved"
+    assert body["avg_rating"] == 5.0
+    assert body["rating_count"] == 1
 
 
 async def test_rate_recipe_rejects_out_of_range_score(

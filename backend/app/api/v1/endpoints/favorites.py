@@ -1,7 +1,9 @@
 """
 Favorites endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Optional
+
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 from sqlalchemy import select, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -137,3 +139,81 @@ async def list_collections(
     collections.insert(0, {"name": None, "count": total_favs})
 
     return collections
+
+
+@router.patch("/{recipe_id}", summary="Move a favorite to another collection")
+async def update_favorite(
+    recipe_id: str,
+    payload: dict = Body(...),
+    db = Depends(get_db),
+    current_user = Depends(get_current_active_user),
+):
+    """Set (or clear) the collection of an existing favorite."""
+    result = await db.execute(
+        select(Favorite).where(
+            Favorite.user_id == current_user.id,
+            Favorite.recipe_id == recipe_id,
+        )
+    )
+    favorite = result.scalar_one_or_none()
+    if not favorite:
+        raise HTTPException(status_code=404, detail="Not in favorites")
+
+    collection = payload.get("collection_name") or None
+    favorite.collection_name = collection
+    await db.commit()
+
+    return {"message": "Favorite updated", "collection_name": collection}
+
+
+@router.patch("/collections/{name}", summary="Rename a collection")
+async def rename_collection(
+    name: str,
+    payload: dict = Body(...),
+    db = Depends(get_db),
+    current_user = Depends(get_current_active_user),
+):
+    """Rename one of the user's collections."""
+    new_name = (payload.get("new_name") or "").strip()
+    if not new_name:
+        raise HTTPException(status_code=400, detail="new_name is required")
+
+    result = await db.execute(
+        select(Favorite).where(
+            Favorite.user_id == current_user.id,
+            Favorite.collection_name == name,
+        )
+    )
+    favorites = result.scalars().all()
+    if not favorites:
+        raise HTTPException(status_code=404, detail="Collection not found")
+
+    for favorite in favorites:
+        favorite.collection_name = new_name
+    await db.commit()
+
+    return {"message": "Collection renamed", "name": new_name, "count": len(favorites)}
+
+
+@router.delete("/collections/{name}", summary="Delete a collection")
+async def delete_collection(
+    name: str,
+    db = Depends(get_db),
+    current_user = Depends(get_current_active_user),
+):
+    """Delete a collection, moving its favorites back to the default list."""
+    result = await db.execute(
+        select(Favorite).where(
+            Favorite.user_id == current_user.id,
+            Favorite.collection_name == name,
+        )
+    )
+    favorites = result.scalars().all()
+    if not favorites:
+        raise HTTPException(status_code=404, detail="Collection not found")
+
+    for favorite in favorites:
+        favorite.collection_name = None
+    await db.commit()
+
+    return {"message": "Collection deleted", "moved_to_default": len(favorites)}

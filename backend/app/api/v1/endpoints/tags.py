@@ -7,7 +7,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.security import get_current_active_user
+from app.core.security import get_current_user_optional
 from app.models import Tag, RecipeTag
 
 router = APIRouter()
@@ -18,9 +18,9 @@ async def list_tags(
     query: Optional[str] = Query(None, description="Search tags by name"),
     limit: int = 20,
     db = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    current_user = Depends(get_current_user_optional),
 ):
-    """Search tags with autocomplete."""
+    """Search tags with autocomplete (public read)."""
     stmt = select(Tag).where(Tag.usage_count > 0)
 
     if query:

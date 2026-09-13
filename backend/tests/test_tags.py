@@ -5,9 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from conftest import create_tag
 
 
-async def test_list_tags_requires_authentication(client: AsyncClient) -> None:
+async def test_list_tags_is_public(client: AsyncClient) -> None:
     response = await client.get("/api/v1/tags")
-    assert response.status_code == 401
+    assert response.status_code == 200
 
 
 async def test_list_tags_returns_only_used_tags(

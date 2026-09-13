@@ -61,11 +61,15 @@ async def rate_recipe(
         .where(Rating.recipe_id == recipe_id)
     )
     avg, count = result.one()
-    recipe.avg_rating = round(avg, 2) if avg else 0
+    recipe.avg_rating = float(round(avg, 2)) if avg else 0
     recipe.rating_count = count
     await db.commit()
 
-    return {"message": "Rating saved"}
+    return {
+        "message": "Rating saved",
+        "avg_rating": recipe.avg_rating,
+        "rating_count": recipe.rating_count,
+    }
 
 
 @router.get("/{recipe_id}", summary="Get recipe ratings")

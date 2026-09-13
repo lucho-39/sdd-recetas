@@ -8,7 +8,7 @@ from sqlalchemy import select, func, or_, cast, Text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.security import get_current_active_user
+from app.core.security import get_current_active_user, get_current_user_optional
 from app.models import Ingredient
 
 router = APIRouter()
@@ -20,9 +20,9 @@ async def search_ingredients(
     category: Optional[str] = Query(None, description="Filter by category"),
     limit: int = 20,
     db = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    current_user = Depends(get_current_user_optional),
 ):
-    """Autocomplete search for ingredients."""
+    """Autocomplete search for ingredients (public read)."""
     query_stmt = select(Ingredient).where(Ingredient.is_active == True)
 
     if query:
@@ -61,9 +61,9 @@ async def list_categories(
 async def get_ingredient(
     ingredient_id: UUID,
     db = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    current_user = Depends(get_current_user_optional),
 ):
-    """Get ingredient by ID."""
+    """Get ingredient by ID (public reference data)."""
     result = await db.execute(
         select(Ingredient).where(Ingredient.id == ingredient_id, Ingredient.is_active == True)
     )

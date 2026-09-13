@@ -7,9 +7,9 @@ from app.models import Ingredient
 from conftest import create_ingredient
 
 
-async def test_search_ingredients_requires_authentication(client: AsyncClient) -> None:
+async def test_search_ingredients_is_public(client: AsyncClient) -> None:
     response = await client.get("/api/v1/ingredients")
-    assert response.status_code == 401
+    assert response.status_code == 200
 
 
 async def test_search_ingredients_returns_active_ingredients(

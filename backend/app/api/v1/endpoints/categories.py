@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.security import get_current_active_user
+from app.core.security import get_current_user_optional
 from app.models import Category
 
 router = APIRouter()
@@ -15,9 +15,9 @@ router = APIRouter()
 @router.get("", summary="List categories")
 async def list_categories(
     db = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    current_user = Depends(get_current_user_optional),
 ):
-    """List all categories."""
+    """List all active categories (public reference data)."""
     result = await db.execute(
         select(Category)
         .where(Category.is_active == True)

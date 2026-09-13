@@ -28,9 +28,9 @@ async def test_list_categories_excludes_inactive(
     assert "inactiva" not in slugs
 
 
-async def test_list_categories_requires_authentication(client: AsyncClient) -> None:
+async def test_list_categories_is_public(client: AsyncClient) -> None:
     response = await client.get("/api/v1/categories")
-    assert response.status_code == 401
+    assert response.status_code == 200
 
 
 async def test_get_category_by_slug(

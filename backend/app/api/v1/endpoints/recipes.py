@@ -1,6 +1,7 @@
 """
 Recipe endpoints
 """
+import copy
 import re
 from typing import List, Optional
 from uuid import UUID
@@ -11,7 +12,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.security import get_current_active_user, get_current_user_optional
-from app.models import Recipe, Category, Tag, User, Favorite, Rating, Visit
+from app.models import Recipe, Category, Tag, User, Favorite, Rating, Visit, Ingredient
 from app.schemas import (
     RecipeCreate,
     RecipeUpdate,
@@ -31,6 +32,38 @@ def slugify(text: str) -> str:
     text = re.sub(r'[\s_-]+', '-', text, flags=re.UNICODE)
     text = re.sub(r'^-+|-+$', '', text)
     return text
+
+
+async def resolve_ingredient_names(
+    db: AsyncSession, ingredients: Optional[List[dict]]
+) -> List[dict]:
+    """Return a copy of the ingredient list with the catalog name resolved.
+
+    The JSONB stores only ``ingredient_id``; the UI needs the display name.
+    Unknown / non-UUID ids are left untouched.
+    """
+    items = copy.deepcopy(ingredients or [])
+    ids: List[UUID] = []
+    for item in items:
+        value = item.get("ingredient_id")
+        if not value:
+            continue
+        try:
+            ids.append(UUID(str(value)))
+        except (ValueError, TypeError):
+            continue
+
+    if ids:
+        result = await db.execute(
+            select(Ingredient.id, Ingredient.name).where(Ingredient.id.in_(ids))
+        )
+        names = {str(row[0]): row[1] for row in result.all()}
+        for item in items:
+            key = str(item.get("ingredient_id"))
+            if key in names:
+                item["name"] = names[key]
+
+    return items
 
 
 async def generate_unique_slug(db: AsyncSession, title: str, exclude_id: Optional[UUID] = None) -> tuple[str, List[SimilarRecipe]]:
@@ -95,8 +128,10 @@ async def generate_unique_slug(db: AsyncSession, title: str, exclude_id: Optiona
 async def list_recipes(
     category: Optional[str] = Query(None, description="Filter by category slug"),
     tags: Optional[List[str]] = Query(None, description="Filter by tag slugs"),
-    ingredients: Optional[List[str]] = Query(None, description="Filter by ingredient slugs"),
+    ingredients: Optional[List[str]] = Query(None, description="Filter by ingredient ids"),
     query: Optional[str] = Query(None, description="Search in title and description"),
+    difficulty: Optional[str] = Query(None, description="Filter by difficulty: easy|medium|hard"),
+    max_time: Optional[int] = Query(None, ge=1, description="Max total time in minutes"),
     sort: str = Query("recent", description="Sort order: recent, visited, saved, top_rated"),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
@@ -117,6 +152,15 @@ async def list_recipes(
     if ingredients:
         for ingredient in ingredients:
             filters.append(Recipe.ingredients.contains([{"ingredient_id": str(ingredient)}]))
+
+    if difficulty:
+        filters.append(Recipe.difficulty == difficulty)
+
+    if max_time:
+        total_time = func.coalesce(Recipe.prep_time_minutes, 0) + func.coalesce(
+            Recipe.cook_time_minutes, 0
+        )
+        filters.append(total_time <= max_time)
 
     if query:
         filters.append(
@@ -186,7 +230,9 @@ async def get_recipe(
     recipe.visit_count += 1
     await db.commit()
 
-    return RecipeResponse.model_validate(recipe)
+    response = RecipeResponse.model_validate(recipe)
+    response.ingredients = await resolve_ingredient_names(db, response.ingredients)
+    return response
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=RecipeResponse)
@@ -296,6 +342,30 @@ async def delete_recipe(
     await db.commit()
 
     return None
+
+
+@router.post("/{slug}/restore", response_model=RecipeResponse, summary="Restore a deleted recipe")
+async def restore_recipe(
+    slug: str,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_active_user),
+):
+    """Restore a soft-deleted recipe (author only)."""
+    result = await db.execute(
+        select(Recipe).where(Recipe.slug == slug, Recipe.author_id == current_user.id)
+    )
+    recipe = result.scalar_one_or_none()
+
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    if recipe.deleted_at is None:
+        raise HTTPException(status_code=400, detail="Recipe is not deleted")
+
+    recipe.deleted_at = None
+    await db.commit()
+    await db.refresh(recipe, attribute_names=["author", "category", "tags"])
+
+    return RecipeResponse.model_validate(recipe)
 
 
 @router.get("/{slug}/similar", response_model=List[SimilarRecipe], summary="Find similar recipes")
