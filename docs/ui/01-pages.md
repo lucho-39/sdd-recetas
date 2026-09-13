@@ -331,6 +331,8 @@ atrás/adelante del navegador.
 - **Acciones**: el usuario puede cambiar su `display_name` y su avatar.
 - **Mis recetas**: lista de **todas las recetas creadas por el usuario**,
   obtenidas de la base de datos (`GET /api/v1/users/me/recipes`).
+- **Notificaciones**: preferencias de eventos (favoritos/calificaciones) y
+  canales (in-app, email, push) con activación del permiso del navegador.
 - **Al final**: cambiar contraseña, darse de baja (soft delete) y eliminar cuenta.
 - **NO** mostrar la fecha del último login ni la sección de "últimas sesiones"
   (información no relevante para el usuario).

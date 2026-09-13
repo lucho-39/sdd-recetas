@@ -141,9 +141,15 @@
 | RF-13.3 | Campanita con badge de no leídas en el navbar | SHOULD | — |
 | RF-13.4 | Dropdown con últimas notificaciones; click marca leída y navega a la receta | SHOULD | — |
 | RF-13.5 | Eliminar notificaciones individualmente o todas | SHOULD | — |
+| RF-13.6 | Canales configurables por el usuario: in-app, email, push (navegador) | SHOULD | — |
+| RF-13.7 | Tipo de evento configurable: favoritos y/o calificaciones | SHOULD | — |
+| RF-13.8 | Poder desactivar todas las notificaciones | SHOULD | — |
 
 > Transporte: **Socket.IO** (`python-socketio` en FastAPI + `socket.io-client`
-> en SvelteKit). Sin auto-notificación; repetir la acción refresca la existente.
+> en SvelteKit). Los eventos no deseados no generan notificación; el canal
+> in-app deduplica y nunca hay auto-notificación. Email vía SMTP (o `email_outbox`
+> cuando no hay SMTP); "push" = notificación del navegador vía Service Worker
+> (`showNotification`).
 
 ---
 

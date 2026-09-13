@@ -67,6 +67,28 @@ Unique: `(user_id, actor_id, recipe_id, type)`.
 | DELETE | `/notifications/{id}` | Borrar una |
 | DELETE | `/notifications` | Borrar todas |
 
+### Preferencias (`/api/v1/users/me/notification-preferences`, auth)
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/users/me/notification-preferences` | Preferencias actuales (defaults si no hay fila) |
+| PUT | `/users/me/notification-preferences` | Actualización parcial |
+
+Campos: `in_app_enabled`, `email_enabled`, `push_enabled` (canales) y
+`favorites_enabled`, `ratings_enabled` (eventos). Defaults: in-app ON, email/push
+OFF, ambos eventos ON. Un evento desactivado no genera ninguna notificación.
+
+- **In-app**: crea `Notification` (dedupe) y emite por Socket.IO.
+- **Email**: `SMTP_HOST` configurado → envío SMTP; sin SMTP → fila `queued` en
+  `email_outbox` (transporte de desarrollo persistente).
+- **Push**: notificación del navegador vía Service Worker (`showNotification`),
+  disparada por el evento de tiempo real cuando el usuario la habilitó y otorgó
+  permiso. Web Push con VAPID (en segundo plano, app cerrada) queda fuera de
+  alcance por ahora.
+
+### Configuración (env)
+`SMTP_HOST`, `SMTP_PORT` (587), `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`,
+`SMTP_USE_TLS` (true). Sin `SMTP_HOST`, los emails se encolan en `email_outbox`.
+
 ### Tiempo real
 - Servidor: `app/realtime/server.py` (`socketio.AsyncServer`), events
   `connect` (auth + join room) y `disconnect`; helper `emit_notification`.
@@ -83,5 +105,10 @@ Unique: `(user_id, actor_id, recipe_id, type)`.
 - ✅ Eventos de favorito y calificación → notificación en tiempo real.
 - ✅ Campanita con badge, dropdown, marcar leída + navegar, borrar una/todas.
 - ✅ Rechazo de sockets sin token; isolation por room `user:<id>`.
-- 🔲 Emails/push (fuera de alcance; ver `docs/vision/scope.md`).
-- 🔲 Notificar por respuestas/comentarios (no aplica: sin comentarios en MVP).
+- ✅ Preferencias por usuario (eventos + canales) desde `/perfil`.
+- ✅ Canal email (SMTP configurable, `email_outbox` como fallback persistente).
+- ✅ Canal push = notificación del navegador vía Service Worker.
+- ✅ CI (`.github/workflows/ci.yml`) corre la suite completa, incluyendo
+  `tests/test_realtime_socket.py` (servidor ASGI real, sin DB).
+- 🔲 Web Push en segundo plano (VAPID) y notificaciones por respuestas/comentarios
+  (no aplica: sin comentarios en el MVP).
