@@ -4,15 +4,20 @@
 	let email = '';
 	let sent = false;
 	let loading = false;
+	let resetUrl = '';
 
 	async function handleSubmit() {
 		loading = true;
 		try {
-			await fetch('/api/v1/auth/forgot-password', {
+			const response = await fetch('/api/v1/auth/forgot-password', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ email })
 			});
+			if (response.ok) {
+				const body = await response.json();
+				resetUrl = body.reset_url ?? '';
+			}
 		} finally {
 			sent = true;
 			loading = false;
@@ -34,6 +39,12 @@
 				<p class="text-sm text-muted-foreground">
 					Si el email existe, te enviamos instrucciones para restablecer la contraseña.
 				</p>
+				{#if resetUrl}
+					<p class="mt-3 text-sm">
+						<span class="text-muted-foreground">Enlace generado (entorno de desarrollo):</span>
+						<a class="link" href={resetUrl}>Restablecer contraseña</a>
+					</p>
+				{/if}
 			{:else}
 				<form class="space-y-4" on:submit|preventDefault={handleSubmit}>
 					<div>

@@ -99,6 +99,14 @@
 				</button>
 			</form>
 
+			<div class="my-4 flex items-center gap-3 text-xs text-muted-foreground">
+				<span class="h-px flex-1 bg-border"></span>o<span class="h-px flex-1 bg-border"></span>
+			</div>
+			<div class="space-y-2">
+				<a href="/api/v1/auth/oauth/google" class="btn btn-outline w-full">Continuar con Google</a>
+				<a href="/api/v1/auth/oauth/github" class="btn btn-outline w-full">Continuar con GitHub</a>
+			</div>
+
 			<div class="mt-4 flex flex-col gap-2 text-center text-sm">
 				<a href="/forgot-password" class="link">¿Olvidaste tu contraseña?</a>
 				<p class="text-muted-foreground">

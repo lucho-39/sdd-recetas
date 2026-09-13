@@ -31,6 +31,7 @@
 			{#if $auth.isAuthenticated}
 				<a href="/mis-recetas" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Mis Recetas</a>
 				<a href="/mis-favoritos" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Favoritos</a>
+				<a href="/recetas/generar" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Generar IA</a>
 			{/if}
 		</div>
 
@@ -80,6 +81,7 @@
 					<a href="/recetas/nueva" class="rounded-md px-3 py-2 text-sm font-medium text-primary hover:bg-accent" on:click={() => (mobileMenuOpen = false)}>Crear receta</a>
 					<a href="/mis-recetas" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground" on:click={() => (mobileMenuOpen = false)}>Mis Recetas</a>
 					<a href="/mis-favoritos" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground" on:click={() => (mobileMenuOpen = false)}>Favoritos</a>
+					<a href="/recetas/generar" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground" on:click={() => (mobileMenuOpen = false)}>Generar IA</a>
 					<button
 						type="button"
 						class="rounded-md px-3 py-2 text-left text-sm font-medium text-destructive hover:bg-destructive/10"
