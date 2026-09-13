@@ -10,6 +10,7 @@ from app.core.config import get_settings
 from app.core.database import init_db, async_session_maker
 from app.core.seed import seed_initial_data
 from app.api.v1.router import api_router
+from app.api.admin import admin_router
 from app.api.v1.endpoints.auth import create_admin_user
 
 settings = get_settings()
@@ -46,6 +47,9 @@ app.add_middleware(
 
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+
+# Include admin API router
+app.include_router(admin_router, prefix="/api/admin")
 
 
 @app.get("/health", tags=["health"])
