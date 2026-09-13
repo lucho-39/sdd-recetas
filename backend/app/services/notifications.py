@@ -13,6 +13,7 @@ from app.core.app_settings import current_settings
 from app.models import Notification, NotificationPreference, Recipe, User
 from app.realtime.server import emit_notification
 from app.services.email import send_email
+from app.services.webpush import send_web_push
 
 DEFAULT_PREFERENCES: Dict[str, bool] = {
     "in_app_enabled": True,
@@ -190,5 +191,17 @@ async def notify_recipe_author(
         if recipient and recipient.email:
             subject, body = _email_content(type, actor, recipe, detail)
             await send_email(db, to_email=recipient.email, subject=subject, body=body)
+
+    if push:
+        await send_web_push(
+            db,
+            user_id=recipient_id,
+            payload={
+                "title": "Recetario IA",
+                "body": _message(type, actor, recipe, detail),
+                "url": f"/receta/{recipe.slug}",
+                "tag": f"{type}-{recipe.id}",
+            },
+        )
 
     return notification

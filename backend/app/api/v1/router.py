@@ -3,7 +3,7 @@ API v1 Router
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import health, auth, users, recipes, categories, tags, ingredients, favorites, ratings, visits, uploads, notifications
+from app.api.v1.endpoints import health, auth, users, recipes, categories, tags, ingredients, favorites, ratings, visits, uploads, notifications, push
 
 api_router = APIRouter()
 
@@ -19,3 +19,4 @@ api_router.include_router(ratings.router, prefix="/ratings", tags=["ratings"])
 api_router.include_router(visits.router, prefix="/visits", tags=["visits"])
 api_router.include_router(uploads.router, prefix="/uploads", tags=["uploads"])
 api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
+api_router.include_router(push.router, prefix="/push", tags=["push"])

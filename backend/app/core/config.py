@@ -60,6 +60,12 @@ class Settings(BaseSettings):
     SMTP_FROM: str = Field(default="no-reply@recetario.local")
     SMTP_USE_TLS: bool = Field(default=True)
 
+    # Web Push (VAPID). If the keys are empty they are generated on first use
+    # and persisted in app_settings (private key never leaves the server).
+    VAPID_SUBJECT: str = Field(default="mailto:admin@recetario.local")
+    VAPID_PUBLIC_KEY: str = Field(default="")
+    VAPID_PRIVATE_KEY: str = Field(default="")
+
     # Admin
     ADMIN_INITIAL_USER: str = "admin@recetario.local"
     ADMIN_INITIAL_PASSWORD: str = "ChangeMeOnFirstLogin123!"

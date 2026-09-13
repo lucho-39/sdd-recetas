@@ -42,11 +42,16 @@ async def get_setting(db: AsyncSession, key: str) -> Any:
 
 
 async def get_all_settings(db: AsyncSession) -> Dict[str, Any]:
-    """Return every setting merged with the code defaults."""
+    """Return every known setting merged with the code defaults.
+
+    Rows with keys not declared in ``DEFAULTS`` (e.g. internally generated
+    secrets) are intentionally excluded from API responses.
+    """
     result = await db.execute(select(AppSetting))
     data: Dict[str, Any] = dict(DEFAULTS)
     for row in result.scalars().all():
-        data[row.key] = row.value
+        if row.key in DEFAULTS:
+            data[row.key] = row.value
     return data
 
 

@@ -37,6 +37,7 @@ dependencies = [
     "bcrypt>=4.1.0",
     "argon2-cffi>=23.1.0",
     "python-socketio>=5.16.4",
+    "pywebpush>=2.5.0",
 ]
 
 [tool.setuptools.packages.find]
