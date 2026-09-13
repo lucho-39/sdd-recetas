@@ -277,6 +277,15 @@ async def get_recipe(
 
     response = RecipeResponse.model_validate(recipe)
     response.ingredients = await resolve_ingredient_names(db, response.ingredients)
+
+    if current_user is not None:
+        response.my_rating = await db.scalar(
+            select(Rating.score).where(
+                Rating.recipe_id == recipe.id,
+                Rating.user_id == current_user.id,
+            )
+        )
+
     return response
 
 

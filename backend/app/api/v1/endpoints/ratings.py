@@ -2,7 +2,7 @@
 Rating endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete as sql_delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -123,4 +123,62 @@ async def get_ratings(
         "page": page,
         "limit": 10,
         "distribution": distribution,
+    }
+
+
+@router.get("/{recipe_id}/mine", summary="Get my rating")
+async def get_my_rating(
+    recipe_id: str,
+    db = Depends(get_db),
+    current_user = Depends(get_current_active_user),
+):
+    """Return the current user's rating for a recipe, if any."""
+    rating = (
+        await db.execute(
+            select(Rating).where(
+                Rating.recipe_id == recipe_id,
+                Rating.user_id == current_user.id,
+            )
+        )
+    ).scalar_one_or_none()
+
+    if not rating:
+        return {"score": None, "review_text": None}
+    return {"score": rating.score, "review_text": rating.review_text}
+
+
+@router.delete("/{recipe_id}", summary="Delete my rating")
+async def delete_rating(
+    recipe_id: str,
+    db = Depends(get_db),
+    current_user = Depends(get_current_active_user),
+):
+    """Remove the current user's rating and recalculate the aggregates."""
+    recipe = await db.get(Recipe, recipe_id)
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    result = await db.execute(
+        sql_delete(Rating).where(
+            Rating.recipe_id == recipe_id,
+            Rating.user_id == current_user.id,
+        )
+    )
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="You have not rated this recipe")
+
+    aggregate = await db.execute(
+        select(func.avg(Rating.score), func.count(Rating.id)).where(
+            Rating.recipe_id == recipe_id
+        )
+    )
+    avg, count = aggregate.one()
+    recipe.avg_rating = float(round(avg, 2)) if avg else 0
+    recipe.rating_count = count
+    await db.commit()
+
+    return {
+        "message": "Rating deleted",
+        "avg_rating": recipe.avg_rating,
+        "rating_count": recipe.rating_count,
     }

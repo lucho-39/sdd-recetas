@@ -116,3 +116,48 @@ async def test_rating_distribution(
     assert distribution["5"] == 1
     assert distribution["3"] == 1
     assert distribution["1"] == 0
+
+
+async def test_delete_own_rating_updates_aggregates(
+    client: AsyncClient, recipe: Recipe, auth_headers: dict
+) -> None:
+    await client.post(f"/api/v1/ratings/{recipe.id}?score=4", headers=auth_headers)
+
+    response = await client.delete(
+        f"/api/v1/ratings/{recipe.id}", headers=auth_headers
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["rating_count"] == 0
+    assert body["avg_rating"] == 0
+
+
+async def test_delete_missing_rating_returns_404(
+    client: AsyncClient, recipe: Recipe, auth_headers: dict
+) -> None:
+    response = await client.delete(
+        f"/api/v1/ratings/{recipe.id}", headers=auth_headers
+    )
+    assert response.status_code == 404
+
+
+async def test_delete_rating_requires_authentication(
+    client: AsyncClient, recipe: Recipe
+) -> None:
+    response = await client.delete(f"/api/v1/ratings/{recipe.id}")
+    assert response.status_code == 401
+
+
+async def test_get_my_rating(
+    client: AsyncClient, recipe: Recipe, auth_headers: dict
+) -> None:
+    empty = await client.get(f"/api/v1/ratings/{recipe.id}/mine", headers=auth_headers)
+    assert empty.status_code == 200
+    assert empty.json()["score"] is None
+
+    await client.post(
+        f"/api/v1/ratings/{recipe.id}?score=5&review_text=Rica", headers=auth_headers
+    )
+    mine = await client.get(f"/api/v1/ratings/{recipe.id}/mine", headers=auth_headers)
+    assert mine.json()["score"] == 5
+    assert mine.json()["review_text"] == "Rica"

@@ -57,6 +57,7 @@ class RecipeResponse(RecipeBase):
     updated_at: datetime
     deleted_at: Optional[datetime] = None
     similar_recipes: List["SimilarRecipe"] = []
+    my_rating: Optional[int] = None
 
     class Config:
         from_attributes = True

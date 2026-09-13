@@ -406,3 +406,15 @@ async def test_update_recipe_without_tags_keeps_them(
         f"/api/v1/recipes/{slug}", json={"description": "nueva"}, headers=auth_headers
     )
     assert [t["slug"] for t in updated.json()["tags"]] == ["rapida"]
+
+
+async def test_get_recipe_includes_my_rating(
+    client: AsyncClient, recipe: Recipe, auth_headers: dict
+) -> None:
+    await client.post(f"/api/v1/ratings/{recipe.id}?score=4", headers=auth_headers)
+
+    authed = await client.get(f"/api/v1/recipes/{recipe.slug}", headers=auth_headers)
+    assert authed.json()["my_rating"] == 4
+
+    anonymous = await client.get(f"/api/v1/recipes/{recipe.slug}")
+    assert anonymous.json()["my_rating"] is None
