@@ -2,23 +2,33 @@ import { writable, get } from 'svelte/store';
 import { browser } from '$app/environment';
 import { io, type Socket } from 'socket.io-client';
 import { auth } from '$lib/stores/auth';
-import type { AppNotification } from '$lib/types';
+import type { AppNotification, NotificationPreferences } from '$lib/types';
 
 interface NotificationsState {
 	items: AppNotification[];
 	unreadCount: number;
 	loading: boolean;
 	connected: boolean;
+	preferences: NotificationPreferences;
 }
 
 const MAX_ITEMS = 50;
+
+const DEFAULT_PREFERENCES: NotificationPreferences = {
+	in_app_enabled: true,
+	email_enabled: false,
+	push_enabled: false,
+	favorites_enabled: true,
+	ratings_enabled: true
+};
 
 function createNotificationsStore() {
 	const { subscribe, set, update } = writable<NotificationsState>({
 		items: [],
 		unreadCount: 0,
 		loading: false,
-		connected: false
+		connected: false,
+		preferences: { ...DEFAULT_PREFERENCES }
 	});
 
 	let socket: Socket | null = null;
@@ -27,6 +37,28 @@ function createNotificationsStore() {
 
 	function token(): string | null {
 		return get(auth).accessToken;
+	}
+
+	function showBrowserNotification(notification: AppNotification) {
+		if (!browser || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+		const who = notification.actor?.display_name ?? 'Alguien';
+		const title =
+			notification.type === 'rating'
+				? `${who} calificó tu receta`
+				: `${who} guardó tu receta`;
+		const body = notification.recipe_title ?? '';
+		const url = notification.recipe_slug ? `/receta/${notification.recipe_slug}` : '/';
+
+		if ('serviceWorker' in navigator) {
+			navigator.serviceWorker.ready
+				.then((registration) =>
+					registration.showNotification(title, { body, data: { url }, tag: notification.id ?? undefined })
+				)
+				.catch(() => {});
+		} else {
+			// eslint-disable-next-line no-new
+			new Notification(title, { body });
+		}
 	}
 
 	function connect(accessToken: string) {
@@ -38,11 +70,16 @@ function createNotificationsStore() {
 		socket.on('connect', () => update((s) => ({ ...s, connected: true })));
 		socket.on('disconnect', () => update((s) => ({ ...s, connected: false })));
 		socket.on('notification', (notification: AppNotification) => {
+			const eventInApp = notification.in_app !== false;
 			update((s) => ({
 				...s,
-				items: [notification, ...s.items].slice(0, MAX_ITEMS),
-				unreadCount: s.unreadCount + (notification.is_read ? 0 : 1)
+				items: eventInApp ? [notification, ...s.items].slice(0, MAX_ITEMS) : s.items,
+				unreadCount:
+					eventInApp && !notification.is_read ? s.unreadCount + 1 : s.unreadCount
 			}));
+			if (get({ subscribe }).preferences.push_enabled) {
+				showBrowserNotification(notification);
+			}
 		});
 	}
 
@@ -74,6 +111,43 @@ function createNotificationsStore() {
 		} catch {
 			update((s) => ({ ...s, loading: false }));
 		}
+	}
+
+	async function loadPreferences(): Promise<NotificationPreferences> {
+		const accessToken = token();
+		if (!accessToken) return get({ subscribe }).preferences;
+		try {
+			const res = await fetch('/api/v1/users/me/notification-preferences', {
+				headers: { Authorization: `Bearer ${accessToken}` }
+			});
+			if (res.ok) {
+				const preferences = (await res.json()) as NotificationPreferences;
+				update((s) => ({ ...s, preferences }));
+				return preferences;
+			}
+		} catch {
+			/* keep defaults */
+		}
+		return get({ subscribe }).preferences;
+	}
+
+	async function savePreferences(
+		partial: Partial<NotificationPreferences>
+	): Promise<NotificationPreferences> {
+		const accessToken = token();
+		if (!accessToken) return get({ subscribe }).preferences;
+		const res = await fetch('/api/v1/users/me/notification-preferences', {
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${accessToken}`
+			},
+			body: JSON.stringify(partial)
+		});
+		if (!res.ok) throw new Error(`API ${res.status}`);
+		const preferences = (await res.json()) as NotificationPreferences;
+		update((s) => ({ ...s, preferences }));
+		return preferences;
 	}
 
 	async function markRead(id: string) {
@@ -140,16 +214,33 @@ function createNotificationsStore() {
 					disconnect();
 					connect(state.accessToken);
 					load();
+					loadPreferences();
 				}
 			} else if (boundToken) {
 				boundToken = null;
 				disconnect();
-				set({ items: [], unreadCount: 0, loading: false, connected: false });
+				set({
+					items: [],
+					unreadCount: 0,
+					loading: false,
+					connected: false,
+					preferences: { ...DEFAULT_PREFERENCES }
+				});
 			}
 		});
 	}
 
-	return { subscribe, start, load, markRead, markAllRead, remove, removeAll };
+	return {
+		subscribe,
+		start,
+		load,
+		loadPreferences,
+		savePreferences,
+		markRead,
+		markAllRead,
+		remove,
+		removeAll
+	};
 }
 
 export const notifications = createNotificationsStore();

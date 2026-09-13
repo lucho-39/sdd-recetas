@@ -168,4 +168,13 @@ export interface AppNotification {
 	detail?: { score?: number } | null;
 	is_read: boolean;
 	created_at: string;
+	in_app?: boolean;
+}
+
+export interface NotificationPreferences {
+	in_app_enabled: boolean;
+	email_enabled: boolean;
+	push_enabled: boolean;
+	favorites_enabled: boolean;
+	ratings_enabled: boolean;
 }
