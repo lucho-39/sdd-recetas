@@ -16,4 +16,14 @@ export default defineConfig({
 			}
 		}
 	},
+	preview: {
+		port: 3001,
+		host: true,
+		proxy: {
+			'/api': {
+				target: 'http://backend:8000',
+				changeOrigin: true
+			}
+		}
+	},
 });
