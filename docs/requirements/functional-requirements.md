@@ -166,7 +166,7 @@
 | RF-04 | `favorites.md` ✅ |
 | RF-05 | `ratings.md` ✅ |
 | RF-06 | `ai-generation.md` (pendiente, v2) |
-| RF-07 | `cooking-mode.md` (doc pendiente; feature implementada) |
+| RF-07 | `cooking-mode.md` ✅ |
 | RF-08 | `visit-tracking.md` ✅ |
 | RF-09 | `tags.md` (pendiente) |
 | RF-10 | `admin.md` ✅ |

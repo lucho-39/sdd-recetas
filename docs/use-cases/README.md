@@ -20,9 +20,9 @@ objetivo concreto.
 | `ratings.md` | Calificaciones y Reseñas | ✅ Completado | Epic 6: Ratings |
 | `auth.md` | Autenticación y Cuenta | ✅ Completado | Epic 1: Auth |
 | `visit-tracking.md` | Tracking de Visitas (Anti-F5) | ✅ Completado | Transversal |
+| `cooking-mode.md` | Modo Cocinando | ✅ Completado | Epic 8: Cocinando |
 | `social.md` | Perfil Público + Compartir | 🔲 Pendiente **[v2]** | Epic 5: Social |
 | `ai-generation.md` | Generación de Recetas por IA | 🔲 Pendiente **[v2]** | Epic 7: IA |
-| `cooking-mode.md` | Modo Cocinando | 🔲 Pendiente **[v2]** | Epic 8: Cocinando |
 
 ## Documentos esperados
 
