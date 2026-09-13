@@ -5,10 +5,12 @@
 	import Footer from '$components/layout/Footer.svelte';
 	import { theme } from '$lib/stores/theme';
 	import { auth } from '$lib/stores/auth';
+	import { notifications } from '$lib/stores/notifications';
 
 	onMount(() => {
 		theme.init();
 		auth.init();
+		notifications.start();
 		if ('serviceWorker' in navigator) {
 			navigator.serviceWorker.register('/service-worker.js').catch(() => {});
 		}

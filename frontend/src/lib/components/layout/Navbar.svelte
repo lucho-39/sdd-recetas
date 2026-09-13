@@ -3,6 +3,7 @@
 	import { auth } from '$lib/stores/auth';
 	import { theme } from '$lib/stores/theme';
 	import AvatarDropdown from '$components/ui/AvatarDropdown.svelte';
+	import NotificationBell from '$components/ui/NotificationBell.svelte';
 
 	let mobileMenuOpen = false;
 
@@ -46,6 +47,7 @@
 
 			{#if $auth.isAuthenticated}
 				<a href="/recetas/nueva" class="btn btn-primary btn-sm hidden sm:inline-flex">Crear receta</a>
+				<NotificationBell />
 				<AvatarDropdown />
 			{:else}
 				<a href="/login" class="btn btn-ghost btn-sm hidden sm:inline-flex">Iniciar sesión</a>

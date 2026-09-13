@@ -151,3 +151,21 @@ export interface ApiError {
 	detail: string;
 	status_code?: number;
 }
+
+export interface NotificationActor {
+	id: string;
+	display_name: string;
+	avatar_url?: string | null;
+}
+
+export interface AppNotification {
+	id: string;
+	type: 'favorite' | 'rating' | string;
+	recipe_id: string;
+	recipe_slug: string | null;
+	recipe_title: string | null;
+	actor: NotificationActor | null;
+	detail?: { score?: number } | null;
+	is_read: boolean;
+	created_at: string;
+}
