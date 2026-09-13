@@ -13,6 +13,10 @@ export default defineConfig({
 			'/api': {
 				target: 'http://backend:8000',
 				changeOrigin: true
+			},
+			'/uploads': {
+				target: 'http://backend:8000',
+				changeOrigin: true
 			}
 		}
 	},
@@ -21,6 +25,10 @@ export default defineConfig({
 		host: true,
 		proxy: {
 			'/api': {
+				target: 'http://backend:8000',
+				changeOrigin: true
+			},
+			'/uploads': {
 				target: 'http://backend:8000',
 				changeOrigin: true
 			}

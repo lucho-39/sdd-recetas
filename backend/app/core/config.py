@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     PROJECT_NAME: str = "Recetario IA"
 
+    # Uploads (local disk; served at /uploads)
+    UPLOADS_DIR: str = Field(default="/app/uploads")
+    MAX_UPLOAD_SIZE_MB: int = Field(default=5)
+
     # Admin
     ADMIN_INITIAL_USER: str = "admin@recetario.local"
     ADMIN_INITIAL_PASSWORD: str = "ChangeMeOnFirstLogin123!"

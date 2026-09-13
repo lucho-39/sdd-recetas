@@ -2,9 +2,12 @@
 Recetario IA - Main Application
 """
 from contextlib import asynccontextmanager
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import get_settings
 from app.core.database import init_db, async_session_maker
@@ -50,6 +53,11 @@ app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 
 # Include admin API router
 app.include_router(admin_router, prefix="/api/admin")
+
+# Serve uploaded images (local disk)
+_uploads_dir = Path(settings.UPLOADS_DIR)
+_uploads_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(_uploads_dir)), name="uploads")
 
 
 @app.get("/health", tags=["health"])
