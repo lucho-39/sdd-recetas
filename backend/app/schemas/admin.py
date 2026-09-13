@@ -79,3 +79,37 @@ class DashboardStats(BaseModel):
     tags_total: int
     ratings_total: int
     visits_total: int
+
+
+# --------------------------------------------------------------------------- #
+# Recipes
+# --------------------------------------------------------------------------- #
+class RecipeAdminUpdate(BaseModel):
+    title: Optional[str] = Field(None, min_length=3, max_length=200)
+    description: Optional[str] = None
+    category_id: Optional[UUID] = None
+    instructions: Optional[str] = Field(None, min_length=10)
+    difficulty: Optional[str] = Field(None, pattern="^(easy|medium|hard)$")
+    prep_time_minutes: Optional[int] = Field(None, ge=0)
+    cook_time_minutes: Optional[int] = Field(None, ge=0)
+    servings: Optional[int] = Field(None, ge=1)
+    is_public: Optional[bool] = None
+
+
+class RecipeVisibilityUpdate(BaseModel):
+    is_public: bool
+
+
+# --------------------------------------------------------------------------- #
+# Ingredients
+# --------------------------------------------------------------------------- #
+class IngredientRejectRequest(BaseModel):
+    reason: str = Field(..., min_length=3, max_length=500)
+
+
+class IngredientNormalizeRequest(BaseModel):
+    name: Optional[str] = Field(None, min_length=2, max_length=100)
+    category: Optional[str] = Field(None, max_length=30)
+    default_unit: Optional[str] = Field(None, max_length=20)
+    aliases: Optional[List[str]] = None
+    mark_validated: bool = True
