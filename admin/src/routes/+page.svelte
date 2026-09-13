@@ -1,23 +1,45 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import {
 		IconUsers as Users,
-		IconBookFilled as BookOpen,
-		IconListFilled as List,
-		IconStarFilled as Star,
-		IconTrendingUp as TrendingUp
+		IconBookFilled as Recipes,
+		IconListFilled as Ingredients,
+		IconTagFilled as Tag,
+		IconBookmarkFilled as Tags,
+		IconStarFilled as Rating,
+		IconEyeFilled as Visits
 	} from '@tabler/icons-svelte';
+	import { auth } from '$lib/stores/auth';
 
-	const stats = [
-		{ label: 'Usuarios activos (30d)', value: '—', icon: Users },
-		{ label: 'Recetas publicadas', value: '—', icon: BookOpen },
-		{ label: 'Ingredientes pendientes', value: '—', icon: List },
-		{ label: 'Rating promedio', value: '—', icon: Star }
-	];
+	let stats: Record<string, number> | null = null;
+	let error = '';
+	let loading = true;
 
-	const activity = [
-		{ user: 'María García', action: 'publicó', target: 'Torta de chocolate', time: 'hace 10 min' },
-		{ user: 'Carlos López', action: 'calificó', target: 'Gazpacho andaluz', time: 'hace 25 min' },
-		{ user: 'Ana Martín', action: 'guardó', target: 'Bizcocho de yogur', time: 'hace 1 hora' }
+	onMount(async () => {
+		try {
+			const res = await fetch('/api/admin/metrics/dashboard', {
+				headers: { Authorization: `Bearer ${$auth.accessToken}` }
+			});
+			if (!res.ok) throw new Error(`API ${res.status}`);
+			stats = await res.json();
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Error al cargar métricas';
+		} finally {
+			loading = false;
+		}
+	});
+
+	const cards = [
+		{ key: 'users_total', label: 'Usuarios', icon: Users },
+		{ key: 'users_active', label: 'Usuarios activos', icon: Users },
+		{ key: 'recipes_total', label: 'Recetas', icon: Recipes },
+		{ key: 'recipes_public', label: 'Recetas públicas', icon: Recipes },
+		{ key: 'ingredients_total', label: 'Ingredientes', icon: Ingredients },
+		{ key: 'ingredients_pending', label: 'Ingredientes pendientes', icon: Ingredients },
+		{ key: 'categories_total', label: 'Categorías', icon: Tag },
+		{ key: 'tags_total', label: 'Tags', icon: Tags },
+		{ key: 'ratings_total', label: 'Calificaciones', icon: Rating },
+		{ key: 'visits_total', label: 'Visitas', icon: Visits }
 	];
 </script>
 
@@ -26,53 +48,26 @@
 </svelte:head>
 
 <div class="space-y-6">
-	<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-		<div>
-			<h1 class="font-playfair text-2xl font-medium text-foreground md:text-3xl">Dashboard</h1>
-			<p class="mt-1 text-muted-foreground">Resumen del panel de administración</p>
-		</div>
-		<button type="button" class="btn btn-outline btn-sm self-start">Actualizar</button>
+	<div>
+		<h1 class="font-playfair text-2xl font-medium text-foreground md:text-3xl">Dashboard</h1>
+		<p class="mt-1 text-muted-foreground">Estadísticas generales de la aplicación</p>
 	</div>
 
-	<div
-		class="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-sm text-foreground"
-		role="status"
-	>
-		<TrendingUp class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-		<p>Los endpoints de administración (<code>/api/admin/*</code>) están pendientes; estas métricas son de ejemplo.</p>
-	</div>
+	{#if error}
+		<div class="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive" role="alert">{error}</div>
+	{/if}
 
-	<!-- Stat cards -->
-	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-		{#each stats as stat (stat.label)}
+	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+		{#each cards as card (card.key)}
 			<div class="card p-5">
 				<div class="flex items-center justify-between">
-					<p class="text-sm text-muted-foreground">{stat.label}</p>
-					<stat.icon class="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+					<p class="text-sm text-muted-foreground">{card.label}</p>
+					<card.icon class="h-5 w-5 text-muted-foreground" aria-hidden="true" />
 				</div>
-				<p class="mt-2 text-3xl font-semibold text-foreground">{stat.value}</p>
+				<p class="mt-2 text-3xl font-semibold text-foreground">
+					{loading ? '…' : (stats?.[card.key] ?? 0)}
+				</p>
 			</div>
 		{/each}
-	</div>
-
-	<!-- Recent activity -->
-	<div class="card p-6">
-		<h2 class="mb-4 text-lg font-medium text-foreground">Actividad reciente</h2>
-		<ul class="divide-y divide-border">
-			{#each activity as item (item.user + item.target)}
-				<li class="flex items-center justify-between gap-4 py-3">
-					<div class="flex items-center gap-3">
-						<span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-							{item.user.charAt(0)}
-						</span>
-						<div>
-							<p class="text-sm font-medium text-foreground">{item.user}</p>
-							<p class="text-xs text-muted-foreground">{item.action} {item.target}</p>
-						</div>
-					</div>
-					<time class="whitespace-nowrap text-xs text-muted-foreground">{item.time}</time>
-				</li>
-			{/each}
-		</ul>
 	</div>
 </div>
