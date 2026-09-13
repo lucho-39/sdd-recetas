@@ -71,13 +71,17 @@
 > (`ReviewList`). El upsert por usuario cubre editar la propia calificación
 > (RF-05.3).
 
-## RF-06: Generación de recetas por IA **[v2 — no implementado]**
+## RF-06: Generación de recetas por IA **[implementado, config-gated]**
 | ID | Requisito | Fortaleza | RB |
 |----|-----------|-----------|-----|
 | RF-06.1 | Generar receta a partir de lista de ingredientes disponibles | SHOULD | — |
 | RF-06.2 | Generar receta con preferencias dietéticas (tags: vegano, keto, etc.) | SHOULD | RB-02 |
 | RF-06.3 | Editar receta generada antes de guardar | SHOULD | RF-02.1 |
 | RF-06.4 | Guardar receta generada como propia | SHOULD | RF-02.1 |
+
+> `POST /api/v1/ai/generate` (proveedor OpenAI-compatible vía `AI_API_KEY`;
+> devuelve 503 si no está configurado). El borrador se revisa/edita en
+> `/recetas/generar` y se guarda con el CRUD normal.
 
 ## RF-07: Modo "Cocinando" **[implementado]**
 | ID | Requisito | Fortaleza | RB |
@@ -165,7 +169,7 @@
 | RF-03 | `search.md` ✅ |
 | RF-04 | `favorites.md` ✅ |
 | RF-05 | `ratings.md` ✅ |
-| RF-06 | `ai-generation.md` (pendiente, v2) |
+| RF-06 | `ai-generation.md` ✅ |
 | RF-07 | `cooking-mode.md` ✅ |
 | RF-08 | `visit-tracking.md` ✅ |
 | RF-09 | `tags.md` (pendiente) |

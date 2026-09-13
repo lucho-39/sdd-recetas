@@ -21,8 +21,8 @@ objetivo concreto.
 | `auth.md` | Autenticación y Cuenta | ✅ Completado | Epic 1: Auth |
 | `visit-tracking.md` | Tracking de Visitas (Anti-F5) | ✅ Completado | Transversal |
 | `cooking-mode.md` | Modo Cocinando | ✅ Completado | Epic 8: Cocinando |
-| `social.md` | Perfil Público + Compartir | 🔲 Pendiente **[v2]** | Epic 5: Social |
-| `ai-generation.md` | Generación de Recetas por IA | 🔲 Pendiente **[v2]** | Epic 7: IA |
+| `social.md` | Perfil Público + Compartir | ✅ Completado | Epic 5: Social |
+| `ai-generation.md` | Generación de Recetas por IA | ✅ Completado (config-gated) | Epic 7: IA |
 
 ## Documentos esperados
 

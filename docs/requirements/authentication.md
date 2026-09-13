@@ -13,10 +13,14 @@
 | Access Token | JWT (HS256) | 15 min | Memoria (JS variable) | Authorization header `Bearer <token>` |
 | Refresh Token | JWT (HS256) con `jti` | 30 días | HttpOnly cookie (Secure, SameSite=Lax, path=/api/v1/auth/refresh) | POST `/auth/refresh` → nuevo access + refresh rotado |
 | Email Verification | JWT (HS256) | 24 h | Email link (dev: link en la respuesta) | **POST** `/auth/verify-email` con `{token}`; el envío real de email queda **[v2]** |
-| Password Reset | JWT (HS256) | 1 h | Email link | **[v2]** POST `/auth/reset-password` |
+| Password Reset | JWT (HS256) | 1 h | Email link | **Implementado** `POST /auth/forgot-password` + `/auth/reset-password` (envío vía SMTP/outbox) |
 
 > **Nota**: la spec original definía access RS256 + refresh *opaque*. El MVP
 > implementa **HS256 + refresh JWT** (ver `docs/decisions/ADR-000-source-of-truth.md`).
+
+> **Rotación con detección de reuso**: cada refresh emite un par nuevo y marca el
+> anterior como revocado en `refresh_tokens`; presentar un token ya rotado revoca
+> toda su familia (`family_id`) y devuelve 401.
 
 ### JWT Claims (Access Token)
 ```json
@@ -38,10 +42,8 @@
 |--------|------|-------------|------|
 | POST | `/auth/register` | Registro email + password | Público |
 | POST | `/auth/login` | Login email + password | Público |
-| POST | `/auth/oauth/google` | Iniciar OAuth Google **[v2]** | Público |
-| GET | `/auth/oauth/google/callback` | Callback Google **[v2]** | Público |
-| POST | `/auth/oauth/github` | Iniciar OAuth GitHub **[v2]** | Público |
-| GET | `/auth/oauth/github/callback` | Callback GitHub **[v2]** | Público |
+| GET | `/auth/oauth/{provider}` | Iniciar OAuth (google\|github) — 503 si no está configurado | Público |
+| GET | `/auth/oauth/{provider}/callback` | Callback OAuth: crea/vincula usuario y emite tokens | Público |
 | POST | `/auth/refresh` | Renovar access token (cookie refresh) | Refresh token |
 | POST | `/auth/logout` | Revocar refresh token | Access token |
 | POST | `/auth/forgot-password` | Solicitar reset email | Público |

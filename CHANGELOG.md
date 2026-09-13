@@ -13,6 +13,10 @@ El proyecto está en fase **MVP (0.x)**.
 - **Verificación de email**: token de 24 h (`POST /auth/verify-email`), `POST /auth/request-verification`
   (público, por email) y reenvío desde el login. En el MVP el registro auto-verifica
   (`require_email_verification=false`); el envío real de email depende de SMTP.
+- **Recuperación de contraseña** real: token de 1 h, email vía SMTP/outbox y página `/reset-password`.
+- **Rotación de refresh con detección de reuso**: presentar un token ya rotado revoca su familia.
+- **OAuth Google/GitHub** (config-gated): `GET /auth/oauth/{provider}` + callback, vinculación
+  de cuentas y emisión de tokens; 503 si faltan credenciales.
 - Perfil privado (`/perfil`) y **perfil público** (`/usuario/:id`) sin datos sensibles.
 
 ### Added — Recetas
@@ -24,6 +28,8 @@ El proyecto está en fase **MVP (0.x)**.
 - **Calificaciones y reseñas**: 1–5 estrellas, reseña textual, promedio y **distribución**,
   "mi calificación" y eliminación de la propia.
 - **Subida de imágenes** a disco local (`POST /api/v1/uploads`, servidas en `/uploads`), o URL externa.
+- **Generación de recetas por IA** (config-gated): `POST /api/v1/ai/generate` (OpenAI-compatible) y
+  revisión/guardado en `/recetas/generar`.
 - **`/buscar`**: filtros de texto, categoría, tags, ingredientes, dificultad y tiempo; orden,
   deep links por URL e infinite scroll.
 - **`/mis-recetas`**: tabs Publicadas/Privadas/Borradas, toggle de visibilidad, editar y restaurar.
@@ -96,5 +102,6 @@ El proyecto está en fase **MVP (0.x)**.
   casos de uso (`search`, `ingredients`, `admin`, `notifications`), testing y este CHANGELOG.
 
 ### Tests
-- Suite de endpoints con Postgres real (`recetario_test`) y `ASGITransport`: **162 tests** verdes,
-  incluidos notificaciones (preferencias/email/Web Push), administración v2 e integración de Socket.IO.
+- Suite de endpoints con Postgres real (`recetario_test`) y `ASGITransport`: **172 tests** verdes,
+  incluidos notificaciones (preferencias/email/Web Push), administración v2, OAuth/reset/refresh,
+  IA (gating) e integración de Socket.IO.

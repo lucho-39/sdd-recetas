@@ -12,7 +12,7 @@ Aplicación mobile-first PWA para gestión de recetas de cocina con:
 - **Notificaciones en tiempo real** (favoritos y calificaciones) con canales configurables (in-app, email, push)
 - **Panel de administración** independiente (dashboard, métricas, config, audit log)
 - **Subida de imágenes** de recetas (disco local)
-- **Generación de recetas por IA** a partir de ingredientes — **[v2]**
+- **Generación de recetas por IA** a partir de ingredientes (config-gated)
 - **Catálogo de ingredientes normalizados** con autocomplete *(seed objetivo 300; actual incompleto)*
 
 ## 🏗️ Stack Tecnológico
@@ -26,7 +26,7 @@ Aplicación mobile-first PWA para gestión de recetas de cocina con:
 | **ORM** | SQLAlchemy 2.0 async + Alembic |
 | **Auth** | JWT HS256 (access 15min) + Refresh JWT 30d (HttpOnly cookie) |
 | **Tiempo real** | Socket.IO (python-socketio + socket.io-client) |
-| **OAuth** | Google + GitHub — **[v2]** |
+| **OAuth** | Google + GitHub (config-gated) |
 | **Contenedores** | Podman + Podman Compose / Quadlet |
 | **Imágenes Base** | AWS ECR Public (`public.ecr.aws/...`) |
 | **Deployment** | VPS (Hetzner/DigitalOcean) + Podman Compose / Quadlet |
@@ -84,6 +84,13 @@ JWT_ALGORITHM=HS256
 ADMIN_INITIAL_USER=admin@recetario.local
 ADMIN_INITIAL_PASSWORD=ChangeMeOnFirstLogin123!
 CORS_ORIGINS=http://localhost:3000,http://localhost:3001
+
+# Opcionales
+# SMTP_HOST / SMTP_USER / SMTP_PASSWORD / SMTP_FROM   → emails (si no, email_outbox)
+# VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY                → Web Push (si no, se autogeneran)
+# GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET             → OAuth Google
+# GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET             → OAuth GitHub
+# AI_API_KEY / AI_BASE_URL / AI_MODEL                 → generación de recetas con IA
 ```
 
 ## 🐳 Despliegue con Podman
@@ -203,7 +210,7 @@ GET /api/recipes?category=postre&tags=vegano,sin-tacc&ingredients=almendra&q=bro
 ## 🧪 Testing
 
 ```bash
-# Backend (162 tests, incluida la integración de Socket.IO)
+# Backend (172 tests, incluida la integración de Socket.IO)
 cd backend && uv run pytest
 
 # CI: .github/workflows/ci.yml corre la suite de backend con Postgres
