@@ -49,6 +49,9 @@ docs/
 └── .ai/               → Contexto para agentes de IA
 ```
 
+> El historial de cambios implementados está en
+> [`../CHANGELOG.md`](../CHANGELOG.md).
+
 ## Orden recomendado de lectura
 
 Una persona nueva en el proyecto debería leer:

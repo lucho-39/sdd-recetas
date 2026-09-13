@@ -8,9 +8,11 @@ Aplicación mobile-first PWA para gestión de recetas de cocina con:
 - **Búsqueda unificada** (nombre, ingredientes, categorías, tags)
 - **Sistema de favoritos y colecciones**
 - **Calificaciones y reseñas** con estrellas fraccionales
-- **Modo cocinando** (fullscreen, wake lock, comandos de voz, timers) — **[v2]**
+- **Modo cocinando** (fullscreen, wake lock, comandos de voz, timers)
+- **Notificaciones en tiempo real** (favoritos y calificaciones) con canales configurables (in-app, email, push)
+- **Panel de administración** independiente (dashboard, métricas, config, audit log)
+- **Subida de imágenes** de recetas (disco local)
 - **Generación de recetas por IA** a partir de ingredientes — **[v2]**
-- **Panel de administración** independiente con auth separado *(endpoints /api/admin/* pendientes)*
 - **Catálogo de ingredientes normalizados** con autocomplete *(seed objetivo 300; actual incompleto)*
 
 ## 🏗️ Stack Tecnológico
@@ -23,6 +25,7 @@ Aplicación mobile-first PWA para gestión de recetas de cocina con:
 | **Base de Datos** | PostgreSQL 16+ (pg_trgm, pgcrypto, btree_gin) |
 | **ORM** | SQLAlchemy 2.0 async + Alembic |
 | **Auth** | JWT HS256 (access 15min) + Refresh JWT 30d (HttpOnly cookie) |
+| **Tiempo real** | Socket.IO (python-socketio + socket.io-client) |
 | **OAuth** | Google + GitHub — **[v2]** |
 | **Contenedores** | Podman + Podman Compose / Quadlet |
 | **Imágenes Base** | AWS ECR Public (`public.ecr.aws/...`) |
@@ -200,18 +203,16 @@ GET /api/recipes?category=postre&tags=vegano,sin-tacc&ingredients=almendra&q=bro
 ## 🧪 Testing
 
 ```bash
-# Backend
-cd backend && uv run pytest --cov=app --cov-report=html
+# Backend (146 tests, incluida la integración de Socket.IO)
+cd backend && uv run pytest
 
-# Frontend
-cd frontend && pnpm run check && pnpm test
-
-# Admin
-cd admin && pnpm run check
-
-# E2E
-pnpm run test:e2e
+# CI: .github/workflows/ci.yml corre la suite de backend con Postgres
+# y el build del frontend
 ```
+
+## 📝 Changelog
+
+El historial de cambios implementados está en [`CHANGELOG.md`](CHANGELOG.md).
 
 ## 📦 Comandos Útiles
 

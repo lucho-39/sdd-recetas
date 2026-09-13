@@ -50,6 +50,20 @@ flowchart TD
 
 ---
 
+## Mensajes
+
+Plantillas (mismo texto en la campanita y en el email):
+
+| Evento | Mensaje |
+|--------|---------|
+| Favorito | `'{actor}' guardó tu receta '{título}'` |
+| Calificación | `Tu receta '{título}' recibió una calificación de {score} estrella(s) de parte de '{actor}'` |
+
+- `{score}` en singular/plural (`1 estrella` / `4 estrellas`).
+- Si no hay puntaje: `Tu receta '{título}' recibió una calificación de parte de '{actor}'`.
+- `{actor}` usa `display_name`; `{título}` el título de la receta.
+- En la campanita, el título de la receta también aparece como línea secundaria.
+
 ## Contrato técnico
 
 ### Modelo `Notification`
