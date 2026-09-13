@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { IconUserCheck as Activate, IconUserOff as Deactivate } from '@tabler/icons-svelte';
+	import {
+		IconUserCheck as Activate,
+		IconUserOff as Deactivate,
+		IconTrashFilled as Erase
+	} from '@tabler/icons-svelte';
 	import { adminFetch, formatDate } from '$lib/api';
 
 	type UserRow = {
@@ -43,6 +47,16 @@
 
 	async function changeRole(row: UserRow, role: string) {
 		await adminFetch(`/users/${row.id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) });
+		await load();
+	}
+
+	async function gdprErase(row: UserRow) {
+		if (!confirm(`¿Anonimizar los datos de "${row.display_name}"? Esta acción no se puede deshacer.`)) return;
+		const deleteRecipes = confirm('¿Eliminar también sus recetas? (Cancelar = conservarlas)');
+		await adminFetch(`/users/${row.id}/gdpr-erase`, {
+			method: 'POST',
+			body: JSON.stringify({ delete_recipes: deleteRecipes })
+		});
 		await load();
 	}
 
@@ -93,6 +107,9 @@
 						<td class="p-3 text-right">
 							<button type="button" class="btn btn-ghost btn-sm" on:click={() => toggleActive(row)} title={row.is_active ? 'Desactivar' : 'Activar'}>
 								{#if row.is_active}<Deactivate class="h-4 w-4" aria-hidden="true" />{:else}<Activate class="h-4 w-4" aria-hidden="true" />{/if}
+							</button>
+							<button type="button" class="btn btn-ghost btn-sm text-destructive" on:click={() => gdprErase(row)} title="Borrar datos (GDPR)">
+								<Erase class="h-4 w-4" aria-hidden="true" />
 							</button>
 						</td>
 					</tr>

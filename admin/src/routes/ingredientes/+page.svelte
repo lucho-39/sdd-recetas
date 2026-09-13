@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { IconCircleCheckFilled as Validate, IconBan as Reject, IconAdjustmentsFilled as Normalize } from '@tabler/icons-svelte';
+	import {
+		IconCircleCheckFilled as Validate,
+		IconBan as Reject,
+		IconAdjustmentsFilled as Normalize,
+		IconGitMerge as Merge
+	} from '@tabler/icons-svelte';
 	import { adminFetch } from '$lib/api';
 
 	type Ingredient = {
@@ -95,6 +100,31 @@
 		}
 	}
 
+	async function merge(item: Ingredient) {
+		const slug = prompt(`Fusionar "${item.name}" en otro ingrediente. Ingresá el slug destino:`);
+		if (!slug) return;
+		message = error = '';
+		try {
+			const data = await adminFetch<{ items: Ingredient[] }>(
+				`/ingredients/validated?search=${encodeURIComponent(slug)}&limit=10`
+			);
+			const target = data.items.find((i) => i.slug === slug) ?? data.items[0];
+			if (!target || target.id === item.id) {
+				error = 'No se encontró un ingrediente destino válido';
+				return;
+			}
+			if (!confirm(`¿Fusionar "${item.name}" en "${target.name}"? Se reasignarán las recetas.`)) return;
+			const result = await adminFetch<{ recipes_updated: number }>(
+				`/ingredients/${item.id}/merge`,
+				{ method: 'POST', body: JSON.stringify({ target_id: target.id }) }
+			);
+			message = `Fusionado en "${target.name}". Recetas actualizadas: ${result.recipes_updated}`;
+			await load();
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Error';
+		}
+	}
+
 	onMount(load);
 </script>
 
@@ -141,6 +171,7 @@
 								<button type="button" class="btn btn-ghost btn-sm text-success" on:click={() => validate(item)} title="Validar"><Validate class="h-4 w-4" aria-hidden="true" /></button>
 							{/if}
 							<button type="button" class="btn btn-ghost btn-sm" on:click={() => openNormalize(item)} title="Normalizar"><Normalize class="h-4 w-4" aria-hidden="true" /></button>
+							<button type="button" class="btn btn-ghost btn-sm" on:click={() => merge(item)} title="Fusionar en otro"><Merge class="h-4 w-4" aria-hidden="true" /></button>
 							{#if tab !== 'rejected'}
 								<button type="button" class="btn btn-ghost btn-sm text-destructive" on:click={() => reject(item)} title="Rechazar"><Reject class="h-4 w-4" aria-hidden="true" /></button>
 							{/if}

@@ -98,6 +98,49 @@
 				/>
 			</label>
 
+			<label class="flex items-start justify-between gap-4">
+				<span>
+					<span class="block text-sm font-medium text-foreground">Modo mantenimiento</span>
+					<span class="block text-xs text-muted-foreground">Bloquea el tráfico público (503); el panel admin sigue accesible.</span>
+				</span>
+				<input type="checkbox" class="mt-1 h-4 w-4" bind:checked={settings.maintenance_mode} />
+			</label>
+
+			<label class="block">
+				<span class="mb-1 block text-sm font-medium text-foreground">Rate limit por minuto (0 = desactivado)</span>
+				<input
+					type="number"
+					min="0"
+					max="10000"
+					class="input-base w-32"
+					bind:value={settings.rate_limit_per_minute}
+				/>
+			</label>
+
+			<fieldset class="space-y-3 border-t border-border pt-4">
+				<legend class="text-sm font-medium text-foreground">Plantillas de email</legend>
+				<p class="text-xs text-muted-foreground">
+					Placeholders: <code>{'{actor}'}</code>, <code>{'{recipe}'}</code>,
+					<code>{'{score}'}</code>, <code>{'{stars}'}</code>, <code>{'{url}'}</code>.
+				</p>
+				<label class="block">
+					<span class="mb-1 block text-xs text-muted-foreground">Asunto — favorito</span>
+					<input class="input-base" bind:value={settings.email_favorite_subject} />
+				</label>
+				<label class="block">
+					<span class="mb-1 block text-xs text-muted-foreground">Cuerpo — favorito</span>
+					<textarea rows="3" class="input-base" bind:value={settings.email_favorite_body}></textarea>
+				</label>
+				<label class="block">
+					<span class="mb-1 block text-xs text-muted-foreground">Asunto — calificación</span>
+					<input class="input-base" bind:value={settings.email_rating_subject} />
+				</label>
+				<label class="block">
+					<span class="mb-1 block text-xs text-muted-foreground">Cuerpo — calificación</span>
+					<textarea rows="3" class="input-base" bind:value={settings.email_rating_body}></textarea>
+				</label>
+			</fieldset>
+
 			<div>
 				<button type="button" class="btn btn-primary" on:click={save} disabled={saving}>
 					{saving ? 'Guardando…' : 'Guardar cambios'}

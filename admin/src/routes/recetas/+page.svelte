@@ -1,7 +1,22 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { IconEyeOff as Hide, IconEye as Show, IconTrashFilled as Trash } from '@tabler/icons-svelte';
+	import {
+		IconEyeOff as Hide,
+		IconEye as Show,
+		IconTrashFilled as Trash,
+		IconChartBar as StatsIcon
+	} from '@tabler/icons-svelte';
 	import { adminFetch, formatDate } from '$lib/api';
+
+	type RecipeStats = {
+		visit_count: number;
+		save_count: number;
+		avg_rating: number;
+		rating_count: number;
+		favorites_count: number;
+		rating_distribution: Record<string, number>;
+		visits_by_day: { date: string; count: number }[];
+	};
 
 	type RecipeRow = {
 		id: string;
@@ -21,6 +36,24 @@
 	let status = '';
 	let loading = true;
 	let error = '';
+	let openId: string | null = null;
+	let statsById: Record<string, RecipeStats> = {};
+
+	async function showStats(row: RecipeRow) {
+		if (openId === row.id) {
+			openId = null;
+			return;
+		}
+		if (!statsById[row.id]) {
+			statsById[row.id] = await adminFetch<RecipeStats>(`/recipes/${row.id}/stats`);
+			statsById = { ...statsById };
+		}
+		openId = row.id;
+	}
+
+	function maxDist(stats: RecipeStats): number {
+		return Math.max(1, ...Object.values(stats.rating_distribution));
+	}
 
 	async function load() {
 		loading = true;
@@ -90,12 +123,41 @@
 						<td class="p-3">{row.visit_count}</td>
 						<td class="p-3 text-muted-foreground">{formatDate(row.created_at)}</td>
 						<td class="p-3 text-right">
+							<button type="button" class="btn btn-ghost btn-sm" on:click={() => showStats(row)} title="Estadísticas" aria-pressed={openId === row.id}>
+								<StatsIcon class="h-4 w-4" aria-hidden="true" />
+							</button>
 							<button type="button" class="btn btn-ghost btn-sm" on:click={() => toggleVisibility(row)} title={row.status === 'public' ? 'Ocultar' : 'Publicar'}>
 								{#if row.status === 'public'}<Hide class="h-4 w-4" aria-hidden="true" />{:else}<Show class="h-4 w-4" aria-hidden="true" />{/if}
 							</button>
 							<button type="button" class="btn btn-ghost btn-sm text-destructive" on:click={() => remove(row)} disabled={row.status === 'deleted'}><Trash class="h-4 w-4" aria-hidden="true" /></button>
 						</td>
 					</tr>
+					{#if openId === row.id && statsById[row.id]}
+						{@const stats = statsById[row.id]}
+						<tr class="border-b border-border bg-muted/30">
+							<td colspan="7" class="p-4">
+								<div class="grid gap-4 sm:grid-cols-2">
+									<div class="flex flex-wrap gap-4 text-sm">
+										<span>Visitas: <strong>{stats.visit_count}</strong></span>
+										<span>Guardados: <strong>{stats.save_count}</strong></span>
+										<span>Favoritos: <strong>{stats.favorites_count}</strong></span>
+										<span>Calificación: <strong>{stats.avg_rating.toFixed(2)}</strong> ({stats.rating_count})</span>
+									</div>
+									<div class="space-y-1">
+										{#each [5, 4, 3, 2, 1] as score}
+											<div class="flex items-center gap-2 text-xs text-muted-foreground">
+												<span class="w-3 text-right">{score}</span><span aria-hidden="true">★</span>
+												<span class="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+													<span class="block h-full rounded-full bg-primary" style="width: {((stats.rating_distribution[String(score)] ?? 0) / maxDist(stats)) * 100}%"></span>
+												</span>
+												<span class="w-6 text-right">{stats.rating_distribution[String(score)] ?? 0}</span>
+											</div>
+										{/each}
+									</div>
+								</div>
+							</td>
+						</tr>
+					{/if}
 				{/each}
 				{#if !loading && items.length === 0}
 					<tr><td class="p-6 text-center text-muted-foreground" colspan="7">Sin recetas</td></tr>

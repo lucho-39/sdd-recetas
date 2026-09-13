@@ -13,6 +13,7 @@
 		IconChartBar as Metrics,
 		IconSettingsFilled as Config,
 		IconHistory as Audit,
+		IconAlertTriangleFilled as Errors,
 		IconMenu2 as Menu,
 		IconLogout as Logout,
 		IconChevronLeft as Collapse
@@ -31,6 +32,7 @@
 		{ href: '/categorias', label: 'Categorías', icon: Tag },
 		{ href: '/tags', label: 'Tags', icon: Tags },
 		{ href: '/audit-log', label: 'Audit log', icon: Audit },
+		{ href: '/errores', label: 'Errores', icon: Errors },
 		{ href: '/config', label: 'Configuración', icon: Config }
 	];
 
