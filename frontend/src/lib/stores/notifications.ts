@@ -34,6 +34,7 @@ function createNotificationsStore() {
 	let socket: Socket | null = null;
 	let boundToken: string | null = null;
 	let started = false;
+	let pushSubscribed = false;
 
 	function token(): string | null {
 		return get(auth).accessToken;
@@ -61,8 +62,71 @@ function createNotificationsStore() {
 		}
 	}
 
-	function connect(accessToken: string) {
-		if (!browser || socket) return;
+	function urlBase64ToUint8Array(base64: string): Uint8Array {
+		const padding = '='.repeat((4 - (base64.length % 4)) % 4);
+		const normalized = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
+		const raw = atob(normalized);
+		const output = new Uint8Array(raw.length);
+		for (let i = 0; i < raw.length; i += 1) output[i] = raw.charCodeAt(i);
+		return output;
+	}
+
+	async function enablePushSubscription(): Promise<boolean> {
+		if (!browser || !('serviceWorker' in navigator)) return false;
+		const registration = await navigator.serviceWorker.ready;
+		const keyResponse = await fetch('/api/v1/push/public-key');
+		if (!keyResponse.ok) return false;
+		const { public_key } = await keyResponse.json();
+		const subscription = await registration.pushManager.subscribe({
+			userVisibleOnly: true,
+			applicationServerKey: urlBase64ToUint8Array(public_key)
+		});
+		const accessToken = token();
+		const res = await fetch('/api/v1/push/subscribe', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${accessToken}`
+			},
+			body: JSON.stringify(subscription.toJSON())
+		});
+		pushSubscribed = res.ok;
+		return pushSubscribed;
+	}
+
+	async function disablePushSubscription(): Promise<void> {
+		if (!browser || !('serviceWorker' in navigator)) return;
+		const registration = await navigator.serviceWorker.ready;
+		const subscription = await registration.pushManager.getSubscription();
+		if (subscription) {
+			const accessToken = token();
+			if (accessToken) {
+				await fetch('/api/v1/push/subscribe', {
+					method: 'DELETE',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${accessToken}`
+					},
+					body: JSON.stringify({ endpoint: subscription.endpoint })
+				}).catch(() => {});
+			}
+			await subscription.unsubscribe().catch(() => {});
+		}
+		pushSubscribed = false;
+	}
+
+	async function syncPushState(): Promise<void> {
+		if (!browser || !('serviceWorker' in navigator)) return;
+		try {
+			const registration = await navigator.serviceWorker.ready;
+			const subscription = await registration.pushManager.getSubscription();
+			pushSubscribed = !!subscription;
+		} catch {
+			pushSubscribed = false;
+		}
+	}
+
+	function connect(accessToken: string) {		if (!browser || socket) return;
 		socket = io({
 			auth: { token: accessToken },
 			transports: ['websocket', 'polling']
@@ -77,7 +141,7 @@ function createNotificationsStore() {
 				unreadCount:
 					eventInApp && !notification.is_read ? s.unreadCount + 1 : s.unreadCount
 			}));
-			if (get({ subscribe }).preferences.push_enabled) {
+			if (get({ subscribe }).preferences.push_enabled && !pushSubscribed) {
 				showBrowserNotification(notification);
 			}
 		});
@@ -215,6 +279,7 @@ function createNotificationsStore() {
 					connect(state.accessToken);
 					load();
 					loadPreferences();
+					syncPushState();
 				}
 			} else if (boundToken) {
 				boundToken = null;
@@ -239,7 +304,9 @@ function createNotificationsStore() {
 		markRead,
 		markAllRead,
 		remove,
-		removeAll
+		removeAll,
+		enablePushSubscription,
+		disablePushSubscription
 	};
 }
 

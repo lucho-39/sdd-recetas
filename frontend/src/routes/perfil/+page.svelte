@@ -125,9 +125,37 @@
 		const permission = await Notification.requestPermission();
 		pushPermission = permission;
 		if (permission === 'granted') {
+			try {
+				await notifications.enablePushSubscription();
+			} catch {
+				prefsError = 'No se pudo registrar la suscripción push.';
+			}
 			await updatePref('push_enabled', true);
 		} else {
 			prefsError = 'Permiso de notificaciones denegado.';
+		}
+	}
+
+	async function togglePush(enabled: boolean) {
+		if (enabled) {
+			await enablePush();
+		} else {
+			await notifications.disablePushSubscription();
+			await updatePref('push_enabled', false);
+		}
+	}
+
+	async function sendTestPush() {
+		prefsMessage = '';
+		prefsError = '';
+		try {
+			const res = await fetch('/api/v1/push/test', { method: 'POST', headers: authHeaders() });
+			const body = await res.json();
+			prefsMessage = body.sent
+				? `Push de prueba enviado (${body.sent}).`
+				: 'No hay suscripciones push registradas en este dispositivo.';
+		} catch {
+			prefsError = 'No se pudo enviar el push de prueba.';
 		}
 	}
 
@@ -239,13 +267,14 @@
 					</label>
 					<div class="flex flex-wrap items-center gap-3">
 						<label class="flex items-center gap-2 text-sm">
-							<input type="checkbox" class="h-4 w-4" checked={prefs.push_enabled} disabled={savingPrefs} on:change={(e) => updatePref('push_enabled', e.currentTarget.checked)} />
+							<input type="checkbox" class="h-4 w-4" checked={prefs.push_enabled} disabled={savingPrefs} on:change={(e) => togglePush(e.currentTarget.checked)} />
 							Notificaciones del navegador
 						</label>
 						{#if pushPermission !== 'granted'}
 							<button type="button" class="btn btn-outline btn-sm" on:click={enablePush} disabled={savingPrefs}>Activar</button>
 						{:else}
 							<span class="text-xs text-muted-foreground">Permiso concedido</span>
+							<button type="button" class="btn btn-outline btn-sm" on:click={sendTestPush}>Probar</button>
 						{/if}
 					</div>
 					{#if pushPermission === 'denied'}
