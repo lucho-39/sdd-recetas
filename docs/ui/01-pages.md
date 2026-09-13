@@ -458,8 +458,14 @@ formularios directos, sin ornamentos.
 - `/categorias` → CRUD (elimina si no tiene recetas; si no, desactiva).
 - `/tags` → CRUD.
 
-**Pendiente (v2)**: `/admin/metricas`, `/admin/config` (flags, rate limits,
-email templates, mantenimiento) y `/admin/audit-log`.
+**Implementado además**: `/metricas` (crecimiento de usuarios, recetas por
+categoría, distribución de calificaciones y top recetas desde
+`GET /api/admin/metrics/overview`), `/config` (flags editables:
+`registration_open`, `require_email_verification`, `max_upload_size_mb` vía
+`GET/PUT /api/admin/config`) y `/audit-log` (registro de acciones
+administrativas, `GET /api/admin/audit-log`).
+
+**Pendiente (v2)**: rate limits, email templates, mantenimiento y error-log.
 
 ---
 

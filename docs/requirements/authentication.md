@@ -12,7 +12,7 @@
 |-------|------|------------|----------------|-----|
 | Access Token | JWT (HS256) | 15 min | Memoria (JS variable) | Authorization header `Bearer <token>` |
 | Refresh Token | JWT (HS256) con `jti` | 30 días | HttpOnly cookie (Secure, SameSite=Lax, path=/api/v1/auth/refresh) | POST `/auth/refresh` → nuevo access + refresh rotado |
-| Email Verification | JWT (HS256) | 24 h | Email link | **[v2]** GET `/auth/verify-email?token=...` |
+| Email Verification | JWT (HS256) | 24 h | Email link (dev: link en la respuesta) | **POST** `/auth/verify-email` con `{token}`; el envío real de email queda **[v2]** |
 | Password Reset | JWT (HS256) | 1 h | Email link | **[v2]** POST `/auth/reset-password` |
 
 > **Nota**: la spec original definía access RS256 + refresh *opaque*. El MVP
@@ -46,8 +46,8 @@
 | POST | `/auth/logout` | Revocar refresh token | Access token |
 | POST | `/auth/forgot-password` | Solicitar reset email | Público |
 | POST | `/auth/reset-password` | Confirmar reset con token | Público |
-| GET | `/auth/verify-email` | Verificar email con token **[v2]** | Público |
-| POST | `/auth/resend-verification` | Reenviar email verificación **[v2]** | Access token |
+| POST | `/auth/verify-email` | Verificar email con token | Público |
+| POST | `/auth/request-verification` | Generar enlace de verificación por email | Público |
 | GET | `/auth/me` | Perfil usuario actual | Access token |
 | PATCH | `/auth/me` | Actualizar perfil (name, avatar) | Access token |
 | POST | `/auth/change-password` | Cambiar password (usuario logueado) | Access token |
