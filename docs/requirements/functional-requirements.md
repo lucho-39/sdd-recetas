@@ -26,7 +26,9 @@
 > Implementado en `/recetas/nueva` y `/recetas/:slug/editar` con `RecipeForm`.
 > Crear/editar asocian etiquetas por slug (`tags` en `RecipeCreate`/`RecipeUpdate`),
 > creando las faltantes y manteniendo `usage_count`. Borrar/restaurar soft delete.
-> Falta: subida de imágenes (hoy solo URL).
+> **Imágenes**: subida a disco local (`POST /api/v1/uploads`, volumen
+> `./.data/uploads`) o URL externa; las imágenes se sirven en `/uploads`. La
+> galería/crop y el storage en la nube (S3) quedan fuera de alcance.
 
 ## RF-03: Búsqueda y descubrimiento público
 | ID | Requisito | Fortaleza | RB |

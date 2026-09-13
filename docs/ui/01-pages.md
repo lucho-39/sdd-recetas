@@ -374,9 +374,11 @@ manual), preparación (un paso por línea) y visibilidad pública/privada.
   devuelve 404 si no lo es y la página redirige al detalle).
 - **Etiquetas**: autocomplete del catálogo con creación de etiquetas nuevas
   (se envían como `tags: string[]` y el backend crea/asocia por slug).
+- **Imagen**: se puede pegar una URL o **subir un archivo**
+  (`POST /api/v1/uploads`, multipart, máx. 5 MB, PNG/JPEG/WebP/GIF) con vista
+  previa. Los archivos se guardan en disco (volumen `./.data/uploads`) y se
+  sirven en `/uploads` (el frontend lo proxya al backend).
 - Ambas requieren sesión; sin sesión redirigen a `/login?returnTo=...`.
-
-**Pendiente**: soporte de subida de imágenes (hoy solo URL).
 
 ---
 

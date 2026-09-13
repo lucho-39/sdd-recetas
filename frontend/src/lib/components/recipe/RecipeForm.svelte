@@ -50,6 +50,8 @@
 	let ingTimer: ReturnType<typeof setTimeout>;
 	let saving = false;
 	let error = '';
+	let uploading = false;
+	let uploadError = '';
 
 	$: categories = $categoriesStore.categories;
 
@@ -80,6 +82,36 @@
 
 	function removeRow(index: number) {
 		rows = rows.filter((_, i) => i !== index);
+	}
+
+	async function uploadImage(event: Event) {
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+
+		uploading = true;
+		uploadError = '';
+		try {
+			const form = new FormData();
+			form.append('file', file);
+			const res = await fetch('/api/v1/uploads', {
+				method: 'POST',
+				headers: { Authorization: `Bearer ${$auth.accessToken}` },
+				body: form
+			});
+			if (res.ok) {
+				const body = await res.json();
+				imageUrl = body.url;
+			} else {
+				const body = await res.json().catch(() => ({}));
+				uploadError = body.detail ? String(body.detail) : 'No se pudo subir la imagen.';
+			}
+		} catch {
+			uploadError = 'No se pudo subir la imagen.';
+		} finally {
+			uploading = false;
+			input.value = '';
+		}
 	}
 
 	async function submit() {
@@ -177,8 +209,22 @@
 	</div>
 
 	<div>
-		<label for="image" class="mb-1 block text-sm font-medium text-foreground">Imagen (URL)</label>
-		<input id="image" bind:value={imageUrl} class="input-base" maxlength="500" placeholder="https://…" />
+		<label for="image" class="mb-1 block text-sm font-medium text-foreground">Imagen</label>
+		<input id="image" bind:value={imageUrl} class="input-base" maxlength="500" placeholder="https://… o subí un archivo" />
+		<div class="mt-2 flex items-center gap-3">
+			<input
+				type="file"
+				accept="image/png,image/jpeg,image/webp,image/gif"
+				on:change={uploadImage}
+				class="text-sm text-muted-foreground"
+				aria-label="Subir imagen"
+			/>
+			{#if uploading}<span class="text-sm text-muted-foreground">Subiendo…</span>{/if}
+		</div>
+		{#if uploadError}<p class="mt-1 text-sm text-destructive" role="alert">{uploadError}</p>{/if}
+		{#if imageUrl}
+			<img src={imageUrl} alt="Vista previa" class="mt-3 h-40 w-full max-w-xs rounded-lg border border-border object-cover" />
+		{/if}
 	</div>
 
 	<div class="grid gap-4 sm:grid-cols-3">
