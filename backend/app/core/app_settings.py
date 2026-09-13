@@ -15,6 +15,21 @@ DEFAULTS: Dict[str, Any] = {
     "registration_open": True,
     "require_email_verification": False,
     "max_upload_size_mb": 5,
+    "maintenance_mode": False,
+    "rate_limit_per_minute": 0,
+    # Email templates. Placeholders: {actor}, {recipe}, {score}, {stars}, {url}
+    "email_favorite_subject": "'{actor}' guardó tu receta '{recipe}'",
+    "email_favorite_body": (
+        "Hola,\n\n'{actor}' guardó tu receta '{recipe}'.\n\n"
+        "Podés verla en {url}\n\n— Recetario IA"
+    ),
+    "email_rating_subject": (
+        "Tu receta '{recipe}' recibió una calificación de {stars} de parte de '{actor}'"
+    ),
+    "email_rating_body": (
+        "Hola,\n\nTu receta '{recipe}' recibió una calificación de {stars} "
+        "de parte de '{actor}'.\n\nPodés verla en {url}\n\n— Recetario IA"
+    ),
 }
 
 
@@ -45,3 +60,24 @@ async def set_settings(db: AsyncSession, values: Dict[str, Any]) -> None:
             db.add(AppSetting(key=key, value=value))
         else:
             row.value = value
+
+
+# In-process settings cache, primed at startup and refreshed on config updates.
+# Middleware reads it synchronously so it never hits the database per request.
+_cache: Dict[str, Any] = {"value": None}
+
+
+def current_settings() -> Dict[str, Any]:
+    """Cached settings (falls back to code defaults when not primed)."""
+    cached = _cache["value"]
+    return dict(cached) if cached is not None else dict(DEFAULTS)
+
+
+def invalidate_settings_cache() -> None:
+    _cache["value"] = None
+
+
+async def load_settings_cache(db: AsyncSession) -> Dict[str, Any]:
+    value = await get_all_settings(db)
+    _cache["value"] = value
+    return value

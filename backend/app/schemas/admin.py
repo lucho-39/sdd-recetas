@@ -134,3 +134,11 @@ class AuditLogItem(BaseModel):
     target_id: Optional[str] = None
     detail: Optional[Dict[str, Any]] = None
     created_at: datetime
+
+
+class GdprEraseRequest(BaseModel):
+    delete_recipes: bool = False
+
+
+class IngredientMergeRequest(BaseModel):
+    target_id: UUID

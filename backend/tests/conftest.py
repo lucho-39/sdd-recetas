@@ -265,6 +265,19 @@ async def admin_user(db_session: AsyncSession) -> User:
     )
 
 
+@pytest.fixture(autouse=True)
+def _reset_app_runtime_caches():
+    """Isolate the in-process settings cache and rate-limit buckets per test."""
+    from app.core.app_settings import invalidate_settings_cache
+    from app.main import _rate_buckets
+
+    invalidate_settings_cache()
+    _rate_buckets.clear()
+    yield
+    invalidate_settings_cache()
+    _rate_buckets.clear()
+
+
 @pytest_asyncio.fixture
 def auth_headers(user: User) -> dict[str, str]:
     token = create_access_token(subject=str(user.id))

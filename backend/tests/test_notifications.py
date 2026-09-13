@@ -211,3 +211,35 @@ async def test_rating_email_message(
     assert "recibió una calificación de 4 estrellas" in subject
     assert "'Admin'" in subject
     assert recipe.title in subject
+
+
+async def test_custom_email_template(
+    client: AsyncClient,
+    db_session,
+    user,
+    recipe: Recipe,
+    auth_headers: dict,
+    admin_headers: dict,
+) -> None:
+    from sqlalchemy import select
+
+    from app.models import EmailOutbox
+
+    await client.put(
+        "/api/v1/users/me/notification-preferences",
+        headers=auth_headers,
+        json={"email_enabled": True},
+    )
+    await client.put(
+        "/api/admin/config",
+        headers=admin_headers,
+        json={"settings": {"email_rating_subject": "[Nueva] {score}★ en {recipe}"}},
+    )
+    await client.post(f"/api/v1/ratings/{recipe.id}?score=5", headers=admin_headers)
+
+    rows = (
+        await db_session.execute(
+            select(EmailOutbox).where(EmailOutbox.to_email == user.email)
+        )
+    ).scalars().all()
+    assert rows[-1].subject == "[Nueva] 5★ en Tarta de manzana"

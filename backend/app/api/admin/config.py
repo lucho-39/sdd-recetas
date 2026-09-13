@@ -4,7 +4,7 @@ Admin: application settings (/api/admin/config).
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.app_settings import get_all_settings, set_settings
+from app.core.app_settings import get_all_settings, load_settings_cache, set_settings
 from app.core.audit import record_audit
 from app.core.database import get_db
 from app.core.security import require_admin
@@ -32,4 +32,4 @@ async def update_config(
         db, admin.id, "config.update", target_type="config", detail=payload.settings
     )
     await db.commit()
-    return {"settings": await get_all_settings(db)}
+    return {"settings": await load_settings_cache(db)}

@@ -9,6 +9,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.app_settings import current_settings
 from app.models import Notification, NotificationPreference, Recipe, User
 from app.realtime.server import emit_notification
 from app.services.email import send_email
@@ -85,16 +86,39 @@ def _message(type: str, actor: User, recipe: Recipe, detail: Optional[dict]) -> 
     return f"'{who}' guardó tu receta '{title}'"
 
 
+def _context(actor: User, recipe: Recipe, detail: Optional[dict]) -> Dict[str, Any]:
+    score = (detail or {}).get("score")
+    stars = f"{score} {'estrella' if score == 1 else 'estrellas'}" if score else ""
+    return {
+        "actor": actor.display_name,
+        "recipe": recipe.title,
+        "score": score if score is not None else "",
+        "stars": stars,
+        "url": f"/receta/{recipe.slug}",
+    }
+
+
+def _render(template: str, context: Dict[str, Any], fallback: str) -> str:
+    try:
+        return template.format(**context)
+    except (KeyError, IndexError, ValueError):
+        return fallback
+
+
 def _email_content(
     type: str, actor: User, recipe: Recipe, detail: Optional[dict]
 ) -> tuple[str, str]:
-    message = _message(type, actor, recipe, detail)
-    subject = message[:200]
-    body = (
-        f"Hola,\n\n{message}.\n\n"
-        f"Podés verla en /receta/{recipe.slug}\n\n"
-        "— Recetario IA"
-    )
+    settings = current_settings()
+    context = _context(actor, recipe, detail)
+    fallback = _message(type, actor, recipe, detail)
+    if type == "rating":
+        subject_template = settings["email_rating_subject"]
+        body_template = settings["email_rating_body"]
+    else:
+        subject_template = settings["email_favorite_subject"]
+        body_template = settings["email_favorite_body"]
+    subject = _render(subject_template, context, fallback)[:200]
+    body = _render(body_template, context, fallback)
     return subject, body
 
 

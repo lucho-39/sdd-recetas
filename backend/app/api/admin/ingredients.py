@@ -11,8 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.audit import record_audit
 from app.core.database import get_db
 from app.core.security import require_admin
-from app.models import Ingredient, User
-from app.schemas.admin import IngredientNormalizeRequest, IngredientRejectRequest
+from app.models import Ingredient, Recipe, User
+from app.schemas.admin import (
+    IngredientMergeRequest,
+    IngredientNormalizeRequest,
+    IngredientRejectRequest,
+)
 
 router = APIRouter()
 
@@ -175,6 +179,57 @@ async def reject_ingredient(
     await db.commit()
     await db.refresh(ingredient)
     return _serialize(ingredient)
+
+
+@router.post("/{ingredient_id}/merge", summary="Merge ingredient into another (admin)")
+async def merge_ingredient(
+    ingredient_id: UUID,
+    data: IngredientMergeRequest,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Reassign every recipe reference from the source ingredient to the target
+    and delete the source (duplicate cleanup)."""
+    if ingredient_id == data.target_id:
+        raise HTTPException(status_code=400, detail="Cannot merge an ingredient into itself")
+
+    source = await db.get(Ingredient, ingredient_id)
+    target = await db.get(Ingredient, data.target_id)
+    if not source or not target:
+        raise HTTPException(status_code=404, detail="Ingredient not found")
+
+    result = await db.execute(
+        select(Recipe).where(Recipe.ingredients.contains([{"ingredient_id": str(source.id)}]))
+    )
+    recipes_updated = 0
+    for recipe in result.scalars().all():
+        changed = False
+        new_items = []
+        for item in recipe.ingredients or []:
+            if item.get("ingredient_id") == str(source.id):
+                item = {**item, "ingredient_id": str(target.id), "name": target.name}
+                changed = True
+            new_items.append(item)
+        if changed:
+            recipe.ingredients = new_items
+            recipes_updated += 1
+
+    await record_audit(
+        db,
+        admin.id,
+        "ingredient.merge",
+        target_type="ingredient",
+        target_id=str(source.id),
+        detail={"target_id": str(target.id), "recipes_updated": recipes_updated},
+    )
+    await db.delete(source)
+    await db.commit()
+    return {
+        "merged": True,
+        "source_id": str(ingredient_id),
+        "target_id": str(target.id),
+        "recipes_updated": recipes_updated,
+    }
 
 
 @router.post("/{ingredient_id}/normalize", summary="Normalize ingredient (admin)")

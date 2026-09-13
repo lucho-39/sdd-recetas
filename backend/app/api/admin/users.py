@@ -1,6 +1,8 @@
 """
 Admin: user management (/api/admin/users).
 """
+import secrets
+from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -9,9 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.audit import record_audit
 from app.core.database import get_db
-from app.core.security import require_admin
-from app.models import User, UserRole
-from app.schemas.admin import UserAdminUpdate, UserAdminListItem
+from app.core.security import get_password_hash, require_admin
+from app.models import Recipe, User, UserRole
+from app.schemas.admin import GdprEraseRequest, UserAdminUpdate, UserAdminListItem
 from app.schemas.auth import UserResponse
 
 router = APIRouter()
@@ -107,6 +109,69 @@ async def deactivate_user(
     await record_audit(db, admin.id, "user.deactivate", target_type="user", target_id=str(user.id))
     await db.commit()
     return _to_item(user)
+
+
+@router.post("/{user_id}/reactivate", summary="Reactivate user (admin)")
+async def reactivate_user(
+    user_id: UUID,
+    admin=Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_active = True
+    user.deactivated_at = None
+    await record_audit(db, admin.id, "user.reactivate", target_type="user", target_id=str(user.id))
+    await db.commit()
+    return _to_item(user)
+
+
+@router.post("/{user_id}/gdpr-erase", summary="Erase user data (GDPR, admin)")
+async def gdpr_erase_user(
+    user_id: UUID,
+    data: GdprEraseRequest,
+    admin=Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Anonymize the user's PII and deactivate the account.
+
+    Optionally soft-deletes the user's recipes as well.
+    """
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    recipes_deleted = 0
+    if data.delete_recipes:
+        recipes = (
+            await db.execute(
+                select(Recipe).where(Recipe.author_id == user.id, Recipe.deleted_at.is_(None))
+            )
+        ).scalars().all()
+        for recipe in recipes:
+            recipe.deleted_at = datetime.utcnow()
+            recipe.is_public = False
+            recipes_deleted += 1
+
+    user.email = f"deleted+{user.id}@recetario.local"
+    user.display_name = "Usuario eliminado"
+    user.avatar_url = None
+    user.password_hash = get_password_hash(secrets.token_urlsafe(24))
+    user.is_active = False
+    user.is_verified = False
+    user.deleted_at = datetime.utcnow()
+
+    await record_audit(
+        db,
+        admin.id,
+        "user.gdpr_erase",
+        target_type="user",
+        target_id=str(user.id),
+        detail={"delete_recipes": data.delete_recipes, "recipes_deleted": recipes_deleted},
+    )
+    await db.commit()
+    return {"erased": True, "id": str(user.id), "recipes_deleted": recipes_deleted}
 
 
 @router.patch("/{user_id}/role", summary="Change user role (admin)")

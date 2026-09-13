@@ -280,3 +280,138 @@ async def test_admin_users_series_and_overview(
     assert "categories" in body
     assert "ratings_distribution" in body
     assert len(body["users_by_month"]) == 12
+
+
+async def test_admin_recipe_stats(
+    client: AsyncClient, admin_headers: dict, recipe: Recipe
+) -> None:
+    response = await client.get(
+        f"/api/admin/recipes/{recipe.id}/stats", headers=admin_headers
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["recipe_id"] == str(recipe.id)
+    assert "favorites_count" in body
+    assert set(body["rating_distribution"].keys()) == {"1", "2", "3", "4", "5"}
+    assert "visits_by_day" in body
+
+
+async def test_admin_reactivate_user(
+    client: AsyncClient, admin_headers: dict, user: User, db_session: AsyncSession
+) -> None:
+    await client.post(f"/api/admin/users/{user.id}/deactivate", headers=admin_headers)
+    response = await client.post(
+        f"/api/admin/users/{user.id}/reactivate", headers=admin_headers
+    )
+    assert response.status_code == 200
+    assert response.json()["is_active"] is True
+
+
+async def test_admin_gdpr_erase_user(
+    client: AsyncClient,
+    admin_headers: dict,
+    db_session: AsyncSession,
+    user: User,
+    category,
+) -> None:
+    recipe = await create_recipe(
+        db_session, author=user, category=category, title="A borrar", slug="a-borrar"
+    )
+
+    response = await client.post(
+        f"/api/admin/users/{user.id}/gdpr-erase",
+        headers=admin_headers,
+        json={"delete_recipes": True},
+    )
+    assert response.status_code == 200
+    assert response.json()["erased"] is True
+    assert response.json()["recipes_deleted"] == 1
+
+    await db_session.refresh(user)
+    assert user.display_name == "Usuario eliminado"
+    assert user.is_active is False
+    assert user.email.startswith("deleted+")
+
+    await db_session.refresh(recipe)
+    assert recipe.deleted_at is not None
+
+
+async def test_admin_ingredient_merge(
+    client: AsyncClient,
+    admin_headers: dict,
+    db_session: AsyncSession,
+    user: User,
+    category,
+) -> None:
+    source = await create_ingredient(db_session, slug="tomate", name="Tomate")
+    target = await create_ingredient(db_session, slug="jitomate", name="Jitomate")
+    recipe = await create_recipe(
+        db_session,
+        author=user,
+        category=category,
+        title="Con tomate",
+        slug="con-tomate",
+        ingredients=[{"ingredient_id": str(source.id), "amount": 1, "unit": "unidad"}],
+    )
+
+    response = await client.post(
+        f"/api/admin/ingredients/{source.id}/merge",
+        headers=admin_headers,
+        json={"target_id": str(target.id)},
+    )
+    assert response.status_code == 200
+    assert response.json()["recipes_updated"] == 1
+
+    await db_session.refresh(recipe)
+    assert recipe.ingredients[0]["ingredient_id"] == str(target.id)
+    assert await db_session.get(type(source), source.id) is None
+
+
+async def test_admin_error_log(
+    client: AsyncClient, admin_headers: dict, db_session: AsyncSession
+) -> None:
+    from app.models import ErrorLog
+
+    db_session.add(ErrorLog(path="/api/v1/boom", method="GET", status_code=500, message="boom"))
+    await db_session.commit()
+
+    response = await client.get("/api/admin/error-log", headers=admin_headers)
+    assert response.status_code == 200
+    paths = [item["path"] for item in response.json()["items"]]
+    assert "/api/v1/boom" in paths
+
+
+async def test_maintenance_mode_blocks_public(
+    client: AsyncClient, admin_headers: dict
+) -> None:
+    await client.put(
+        "/api/admin/config",
+        headers=admin_headers,
+        json={"settings": {"maintenance_mode": True}},
+    )
+    blocked = await client.get("/api/v1/recipes")
+    assert blocked.status_code == 503
+
+    # admin endpoints keep working so maintenance can be turned off
+    await client.put(
+        "/api/admin/config",
+        headers=admin_headers,
+        json={"settings": {"maintenance_mode": False}},
+    )
+    assert (await client.get("/api/v1/recipes")).status_code == 200
+
+
+async def test_rate_limit_returns_429(
+    client: AsyncClient, admin_headers: dict
+) -> None:
+    await client.put(
+        "/api/admin/config",
+        headers=admin_headers,
+        json={"settings": {"rate_limit_per_minute": 2}},
+    )
+    first = await client.get("/api/v1/recipes")
+    second = await client.get("/api/v1/recipes")
+    third = await client.get("/api/v1/recipes")
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert third.status_code == 429

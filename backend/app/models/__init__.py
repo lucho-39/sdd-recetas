@@ -332,6 +332,21 @@ class EmailOutbox(Base):
     )
 
 
+class ErrorLog(Base):
+    """Server errors (5xx) captured for the admin error log."""
+
+    __tablename__ = "error_logs"
+
+    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    path: Mapped[str] = mapped_column(String(500), nullable=False)
+    method: Mapped[str] = mapped_column(String(10), nullable=False)
+    status_code: Mapped[int] = mapped_column(Integer, nullable=False)
+    message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True
+    )
+
+
 # Import for type hints
 from typing import Optional, List
 from sqlalchemy import Index

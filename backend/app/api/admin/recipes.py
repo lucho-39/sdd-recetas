@@ -1,7 +1,7 @@
 """
 Admin: recipe management (/api/admin/recipes).
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -12,7 +12,7 @@ from sqlalchemy.orm import selectinload
 from app.core.audit import record_audit
 from app.core.database import get_db
 from app.core.security import require_admin
-from app.models import Category, Recipe, User
+from app.models import Category, Favorite, Rating, Recipe, User, Visit
 from app.schemas.admin import RecipeAdminUpdate, RecipeVisibilityUpdate
 from app.schemas.recipe import RecipeResponse
 
@@ -103,6 +103,56 @@ async def get_recipe(
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
     return RecipeResponse.model_validate(recipe)
+
+
+@router.get("/{recipe_id}/stats", summary="Recipe stats (admin)")
+async def recipe_stats(
+    recipe_id: UUID,
+    _=Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    recipe = await db.get(Recipe, recipe_id)
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    favorites_count = (
+        await db.scalar(
+            select(func.count()).select_from(Favorite).where(Favorite.recipe_id == recipe_id)
+        )
+    ) or 0
+
+    distribution = {str(score): 0 for score in range(1, 6)}
+    distribution_rows = await db.execute(
+        select(Rating.score, func.count(Rating.id))
+        .where(Rating.recipe_id == recipe_id)
+        .group_by(Rating.score)
+    )
+    for score, count in distribution_rows.all():
+        distribution[str(score)] = count
+
+    since = datetime.utcnow() - timedelta(days=14)
+    visits_result = await db.execute(
+        select(func.date_trunc("day", Visit.visited_at).label("day"), func.count())
+        .where(Visit.recipe_id == recipe_id, Visit.visited_at >= since)
+        .group_by("day")
+        .order_by("day")
+    )
+    visits_by_day = [
+        {"date": (day.date() if isinstance(day, datetime) else day).isoformat(), "count": count}
+        for day, count in visits_result.all()
+    ]
+
+    return {
+        "recipe_id": str(recipe.id),
+        "title": recipe.title,
+        "visit_count": recipe.visit_count,
+        "save_count": recipe.save_count,
+        "avg_rating": float(recipe.avg_rating),
+        "rating_count": recipe.rating_count,
+        "favorites_count": favorites_count,
+        "rating_distribution": distribution,
+        "visits_by_day": visits_by_day,
+    }
 
 
 @router.patch("/{recipe_id}", response_model=RecipeResponse, summary="Update recipe (admin)")

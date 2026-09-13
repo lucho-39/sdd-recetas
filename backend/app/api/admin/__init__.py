@@ -7,6 +7,7 @@ from app.api.admin import (
     audit,
     categories,
     config,
+    errors,
     ingredients,
     metrics,
     recipes,
@@ -24,3 +25,4 @@ admin_router.include_router(ingredients.router, prefix="/ingredients", tags=["ad
 admin_router.include_router(metrics.router, prefix="/metrics", tags=["admin:metrics"])
 admin_router.include_router(config.router, prefix="/config", tags=["admin:config"])
 admin_router.include_router(audit.router, prefix="/audit-log", tags=["admin:audit"])
+admin_router.include_router(errors.router, prefix="/error-log", tags=["admin:errors"])
