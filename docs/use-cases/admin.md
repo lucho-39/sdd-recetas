@@ -344,7 +344,7 @@
 ### Estado de implementación (MVP)
 
 **Implementado** en `/api/admin` (guard: rol `admin`):
-- Métricas: `GET /metrics/dashboard`.
+- Métricas: `GET /metrics/dashboard`, `GET /metrics/recipes-series?interval=month|week&periods=N` (recetas creadas por mes/semana).
 - Categorías: `GET`, `POST`, `PATCH /{id}`, `DELETE /{id}` (elimina si no tiene recetas; si no, desactiva).
 - Tags: `GET`, `POST`, `PATCH /{id}`, `DELETE /{id}`.
 - Usuarios: `GET` (listado con filtros), `GET /{id}`, `POST /{id}/activate`, `POST /{id}/deactivate`, `PATCH /{id}/role`.

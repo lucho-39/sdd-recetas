@@ -10,18 +10,36 @@
 		IconEyeFilled as Visits
 	} from '@tabler/icons-svelte';
 	import { auth } from '$lib/stores/auth';
+	import BarChart from '$lib/components/BarChart.svelte';
 
 	let stats: Record<string, number> | null = null;
+	let monthly: { label: string; count: number }[] = [];
+	let weekly: { label: string; count: number }[] = [];
 	let error = '';
 	let loading = true;
 
+	async function fetchAdmin<T>(path: string): Promise<T> {
+		const res = await fetch(`/api/admin${path}`, {
+			headers: { Authorization: `Bearer ${$auth.accessToken}` }
+		});
+		if (!res.ok) throw new Error(`API ${res.status}`);
+		return (await res.json()) as T;
+	}
+
 	onMount(async () => {
 		try {
-			const res = await fetch('/api/admin/metrics/dashboard', {
-				headers: { Authorization: `Bearer ${$auth.accessToken}` }
-			});
-			if (!res.ok) throw new Error(`API ${res.status}`);
-			stats = await res.json();
+			const [dashboard, monthSeries, weekSeries] = await Promise.all([
+				fetchAdmin<Record<string, number>>('/metrics/dashboard'),
+				fetchAdmin<{ series: { label: string; count: number }[] }>(
+					'/metrics/recipes-series?interval=month&periods=12'
+				),
+				fetchAdmin<{ series: { label: string; count: number }[] }>(
+					'/metrics/recipes-series?interval=week&periods=8'
+				)
+			]);
+			stats = dashboard;
+			monthly = monthSeries.series;
+			weekly = weekSeries.series;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Error al cargar métricas';
 		} finally {
@@ -69,5 +87,11 @@
 				</p>
 			</div>
 		{/each}
+	</div>
+
+	<!-- Recipes created per month / week -->
+	<div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+		<BarChart title="Recetas creadas por mes" data={monthly} />
+		<BarChart title="Recetas creadas por semana" data={weekly} />
 	</div>
 </div>

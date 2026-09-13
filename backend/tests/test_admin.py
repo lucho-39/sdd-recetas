@@ -200,3 +200,26 @@ async def test_admin_ingredient_normalize(
     body = response.json()
     assert body["name"] == "Normalizado"
     assert body["validated_by_admin"] is True
+
+
+async def test_admin_recipes_series(
+    client: AsyncClient, admin_headers: dict, recipe: Recipe
+) -> None:
+    month = await client.get(
+        "/api/admin/metrics/recipes-series?interval=month&periods=6",
+        headers=admin_headers,
+    )
+    assert month.status_code == 200
+    month_body = month.json()
+    assert month_body["interval"] == "month"
+    assert len(month_body["series"]) == 6
+    assert sum(p["count"] for p in month_body["series"]) >= 1
+
+    week = await client.get(
+        "/api/admin/metrics/recipes-series?interval=week&periods=4",
+        headers=admin_headers,
+    )
+    assert week.status_code == 200
+    week_body = week.json()
+    assert week_body["interval"] == "week"
+    assert len(week_body["series"]) == 4

@@ -1,7 +1,9 @@
 """
 Admin: dashboard metrics (/api/admin/metrics).
 """
-from fastapi import APIRouter, Depends
+from datetime import datetime, timedelta
+
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +13,11 @@ from app.models import Category, Ingredient, Rating, Recipe, Tag, User, Visit
 from app.schemas.admin import DashboardStats
 
 router = APIRouter()
+
+_MONTHS_ES = [
+    "ene", "feb", "mar", "abr", "may", "jun",
+    "jul", "ago", "sep", "oct", "nov", "dic",
+]
 
 
 async def _count(db: AsyncSession, model, *conditions) -> int:
@@ -41,3 +48,58 @@ async def dashboard(
         ratings_total=await _count(db, Rating),
         visits_total=await _count(db, Visit),
     )
+
+
+def _month_start(d: datetime) -> datetime:
+    return d.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
+def _add_months(d: datetime, n: int) -> datetime:
+    month = d.month - 1 + n
+    year = d.year + month // 12
+    month = month % 12 + 1
+    return d.replace(year=year, month=month, day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
+def _week_start(d: datetime) -> datetime:
+    start = d - timedelta(days=d.weekday())
+    return start.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+@router.get("/recipes-series", summary="Recipes created per month/week (admin)")
+async def recipes_series(
+    interval: str = Query("month", pattern="^(month|week)$"),
+    periods: int = Query(12, ge=1, le=52),
+    _=Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return the number of recipes created per month or per week.
+
+    The series always has ``periods`` buckets (oldest first), filling gaps
+    with zero so the chart has a stable x-axis.
+    """
+    trunc = "month" if interval == "month" else "week"
+    bucket = func.date_trunc(trunc, Recipe.created_at)
+    result = await db.execute(
+        select(bucket.label("bucket"), func.count().label("count"))
+        .group_by(bucket)
+        .order_by(bucket)
+    )
+
+    counts: dict = {}
+    for raw_key, count in result.all():
+        key = raw_key.date() if isinstance(raw_key, datetime) else raw_key
+        counts[key] = count
+
+    now = datetime.utcnow()
+    series = []
+    for i in range(periods - 1, -1, -1):
+        if interval == "month":
+            start = _add_months(_month_start(now), -i)
+            label = f"{_MONTHS_ES[start.month - 1]} {start.year}"
+        else:
+            start = _week_start(now) - timedelta(weeks=i)
+            label = f"{start.day:02d}/{start.month:02d}"
+        series.append({"label": label, "count": counts.get(start.date(), 0)})
+
+    return {"interval": interval, "series": series}

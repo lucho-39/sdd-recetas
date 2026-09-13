@@ -383,7 +383,9 @@ formularios directos, sin ornamentos.
   **Cerrar sesión**.
 - **Dashboard** (`/`): cards con estadísticas reales (usuarios, recetas,
   ingredientes, categorías, tags, calificaciones, visitas) desde
-  `GET /api/admin/metrics/dashboard`.
+  `GET /api/admin/metrics/dashboard`, y **dos charts de barras verticales**
+  de recetas creadas por mes y por semana
+  (`GET /api/admin/metrics/recipes-series?interval=month|week`).
 
 **Secciones** (listar, buscar, filtrar, ver detalle, editar, eliminar según corresponda):
 - `/usuarios` → tabla, filtros por estado, activar/desactivar, cambiar rol.
