@@ -224,3 +224,47 @@ async def test_bootstrap_admin_creates_admin_and_is_idempotent(
     )
     assert me.status_code == 200
     assert me.json()["email"] == settings.ADMIN_INITIAL_USER
+
+
+async def test_email_verification_flow(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    user = await create_user(db_session, email="unverified@example.com", is_verified=False)
+
+    request = await client.post(
+        "/api/v1/auth/request-verification", json={"email": "unverified@example.com"}
+    )
+    assert request.status_code == 200
+    url = request.json()["verification_url"]
+    assert url and "token=" in url
+
+    token = url.split("token=")[1]
+    verify = await client.post("/api/v1/auth/verify-email", json={"token": token})
+    assert verify.status_code == 200
+
+    await db_session.refresh(user)
+    assert user.is_verified is True
+
+
+async def test_verify_email_rejects_bad_token(client: AsyncClient) -> None:
+    response = await client.post("/api/v1/auth/verify-email", json={"token": "nope"})
+    assert response.status_code == 400
+
+
+async def test_register_blocked_when_registration_closed(
+    client: AsyncClient, admin_headers: dict
+) -> None:
+    await client.put(
+        "/api/admin/config",
+        headers=admin_headers,
+        json={"settings": {"registration_open": False}},
+    )
+    response = await client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "blocked@example.com",
+            "display_name": "Blocked",
+            "password": "password123",
+        },
+    )
+    assert response.status_code == 403

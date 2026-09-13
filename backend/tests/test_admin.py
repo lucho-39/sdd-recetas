@@ -223,3 +223,60 @@ async def test_admin_recipes_series(
     week_body = week.json()
     assert week_body["interval"] == "week"
     assert len(week_body["series"]) == 4
+
+
+async def test_admin_config_get_and_update(
+    client: AsyncClient, admin_headers: dict
+) -> None:
+    fetched = await client.get("/api/admin/config", headers=admin_headers)
+    assert fetched.status_code == 200
+    assert fetched.json()["settings"]["registration_open"] is True
+
+    updated = await client.put(
+        "/api/admin/config",
+        headers=admin_headers,
+        json={"settings": {"registration_open": False, "max_upload_size_mb": 10}},
+    )
+    assert updated.status_code == 200
+    settings = updated.json()["settings"]
+    assert settings["registration_open"] is False
+    assert settings["max_upload_size_mb"] == 10
+
+    ignored = await client.put(
+        "/api/admin/config", headers=admin_headers, json={"settings": {"nope": 1}}
+    )
+    assert "nope" not in ignored.json()["settings"]
+
+
+async def test_admin_audit_log_records_actions(
+    client: AsyncClient, admin_headers: dict
+) -> None:
+    await client.post(
+        "/api/admin/tags",
+        headers=admin_headers,
+        json={"slug": "audit-tag", "name": "Audit Tag"},
+    )
+
+    response = await client.get("/api/admin/audit-log", headers=admin_headers)
+    assert response.status_code == 200
+    actions = [item["action"] for item in response.json()["items"]]
+    assert "tag.create" in actions
+
+
+async def test_admin_users_series_and_overview(
+    client: AsyncClient, admin_headers: dict, user: User, recipe: Recipe
+) -> None:
+    series = await client.get(
+        "/api/admin/metrics/users-series?interval=month&periods=3",
+        headers=admin_headers,
+    )
+    assert series.status_code == 200
+    assert len(series.json()["series"]) == 3
+
+    overview = await client.get("/api/admin/metrics/overview", headers=admin_headers)
+    assert overview.status_code == 200
+    body = overview.json()
+    assert "top_recipes" in body
+    assert "categories" in body
+    assert "ratings_distribution" in body
+    assert len(body["users_by_month"]) == 12

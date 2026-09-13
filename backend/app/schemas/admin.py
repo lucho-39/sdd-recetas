@@ -1,7 +1,7 @@
 """
 Admin schemas: payloads for the administrative API (/api/admin).
 """
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from datetime import datetime
 from uuid import UUID
 
@@ -113,3 +113,24 @@ class IngredientNormalizeRequest(BaseModel):
     default_unit: Optional[str] = Field(None, max_length=20)
     aliases: Optional[List[str]] = None
     mark_validated: bool = True
+
+
+# --------------------------------------------------------------------------- #
+# Config
+# --------------------------------------------------------------------------- #
+class ConfigUpdate(BaseModel):
+    settings: Dict[str, Any]
+
+
+# --------------------------------------------------------------------------- #
+# Audit log
+# --------------------------------------------------------------------------- #
+class AuditLogItem(BaseModel):
+    id: UUID
+    actor_id: Optional[UUID] = None
+    actor_name: Optional[str] = None
+    action: str
+    target_type: Optional[str] = None
+    target_id: Optional[str] = None
+    detail: Optional[Dict[str, Any]] = None
+    created_at: datetime

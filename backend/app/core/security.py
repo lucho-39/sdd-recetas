@@ -90,6 +90,22 @@ def create_refresh_token(
     return jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 
+def create_email_verification_token(
+    subject: str,
+    expires_delta: Optional[timedelta] = None,
+) -> str:
+    """Create a short-lived token used to verify an email address."""
+    expire = datetime.utcnow() + (expires_delta or timedelta(hours=24))
+    to_encode = {
+        "exp": expire,
+        "sub": str(subject),
+        "type": "email_verify",
+        "iat": datetime.utcnow(),
+        "jti": str(uuid4()),
+    }
+    return jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+
+
 def decode_token(token: str) -> Optional[dict]:
     """Decode and validate a JWT token."""
     try:

@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.audit import record_audit
 from app.core.database import get_db
 from app.core.security import require_admin
 from app.models import User, UserRole
@@ -80,7 +81,7 @@ async def get_user(
 @router.post("/{user_id}/activate", summary="Activate user (admin)")
 async def activate_user(
     user_id: UUID,
-    _=Depends(require_admin),
+    admin=Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     user = await db.get(User, user_id)
@@ -88,6 +89,7 @@ async def activate_user(
         raise HTTPException(status_code=404, detail="User not found")
     user.is_active = True
     user.is_verified = True
+    await record_audit(db, admin.id, "user.activate", target_type="user", target_id=str(user.id))
     await db.commit()
     return _to_item(user)
 
@@ -95,13 +97,14 @@ async def activate_user(
 @router.post("/{user_id}/deactivate", summary="Deactivate user (admin)")
 async def deactivate_user(
     user_id: UUID,
-    _=Depends(require_admin),
+    admin=Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     user = await db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     user.is_active = False
+    await record_audit(db, admin.id, "user.deactivate", target_type="user", target_id=str(user.id))
     await db.commit()
     return _to_item(user)
 
@@ -110,7 +113,7 @@ async def deactivate_user(
 async def change_role(
     user_id: UUID,
     data: UserAdminUpdate,
-    _=Depends(require_admin),
+    admin=Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     user = await db.get(User, user_id)
@@ -120,5 +123,13 @@ async def change_role(
         user.role = UserRole(data.role)
     if data.is_verified is not None:
         user.is_verified = data.is_verified
+    await record_audit(
+        db,
+        admin.id,
+        "user.update",
+        target_type="user",
+        target_id=str(user.id),
+        detail=data.model_dump(exclude_unset=True),
+    )
     await db.commit()
     return _to_item(user)

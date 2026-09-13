@@ -3,7 +3,7 @@ Recetario IA - Database Models
 """
 import enum
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, List, Optional
 from uuid import uuid4
 
 from sqlalchemy import (
@@ -231,6 +231,38 @@ class Ingredient(Base):
         Index("ix_ingredients_category", "category"),
         Index("ix_ingredients_is_active", "is_active"),
     )
+
+
+class AppSetting(Base):
+    """Key/value application settings editable from the admin panel."""
+
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(String(80), primary_key=True)
+    value: Mapped[Any] = mapped_column(JSONB, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+
+
+class AuditLog(Base):
+    """Audit trail of administrative actions."""
+
+    __tablename__ = "audit_logs"
+
+    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    actor_id: Mapped[Optional[uuid4]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    action: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    target_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    target_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    detail: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True
+    )
+
+    actor: Mapped[Optional["User"]] = relationship(foreign_keys=[actor_id])
 
 
 # Import for type hints

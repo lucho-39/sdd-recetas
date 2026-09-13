@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.audit import record_audit
 from app.core.database import get_db
 from app.core.security import require_admin
 from app.models import Category, Recipe
@@ -62,7 +63,7 @@ async def list_categories(
 @router.post("", status_code=201, summary="Create category (admin)")
 async def create_category(
     data: CategoryAdminCreate,
-    _=Depends(require_admin),
+    admin=Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     exists = await db.scalar(select(Category.id).where(Category.slug == data.slug))
@@ -70,6 +71,14 @@ async def create_category(
         raise HTTPException(status_code=400, detail="Category slug already exists")
     category = Category(**data.model_dump())
     db.add(category)
+    await record_audit(
+        db,
+        admin.id,
+        "category.create",
+        target_type="category",
+        target_id=category.slug,
+        detail={"name": category.name},
+    )
     await db.commit()
     await db.refresh(category)
     return {"id": str(category.id), "slug": category.slug, "name": category.name}
@@ -79,14 +88,23 @@ async def create_category(
 async def update_category(
     category_id: UUID,
     data: CategoryAdminUpdate,
-    _=Depends(require_admin),
+    admin=Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     category = await db.get(Category, category_id)
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
-    for field, value in data.model_dump(exclude_unset=True).items():
+    changes = data.model_dump(exclude_unset=True)
+    for field, value in changes.items():
         setattr(category, field, value)
+    await record_audit(
+        db,
+        admin.id,
+        "category.update",
+        target_type="category",
+        target_id=str(category.id),
+        detail=changes,
+    )
     await db.commit()
     await db.refresh(category)
     return {"id": str(category.id), "slug": category.slug, "name": category.name, "is_active": category.is_active}
@@ -95,7 +113,7 @@ async def update_category(
 @router.delete("/{category_id}", summary="Delete or deactivate category (admin)")
 async def delete_category(
     category_id: UUID,
-    _=Depends(require_admin),
+    admin=Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     category = await db.get(Category, category_id)
@@ -107,9 +125,20 @@ async def delete_category(
     )
     if recipe_count and recipe_count > 0:
         category.is_active = False
+        await record_audit(
+            db,
+            admin.id,
+            "category.deactivate",
+            target_type="category",
+            target_id=str(category.id),
+            detail={"recipes": recipe_count},
+        )
         await db.commit()
         return {"deleted": False, "deactivated": True, "recipes": recipe_count}
 
+    await record_audit(
+        db, admin.id, "category.delete", target_type="category", target_id=str(category.id)
+    )
     await db.delete(category)
     await db.commit()
     return {"deleted": True, "deactivated": False, "recipes": 0}

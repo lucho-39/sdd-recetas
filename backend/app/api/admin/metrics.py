@@ -66,20 +66,13 @@ def _week_start(d: datetime) -> datetime:
     return start.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
-@router.get("/recipes-series", summary="Recipes created per month/week (admin)")
-async def recipes_series(
-    interval: str = Query("month", pattern="^(month|week)$"),
-    periods: int = Query(12, ge=1, le=52),
-    _=Depends(require_admin),
-    db: AsyncSession = Depends(get_db),
-):
-    """Return the number of recipes created per month or per week.
+async def _series(db: AsyncSession, column, interval: str, periods: int) -> list[dict]:
+    """Build a stable series of ``periods`` buckets (oldest first).
 
-    The series always has ``periods`` buckets (oldest first), filling gaps
-    with zero so the chart has a stable x-axis.
+    Gaps are filled with zero so charts keep a stable x-axis.
     """
     trunc = "month" if interval == "month" else "week"
-    bucket = func.date_trunc(trunc, Recipe.created_at)
+    bucket = func.date_trunc(trunc, column)
     result = await db.execute(
         select(bucket.label("bucket"), func.count().label("count"))
         .group_by(bucket)
@@ -102,4 +95,88 @@ async def recipes_series(
             label = f"{start.day:02d}/{start.month:02d}"
         series.append({"label": label, "count": counts.get(start.date(), 0)})
 
-    return {"interval": interval, "series": series}
+    return series
+
+
+@router.get("/recipes-series", summary="Recipes created per month/week (admin)")
+async def recipes_series(
+    interval: str = Query("month", pattern="^(month|week)$"),
+    periods: int = Query(12, ge=1, le=52),
+    _=Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return the number of recipes created per month or per week."""
+    return {
+        "interval": interval,
+        "series": await _series(db, Recipe.created_at, interval, periods),
+    }
+
+
+@router.get("/users-series", summary="Users registered per month/week (admin)")
+async def users_series(
+    interval: str = Query("month", pattern="^(month|week)$"),
+    periods: int = Query(12, ge=1, le=52),
+    _=Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return the number of users registered per month or per week."""
+    return {
+        "interval": interval,
+        "series": await _series(db, User.created_at, interval, periods),
+    }
+
+
+@router.get("/overview", summary="Analytics overview (admin)")
+async def overview(
+    _=Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Top recipes, recipes per category, global rating distribution and
+    user growth series for the metrics page."""
+    top_result = await db.execute(
+        select(
+            Recipe.slug,
+            Recipe.title,
+            Recipe.visit_count,
+            Recipe.avg_rating,
+            Recipe.rating_count,
+        )
+        .where(Recipe.deleted_at.is_(None))
+        .order_by(Recipe.visit_count.desc())
+        .limit(5)
+    )
+    top_recipes = [
+        {
+            "slug": row.slug,
+            "title": row.title,
+            "visit_count": row.visit_count,
+            "avg_rating": row.avg_rating,
+            "rating_count": row.rating_count,
+        }
+        for row in top_result.all()
+    ]
+
+    category_result = await db.execute(
+        select(Category.name, func.count(Recipe.id))
+        .join(Recipe, Recipe.category_id == Category.id)
+        .where(Recipe.deleted_at.is_(None))
+        .group_by(Category.name)
+        .order_by(func.count(Recipe.id).desc())
+        .limit(10)
+    )
+    categories = [{"name": name, "count": count} for name, count in category_result.all()]
+
+    distribution = {str(score): 0 for score in range(1, 6)}
+    dist_result = await db.execute(
+        select(Rating.score, func.count(Rating.id)).group_by(Rating.score)
+    )
+    for score, count in dist_result.all():
+        distribution[str(score)] = count
+
+    return {
+        "top_recipes": top_recipes,
+        "categories": categories,
+        "ratings_distribution": distribution,
+        "users_by_month": await _series(db, User.created_at, "month", 12),
+        "users_by_week": await _series(db, User.created_at, "week", 8),
+    }

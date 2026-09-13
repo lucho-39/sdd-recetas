@@ -9,6 +9,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.audit import record_audit
 from app.core.database import get_db
 from app.core.security import require_admin
 from app.models import Category, Recipe, User
@@ -108,7 +109,7 @@ async def get_recipe(
 async def update_recipe(
     recipe_id: UUID,
     data: RecipeAdminUpdate,
-    _=Depends(require_admin),
+    admin=Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     recipe = await db.get(Recipe, recipe_id)
@@ -124,6 +125,14 @@ async def update_recipe(
     for field, value in update_data.items():
         setattr(recipe, field, value)
 
+    await record_audit(
+        db,
+        admin.id,
+        "recipe.update",
+        target_type="recipe",
+        target_id=str(recipe.id),
+        detail=update_data,
+    )
     await db.commit()
     await db.refresh(recipe, attribute_names=["author", "category", "tags"])
     return RecipeResponse.model_validate(recipe)
@@ -133,13 +142,21 @@ async def update_recipe(
 async def set_visibility(
     recipe_id: UUID,
     data: RecipeVisibilityUpdate,
-    _=Depends(require_admin),
+    admin=Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     recipe = await db.get(Recipe, recipe_id)
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
     recipe.is_public = data.is_public
+    await record_audit(
+        db,
+        admin.id,
+        "recipe.visibility",
+        target_type="recipe",
+        target_id=str(recipe.id),
+        detail={"is_public": data.is_public},
+    )
     await db.commit()
     await db.refresh(recipe, attribute_names=["author", "category", "tags"])
     return RecipeResponse.model_validate(recipe)
@@ -148,7 +165,7 @@ async def set_visibility(
 @router.delete("/{recipe_id}", summary="Soft-delete recipe (admin)")
 async def delete_recipe(
     recipe_id: UUID,
-    _=Depends(require_admin),
+    admin=Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     recipe = await db.get(Recipe, recipe_id)
@@ -157,5 +174,8 @@ async def delete_recipe(
     if recipe.deleted_at is None:
         recipe.deleted_at = datetime.utcnow()
         recipe.is_public = False
+        await record_audit(
+            db, admin.id, "recipe.delete", target_type="recipe", target_id=str(recipe.id)
+        )
         await db.commit()
     return {"deleted": True, "id": str(recipe.id)}

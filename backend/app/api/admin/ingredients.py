@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.audit import record_audit
 from app.core.database import get_db
 from app.core.security import require_admin
 from app.models import Ingredient, User
@@ -136,6 +137,13 @@ async def validate_ingredient(
     ingredient.validated_by = admin.id
     ingredient.rejected = False
     ingredient.is_active = True
+    await record_audit(
+        db,
+        admin.id,
+        "ingredient.validate",
+        target_type="ingredient",
+        target_id=str(ingredient.id),
+    )
     await db.commit()
     await db.refresh(ingredient)
     return _serialize(ingredient)
@@ -156,6 +164,14 @@ async def reject_ingredient(
     ingredient.rejected_by = admin.id
     ingredient.rejected_at = datetime.utcnow()
     ingredient.is_active = False
+    await record_audit(
+        db,
+        admin.id,
+        "ingredient.reject",
+        target_type="ingredient",
+        target_id=str(ingredient.id),
+        detail={"reason": data.reason},
+    )
     await db.commit()
     await db.refresh(ingredient)
     return _serialize(ingredient)
@@ -183,6 +199,14 @@ async def normalize_ingredient(
         ingredient.rejected = False
         ingredient.is_active = True
 
+    await record_audit(
+        db,
+        admin.id,
+        "ingredient.normalize",
+        target_type="ingredient",
+        target_id=str(ingredient.id),
+        detail=update_data,
+    )
     await db.commit()
     await db.refresh(ingredient)
     return _serialize(ingredient)

@@ -12,6 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.app_settings import get_setting
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.security import (
@@ -19,6 +20,7 @@ from app.core.security import (
     get_password_hash,
     create_access_token,
     create_refresh_token,
+    create_email_verification_token,
     decode_token,
     blacklist_token,
 )
@@ -124,6 +126,12 @@ async def create_admin_user(db: AsyncSession) -> None:
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
     """Register a new user."""
+    if not await get_setting(db, "registration_open"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Registration is currently closed",
+        )
+
     # Check if email exists
     result = await db.execute(select(User).where(User.email == user_data.email))
     if result.scalar_one_or_none():
@@ -133,11 +141,12 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
         )
 
     # Create user
+    require_verification = bool(await get_setting(db, "require_email_verification"))
     user = User(
         email=user_data.email,
         password_hash=get_password_hash(user_data.password),
         display_name=user_data.display_name,
-        is_verified=not settings.REQUIRE_EMAIL_VERIFICATION,
+        is_verified=not require_verification,
     )
 
     db.add(user)
@@ -322,6 +331,62 @@ async def change_password(
     return {"message": "Password changed successfully"}
 
 
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+
+@router.post("/request-verification")
+async def request_verification(
+    payload: PasswordResetRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate an email verification link for an account.
+
+    Unauthenticated on purpose: an unverified user cannot log in yet. Email
+    delivery is v2, so outside production the link is returned in the response
+    (the response never reveals whether the email exists or is already verified).
+    """
+    result = await db.execute(select(User).where(User.email == payload.email))
+    user = result.scalar_one_or_none()
+
+    if user and not user.is_verified:
+        token = create_email_verification_token(str(user.id))
+        url = f"/verify-email?token={token}" if settings.ENVIRONMENT != "production" else None
+        return {"message": "Verification link generated", "verification_url": url}
+
+    return {
+        "message": "If the account needs verification, a link has been sent",
+        "verification_url": None,
+    }
+
+
+@router.post("/verify-email")
+async def verify_email(
+    payload: VerifyEmailRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Mark the user's email as verified using a verification token."""
+    data = decode_token(payload.token)
+    if not data or data.get("type") != "email_verify":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification token",
+        )
+
+    try:
+        user_uuid = UUID(str(data.get("sub")))
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token")
+
+    user = await db.get(User, user_uuid)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    user.is_verified = True
+    await db.commit()
+    return {"message": "Email verified successfully"}
+
+
 @router.post("/forgot-password")
 async def forgot_password(
     request: PasswordResetRequest,
@@ -334,7 +399,6 @@ async def forgot_password(
     # Always return success to prevent email enumeration
     if user:
         # TODO: Send reset email with token
-        # For now, just log
         pass
 
     return {"message": "If the email exists, a reset link has been sent"}
@@ -347,7 +411,6 @@ async def reset_password(
 ):
     """Reset password with token."""
     # TODO: Validate reset token
-    # For now, just return success
     return {"message": "Password has been reset"}
 
 

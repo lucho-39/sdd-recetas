@@ -9,8 +9,11 @@ import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.app_settings import get_setting
 from app.core.config import get_settings
+from app.core.database import get_db
 from app.core.security import get_current_active_user
 
 router = APIRouter()
@@ -40,6 +43,7 @@ def _is_supported_image(data: bytes) -> bool:
 async def upload_image(
     file: UploadFile = File(...),
     current_user = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Upload a recipe image and return its public URL."""
     settings = get_settings()
@@ -47,7 +51,8 @@ async def upload_image(
     if file.content_type not in CONTENT_TYPE_EXT:
         raise HTTPException(status_code=400, detail="Unsupported image type")
 
-    max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    max_mb = await get_setting(db, "max_upload_size_mb") or settings.MAX_UPLOAD_SIZE_MB
+    max_bytes = int(max_mb) * 1024 * 1024
     data = await file.read(max_bytes + 1)
     if len(data) > max_bytes:
         raise HTTPException(status_code=413, detail="File too large")
