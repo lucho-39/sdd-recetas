@@ -1,10 +1,11 @@
 """Tests for the recipe endpoints."""
 from httpx import AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Category, Recipe, User
+from app.models import Category, Recipe, Tag, User
 
-from conftest import create_category, create_recipe, create_user
+from conftest import create_category, create_recipe, create_tag, create_user
 
 
 def _recipe_payload(category: Category, **overrides: object) -> dict:
@@ -348,3 +349,60 @@ async def test_list_recipes_filters_by_difficulty(
 
     none = await client.get("/api/v1/recipes?difficulty=easy", headers=auth_headers)
     assert none.json()["total"] == 0
+
+
+async def test_create_recipe_with_tags(
+    client: AsyncClient, category: Category, auth_headers: dict
+) -> None:
+    response = await client.post(
+        "/api/v1/recipes",
+        json=_recipe_payload(category, title="Receta con tags", tags=["vegano", "sin-tacc"]),
+        headers=auth_headers,
+    )
+    assert response.status_code == 201
+    slugs = sorted(tag["slug"] for tag in response.json()["tags"])
+    assert slugs == ["sin-tacc", "vegano"]
+
+
+async def test_update_recipe_tags_syncs_usage_count(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    category: Category,
+    auth_headers: dict,
+) -> None:
+    await create_tag(db_session, slug="vegano", name="Vegano", usage_count=3)
+
+    created = await client.post(
+        "/api/v1/recipes",
+        json=_recipe_payload(category, title="Receta vegana", tags=["vegano"]),
+        headers=auth_headers,
+    )
+    slug = created.json()["slug"]
+
+    tag = (await db_session.execute(select(Tag).where(Tag.slug == "vegano"))).scalar_one()
+    assert tag.usage_count == 4
+
+    updated = await client.patch(
+        f"/api/v1/recipes/{slug}", json={"tags": ["dulce"]}, headers=auth_headers
+    )
+    assert updated.status_code == 200
+    assert [t["slug"] for t in updated.json()["tags"]] == ["dulce"]
+
+    await db_session.refresh(tag)
+    assert tag.usage_count == 3
+
+
+async def test_update_recipe_without_tags_keeps_them(
+    client: AsyncClient, category: Category, auth_headers: dict
+) -> None:
+    created = await client.post(
+        "/api/v1/recipes",
+        json=_recipe_payload(category, title="Receta estable", tags=["rapida"]),
+        headers=auth_headers,
+    )
+    slug = created.json()["slug"]
+
+    updated = await client.patch(
+        f"/api/v1/recipes/{slug}", json={"description": "nueva"}, headers=auth_headers
+    )
+    assert [t["slug"] for t in updated.json()["tags"]] == ["rapida"]

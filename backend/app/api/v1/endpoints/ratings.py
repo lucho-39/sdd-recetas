@@ -108,9 +108,19 @@ async def get_ratings(
         select(func.count(Rating.id)).where(Rating.recipe_id == recipe_id)
     )
 
+    distribution = {str(score): 0 for score in range(1, 6)}
+    dist_result = await db.execute(
+        select(Rating.score, func.count(Rating.id))
+        .where(Rating.recipe_id == recipe_id)
+        .group_by(Rating.score)
+    )
+    for score, count in dist_result.all():
+        distribution[str(score)] = count
+
     return {
         "ratings": ratings,
         "total": total,
         "page": page,
         "limit": 10,
+        "distribution": distribution,
     }

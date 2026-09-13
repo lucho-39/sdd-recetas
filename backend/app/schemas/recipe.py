@@ -25,7 +25,7 @@ class RecipeBase(BaseModel):
 
 
 class RecipeCreate(RecipeBase):
-    pass
+    tags: List[str] = Field(default_factory=list)
 
 
 class RecipeUpdate(BaseModel):
@@ -40,6 +40,7 @@ class RecipeUpdate(BaseModel):
     instructions: Optional[str] = Field(None, min_length=10)
     ingredients: Optional[List[dict]] = None
     is_public: Optional[bool] = None
+    tags: Optional[List[str]] = None
 
 
 class RecipeResponse(RecipeBase):

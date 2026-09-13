@@ -66,6 +66,51 @@ async def resolve_ingredient_names(
     return items
 
 
+async def sync_recipe_tags(
+    db: AsyncSession, recipe: Recipe, tag_slugs: Optional[List[str]]
+) -> None:
+    """Replace a recipe's tags by slug, creating missing ones.
+
+    ``usage_count`` is kept in sync: incremented for newly associated tags and
+    decremented for the ones removed.
+    """
+    normalized: List[str] = []
+    seen: set[str] = set()
+    for raw in tag_slugs or []:
+        slug = slugify(str(raw))
+        if slug and slug not in seen:
+            seen.add(slug)
+            normalized.append(slug)
+
+    # Read current tags before any query so the collection is loaded without
+    # triggering a lazy load after an autoflush (which would fail in async).
+    current = {tag.slug: tag for tag in recipe.tags}
+
+    existing: dict[str, Tag] = {}
+    if normalized:
+        # no_autoflush keeps a newly added (pending) recipe pending, so the
+        # relationship assignment below does not need to load a collection.
+        with db.no_autoflush:
+            result = await db.execute(select(Tag).where(Tag.slug.in_(normalized)))
+            existing = {tag.slug: tag for tag in result.scalars().all()}
+
+    for slug, tag in current.items():
+        if slug not in seen:
+            tag.usage_count = max(0, tag.usage_count - 1)
+
+    new_tags: List[Tag] = []
+    for slug in normalized:
+        tag = existing.get(slug)
+        if tag is None:
+            tag = Tag(slug=slug, name=slug.replace('-', ' ').title(), usage_count=1)
+            db.add(tag)
+        elif slug not in current:
+            tag.usage_count += 1
+        new_tags.append(tag)
+
+    recipe.tags = new_tags
+
+
 async def generate_unique_slug(db: AsyncSession, title: str, exclude_id: Optional[UUID] = None) -> tuple[str, List[SimilarRecipe]]:
     """
     Generate a unique slug for a recipe title.
@@ -271,6 +316,7 @@ async def create_recipe(
     )
 
     db.add(recipe)
+    await sync_recipe_tags(db, recipe, recipe_data.tags)
     await db.commit()
     await db.refresh(recipe)
 
@@ -293,7 +339,9 @@ async def update_recipe(
 ):
     """Update a recipe."""
     result = await db.execute(
-        select(Recipe).where(Recipe.slug == slug, Recipe.author_id == current_user.id)
+        select(Recipe)
+        .where(Recipe.slug == slug, Recipe.author_id == current_user.id)
+        .options(selectinload(Recipe.tags))
     )
     recipe = result.scalar_one_or_none()
 
@@ -302,6 +350,7 @@ async def update_recipe(
 
     # Update fields if provided
     update_data = recipe_data.model_dump(exclude_unset=True)
+    tag_slugs = update_data.pop("tags", None)
 
     # Handle title change -> slug regeneration
     similar_recipes: List[SimilarRecipe] = []
@@ -313,6 +362,9 @@ async def update_recipe(
 
     for field, value in update_data.items():
         setattr(recipe, field, value)
+
+    if tag_slugs is not None:
+        await sync_recipe_tags(db, recipe, tag_slugs)
 
     await db.commit()
     await db.refresh(recipe, attribute_names=["author", "category", "tags"])

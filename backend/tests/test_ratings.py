@@ -3,7 +3,10 @@ from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import create_access_token
 from app.models import Rating, Recipe
+
+from conftest import create_user
 
 
 async def test_rate_recipe(
@@ -94,3 +97,22 @@ async def test_get_recipe_ratings(
     assert body["total"] == 1
     assert body["ratings"][0]["score"] == 5
     assert body["ratings"][0]["review_text"] == "Riquísima"
+
+
+async def test_rating_distribution(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    recipe: Recipe,
+    auth_headers: dict,
+) -> None:
+    other = await create_user(db_session, email="rater@example.com")
+    other_headers = {"Authorization": f"Bearer {create_access_token(subject=str(other.id))}"}
+
+    await client.post(f"/api/v1/ratings/{recipe.id}?score=5", headers=auth_headers)
+    await client.post(f"/api/v1/ratings/{recipe.id}?score=3", headers=other_headers)
+
+    response = await client.get(f"/api/v1/ratings/{recipe.id}")
+    distribution = response.json()["distribution"]
+    assert distribution["5"] == 1
+    assert distribution["3"] == 1
+    assert distribution["1"] == 0
