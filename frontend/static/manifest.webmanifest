@@ -1,0 +1,19 @@
+{
+	"name": "Recetario IA",
+	"short_name": "Recetario",
+	"description": "Donde cada ingrediente cuenta una historia y cada receta nace del corazón",
+	"lang": "es",
+	"start_url": "/",
+	"scope": "/",
+	"display": "standalone",
+	"background_color": "#FAF9F6",
+	"theme_color": "#FB923C",
+	"icons": [
+		{
+			"src": "/icon.svg",
+			"sizes": "any",
+			"type": "image/svg+xml",
+			"purpose": "any maskable"
+		}
+	]
+}

@@ -8,6 +8,9 @@
 	let password = '';
 	let error = '';
 	let loading = false;
+	let needsVerification = false;
+	let verifyMessage = '';
+	let verifyUrl = '';
 
 	let returnTo = '/';
 	$: returnTo = $page.url.searchParams.get('returnTo') ?? '/';
@@ -19,9 +22,32 @@
 			await auth.login(email, password);
 			await goto(returnTo);
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'No se pudo iniciar sesión';
+			const message = err instanceof Error ? err.message : 'No se pudo iniciar sesión';
+			error = message;
+			needsVerification = /not verified/i.test(message);
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function resendVerification() {
+		verifyMessage = '';
+		verifyUrl = '';
+		const res = await fetch('/api/v1/auth/request-verification', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ email })
+		});
+		if (res.ok) {
+			const body = await res.json();
+			if (body.verification_url) {
+				verifyUrl = body.verification_url;
+				verifyMessage = 'Enlace generado (entorno de desarrollo):';
+			} else {
+				verifyMessage = body.message ?? 'Revisá tu correo.';
+			}
+		} else {
+			verifyMessage = 'No se pudo generar el enlace.';
 		}
 	}
 </script>
@@ -42,6 +68,19 @@
 					<div class="flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
 						<AlertCircle class="h-5 w-5 shrink-0" aria-hidden="true" />
 						<p>{error}</p>
+					</div>
+				{/if}
+
+				{#if needsVerification}
+					<div class="rounded-md border border-border bg-muted/40 p-3 text-sm">
+						<p class="mb-2 text-muted-foreground">Tu email todavía no está verificado.</p>
+						<div class="flex flex-wrap items-center gap-3">
+							<button type="button" class="btn btn-outline btn-sm" on:click={resendVerification}>
+								Reenviar verificación
+							</button>
+							{#if verifyMessage}<span class="text-muted-foreground">{verifyMessage}</span>{/if}
+							{#if verifyUrl}<a class="text-primary underline" href={verifyUrl}>Verificar ahora</a>{/if}
+						</div>
 					</div>
 				{/if}
 

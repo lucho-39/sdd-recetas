@@ -35,6 +35,8 @@
 	let voiceSupported = false;
 	let fullscreen = false;
 	let announced = '';
+	let installPrompt: any = null;
+	let canInstall = false;
 
 	// Remaining seconds per step (persisted)
 	let timers: Record<number, number> = {};
@@ -233,13 +235,41 @@
 			if (!document.fullscreenElement) {
 				await document.documentElement.requestFullscreen?.();
 				fullscreen = true;
+				try {
+					await (screen as any).orientation?.lock?.('landscape');
+				} catch {
+					/* orientation lock not supported */
+				}
 			} else {
 				await document.exitFullscreen?.();
 				fullscreen = false;
+				try {
+					(screen as any).orientation?.unlock?.();
+				} catch {
+					/* ignore */
+				}
 			}
 		} catch {
 			/* bloqueado sin gesto */
 		}
+	}
+
+	function handleBeforeInstall(event: Event) {
+		event.preventDefault();
+		installPrompt = event;
+		canInstall = true;
+	}
+
+	async function installApp() {
+		if (!installPrompt) return;
+		installPrompt.prompt();
+		try {
+			await installPrompt.userChoice;
+		} catch {
+			/* ignore */
+		}
+		installPrompt = null;
+		canInstall = false;
 	}
 
 	function handleVisibility() {
@@ -329,6 +359,7 @@
 			requestWakeLock();
 			document.addEventListener('visibilitychange', handleVisibility);
 			document.addEventListener('fullscreenchange', handleFullscreenChange);
+			window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 		}
 
 		return () => {
@@ -339,6 +370,7 @@
 				document.body.style.overflow = '';
 				document.removeEventListener('visibilitychange', handleVisibility);
 				document.removeEventListener('fullscreenchange', handleFullscreenChange);
+				window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
 			}
 		};
 	});
@@ -369,6 +401,11 @@
 			<X class="h-5 w-5" aria-hidden="true" /> Salir
 		</button>
 		<div class="flex items-center gap-1">
+			{#if canInstall}
+				<button type="button" class="btn btn-ghost btn-sm" on:click={installApp} aria-label="Instalar aplicación">
+					Instalar
+				</button>
+			{/if}
 			<button
 				type="button"
 				class="btn btn-ghost btn-sm"
