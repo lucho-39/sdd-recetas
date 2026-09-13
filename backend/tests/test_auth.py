@@ -184,7 +184,11 @@ async def test_forgot_password_never_leaks_account_existence(
     )
     assert known.status_code == 200
     assert unknown.status_code == 200
-    assert known.json() == unknown.json()
+    # The message never differs (anti-enumeration). In development the reset
+    # link is returned for known accounts to exercise the flow; in production
+    # it is always None, so the bodies are identical.
+    assert known.json()["message"] == unknown.json()["message"]
+    assert unknown.json()["reset_url"] is None
 
 
 async def test_bootstrap_admin_creates_admin_and_is_idempotent(

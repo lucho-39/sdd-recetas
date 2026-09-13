@@ -364,6 +364,44 @@ class PushSubscription(Base):
     )
 
 
+class RefreshToken(Base):
+    """Issued refresh tokens, to detect reuse by rotation family."""
+
+    __tablename__ = "refresh_tokens"
+
+    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[uuid4] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    jti: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    family_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    revoked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, nullable=False
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class OAuthAccount(Base):
+    """Linked external identity (Google/GitHub)."""
+
+    __tablename__ = "oauth_accounts"
+
+    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[uuid4] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    provider: Mapped[str] = mapped_column(String(20), nullable=False)
+    provider_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint("provider", "provider_id", name="uq_oauth_provider_account"),
+    )
+
+
 # Import for type hints
 from typing import Optional, List
 from sqlalchemy import Index

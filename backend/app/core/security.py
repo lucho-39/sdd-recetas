@@ -73,6 +73,7 @@ def create_access_token(
 def create_refresh_token(
     subject: str,
     expires_delta: Optional[timedelta] = None,
+    jti: Optional[str] = None,
 ) -> str:
     """Create a new refresh token."""
     if expires_delta:
@@ -84,6 +85,24 @@ def create_refresh_token(
         "exp": expire,
         "sub": subject,
         "type": "refresh",
+        "iat": datetime.utcnow(),
+        "jti": jti or str(uuid4()),
+    }
+    return jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+
+
+def create_password_reset_token(
+    subject: str,
+    expires_delta: Optional[timedelta] = None,
+) -> str:
+    """Create a short-lived token used to reset a password."""
+    expire = datetime.utcnow() + (
+        expires_delta or timedelta(minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES)
+    )
+    to_encode = {
+        "exp": expire,
+        "sub": str(subject),
+        "type": "password_reset",
         "iat": datetime.utcnow(),
         "jti": str(uuid4()),
     }
@@ -100,6 +119,19 @@ def create_email_verification_token(
         "exp": expire,
         "sub": str(subject),
         "type": "email_verify",
+        "iat": datetime.utcnow(),
+        "jti": str(uuid4()),
+    }
+    return jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+
+
+def create_oauth_state(provider: str, expires_delta: Optional[timedelta] = None) -> str:
+    """Create a short-lived anti-CSRF state for the OAuth flow."""
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=10))
+    to_encode = {
+        "exp": expire,
+        "type": "oauth_state",
+        "provider": provider,
         "iat": datetime.utcnow(),
         "jti": str(uuid4()),
     }

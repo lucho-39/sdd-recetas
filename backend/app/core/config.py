@@ -66,6 +66,22 @@ class Settings(BaseSettings):
     VAPID_PUBLIC_KEY: str = Field(default="")
     VAPID_PRIVATE_KEY: str = Field(default="")
 
+    # Frontend URL (used for redirects: OAuth, password reset links)
+    FRONTEND_URL: str = Field(default="http://localhost:3000")
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = Field(default=60)
+
+    # OAuth (v2). Empty client id -> provider disabled (503).
+    OAUTH_REDIRECT_BASE: str = Field(default="http://localhost:8000")
+    GOOGLE_CLIENT_ID: str = Field(default="")
+    GOOGLE_CLIENT_SECRET: str = Field(default="")
+    GITHUB_CLIENT_ID: str = Field(default="")
+    GITHUB_CLIENT_SECRET: str = Field(default="")
+
+    # AI recipe generation (v2). Empty key -> endpoint disabled (503).
+    AI_API_KEY: str = Field(default="")
+    AI_BASE_URL: str = Field(default="https://api.openai.com/v1")
+    AI_MODEL: str = Field(default="gpt-4o-mini")
+
     # Admin
     ADMIN_INITIAL_USER: str = "admin@recetario.local"
     ADMIN_INITIAL_PASSWORD: str = "ChangeMeOnFirstLogin123!"
