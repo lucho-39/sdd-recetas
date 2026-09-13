@@ -298,9 +298,7 @@
 
 ---
 
-## Endpoints API Admin (Scope `admin`)
-
-| Método | Ruta | Descripción |
+## Endpoints API Admin (Scope `admin`)| Método | Ruta | Descripción |
 |--------|------|-------------|
 | GET | `/api/admin/categories` | Listar categorías (paginado, filtros) |
 | POST | `/api/admin/categories` | Crear categoría |
@@ -342,6 +340,21 @@
 | GET | `/api/admin/error-log` | Log errores 5xx |
 
 ---
+
+### Estado de implementación (MVP)
+
+**Implementado** en `/api/admin` (guard: rol `admin`):
+- Métricas: `GET /metrics/dashboard`.
+- Categorías: `GET`, `POST`, `PATCH /{id}`, `DELETE /{id}` (elimina si no tiene recetas; si no, desactiva).
+- Tags: `GET`, `POST`, `PATCH /{id}`, `DELETE /{id}`.
+- Usuarios: `GET` (listado con filtros), `GET /{id}`, `POST /{id}/activate`, `POST /{id}/deactivate`, `PATCH /{id}/role`.
+- Recetas: `GET` (listado/filtros/estado), `GET /{id}`, `PATCH /{id}`, `PATCH /{id}/visibility`, `DELETE /{id}` (soft delete).
+- Ingredientes: `GET /pending`, `GET /validated`, `GET /rejected`, `POST /{id}/validate`, `POST /{id}/reject`, `POST /{id}/normalize`.
+
+**Pendiente (v2 / no implementado)**: `POST /users/{id}/reactivate`,
+`POST /users/{id}/gdpr-erase`, `POST /ingredients/{id}/merge`,
+`GET /recipes/{id}/stats`, feature flags, rate-limits, email-templates,
+maintenance, audit-log y error-log.
 
 ## Flujos de Autenticación Admin (Proyecto Separado)
 

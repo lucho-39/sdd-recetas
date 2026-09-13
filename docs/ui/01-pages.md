@@ -370,15 +370,31 @@ gap: 1.5rem;              /* gap-6 */
 
 ## 8. Admin (Proyecto Separado — `recetario-admin`)
 
-Ver `docs/use-cases/admin.md` para casos de uso completos.
+Ver `docs/use-cases/admin.md` para casos de uso y estado de la API.
 
-**Pantallas MVP**:
-- `/admin` → Dashboard (KPIs cards + gráficos)
-- `/admin/categorias` → CRUD tabla + modal
-- `/admin/usuarios` → Tabla + acciones (reactivar, GDPR, rol)
-- `/admin/ingredientes` → Pendientes validación + validar/mergear/rechazar
-- `/admin/metricas` → Dashboard global, contenido, usuarios
-- `/admin/config` → Feature flags, rate limits, email templates, mantenimiento
+**Estilo**: más **sobrio y simple** que el frontend, pero **consistente** en todo
+el panel (misma paleta/tipografía base, radios y sombras mínimos). Tablas y
+formularios directos, sin ornamentos.
+
+**Layout**:
+- **Aside izquierdo** fijo con la navegación; **colapsable** a solo iconos
+  (preferencia persistida en `localStorage`).
+- **Header superior** con el `display_name` del usuario logueado y botón
+  **Cerrar sesión**.
+- **Dashboard** (`/`): cards con estadísticas reales (usuarios, recetas,
+  ingredientes, categorías, tags, calificaciones, visitas) desde
+  `GET /api/admin/metrics/dashboard`.
+
+**Secciones** (listar, buscar, filtrar, ver detalle, editar, eliminar según corresponda):
+- `/usuarios` → tabla, filtros por estado, activar/desactivar, cambiar rol.
+- `/recetas` → tabla, filtros por estado, ocultar/publicar, soft delete.
+- `/ingredientes` → tabs Pendientes / Validados / Rechazados; validar,
+  rechazar (con razón) y normalizar.
+- `/categorias` → CRUD (elimina si no tiene recetas; si no, desactiva).
+- `/tags` → CRUD.
+
+**Pendiente (v2)**: `/admin/metricas`, `/admin/config` (flags, rate limits,
+email templates, mantenimiento) y `/admin/audit-log`.
 
 ---
 
