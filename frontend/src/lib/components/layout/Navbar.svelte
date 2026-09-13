@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Menu, X, Search, Moon, Sun, LogIn } from 'lucide-svelte';
+	import { IconMenu2 as Menu, IconX as X, IconMoonFilled as Moon } from '@tabler/icons-svelte';
 	import { auth } from '$lib/stores/auth';
 	import { theme } from '$lib/stores/theme';
 	import AvatarDropdown from '$components/ui/AvatarDropdown.svelte';

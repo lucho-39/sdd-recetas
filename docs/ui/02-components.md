@@ -609,7 +609,7 @@ interface AlertProps {
 **Implementación shadcn `Alert` (Destructive)**:
 ```svelte
 <script lang="ts">
-  import { X, AlertCircle, AlertTriangle, CheckCircle, Info } from 'lucide-svelte';
+  import { IconX as X, IconAlertCircleFilled as AlertCircle, IconAlertTriangleFilled as AlertTriangle, IconCircleCheckFilled as CheckCircle, IconInfoCircleFilled as Info } from '@tabler/icons-svelte';
   export let variant: 'default' | 'destructive' | 'warning' | 'success' = 'default';
   export let title: string;
   export let description: string;

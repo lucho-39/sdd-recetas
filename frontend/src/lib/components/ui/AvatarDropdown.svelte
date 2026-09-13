@@ -1,5 +1,12 @@
 <script lang="ts">
-	import { User, LogOut, Settings, ChevronDown, BookOpen, Heart } from 'lucide-svelte';
+	import {
+		IconUserFilled as User,
+		IconLogout as LogOut,
+		IconSettingsFilled as Settings,
+		IconChevronDown as ChevronDown,
+		IconBookFilled as BookOpen,
+		IconHeartFilled as Heart
+	} from '@tabler/icons-svelte';
 	import { auth } from '$lib/stores/auth';
 
 	let open = false;

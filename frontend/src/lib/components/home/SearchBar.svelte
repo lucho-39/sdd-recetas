@@ -1,5 +1,9 @@
 <script lang="ts">
-	import { Search, SlidersHorizontal, X } from 'lucide-svelte';
+	import {
+		IconSearch as Search,
+		IconAdjustmentsFilled as SlidersHorizontal,
+		IconX as X
+	} from '@tabler/icons-svelte';
 
 	export let query = '';
 	export let category = '';

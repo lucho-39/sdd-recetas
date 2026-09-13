@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ChefHat } from 'lucide-svelte';
+	import { IconChefHatFilled as ChefHat } from '@tabler/icons-svelte';
 </script>
 
 <section class="hero relative py-20 md:py-32 overflow-hidden">

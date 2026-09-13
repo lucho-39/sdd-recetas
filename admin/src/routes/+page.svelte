@@ -1,5 +1,11 @@
 <script lang="ts">
-	import { Users, BookOpen, List, Star, TrendingUp } from 'lucide-svelte';
+	import {
+		IconUsers as Users,
+		IconBookFilled as BookOpen,
+		IconListFilled as List,
+		IconStarFilled as Star,
+		IconTrendingUp as TrendingUp
+	} from '@tabler/icons-svelte';
 
 	const stats = [
 		{ label: 'Usuarios activos (30d)', value: '—', icon: Users },

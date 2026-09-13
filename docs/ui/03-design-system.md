@@ -114,6 +114,22 @@
 
 ---
 
+## 2.5. Iconografía
+
+**Librería**: **Tabler Icons** (`@tabler/icons-svelte`), en su **variante filled**
+(todos los iconos terminados en `Filled`).
+
+- Se usa **filled en toda la aplicación** (frontend y admin) para un look sólido
+  y consistente con la paleta warm.
+- Cuando un icono no tiene variante filled, se usa la variante outline más
+  cercana (excepciones: `IconUsers`, `IconChartBar`, `IconLoader2`, `IconMenu2`,
+  `IconX`, `IconChevronDown`, `IconLogout`, `IconTrendingUp`, `IconSearch`).
+- Import con alias para mantener legibilidad en el markup:
+  ```svelte
+  import { IconHeartFilled as Heart } from '@tabler/icons-svelte';
+  ```
+- **No** usar `lucide-svelte` (quedó deprecado en el proyecto).
+
 ## 3. Espaciado (Spacing Scale — 4px Base)
 
 | Token | Valor | Px | Uso |

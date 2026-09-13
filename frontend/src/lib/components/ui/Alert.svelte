@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import { X } from 'lucide-svelte';
+	import { IconX as X } from '@tabler/icons-svelte';
 	import { Button } from '$components/ui/Button.svelte';
 
 	export let variant: 'default' | 'destructive' | 'warning' | 'success' = 'default';

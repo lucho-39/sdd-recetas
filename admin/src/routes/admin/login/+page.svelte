@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth';
-	import { Loader2, AlertCircle } from 'lucide-svelte';
+	import {
+		IconLoader2 as Loader2,
+		IconAlertCircleFilled as AlertCircle
+	} from '@tabler/icons-svelte';
 
 	let email = '';
 	let password = '';

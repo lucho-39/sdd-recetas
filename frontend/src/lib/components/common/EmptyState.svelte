@@ -1,5 +1,11 @@
 <script lang="ts">
-	import { Search, Heart, Utensils, BookOpen, AlertCircle } from 'lucide-svelte';
+	import {
+		IconSearch as Search,
+		IconHeartFilled as Heart,
+		IconChefHatFilled as Utensils,
+		IconBookFilled as BookOpen,
+		IconAlertCircleFilled as AlertCircle
+	} from '@tabler/icons-svelte';
 
 	export let variant: 'search' | 'favorites' | 'recipes' | 'categories' | 'tags' = 'search';
 	export let title: string = '';

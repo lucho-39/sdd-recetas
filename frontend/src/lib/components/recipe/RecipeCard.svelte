@@ -1,6 +1,10 @@
 <script lang="ts">
 	import type { Recipe } from '$lib/types';
-	import { Clock, Flame, Eye, Bookmark } from 'lucide-svelte';
+	import {
+		IconClockFilled as Clock,
+		IconEyeFilled as Eye,
+		IconBookmarkFilled as Bookmark
+	} from '@tabler/icons-svelte';
 	import CategoryBadge from '$components/recipe/CategoryBadge.svelte';
 	import RatingStars from '$components/recipe/RatingStars.svelte';
 	import AuthorAvatar from '$components/common/AuthorAvatar.svelte';

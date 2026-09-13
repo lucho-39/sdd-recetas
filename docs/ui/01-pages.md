@@ -416,7 +416,7 @@ Ver `docs/use-cases/admin.md` para casos de uso completos.
 ```svelte
 <!-- components/ui/Alert.svelte -->
 <script lang="ts">
-  import { X } from 'lucide-svelte';
+  import { IconX as X } from '@tabler/icons-svelte';
   export let variant: 'default' | 'destructive' | 'warning' = 'default';
   export let title: string;
   export let description: string;

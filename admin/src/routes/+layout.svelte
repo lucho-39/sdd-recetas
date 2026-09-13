@@ -1,7 +1,17 @@
 <script lang="ts">
 	import '../app.css';
 	import { onMount } from 'svelte';
-	import { Menu, X, LayoutDashboard, Tag, Users, BookOpen, List, BarChart3, Settings } from 'lucide-svelte';
+	import {
+		IconMenu2 as Menu,
+		IconX as X,
+		IconLayoutDashboardFilled as LayoutDashboard,
+		IconTagFilled as Tag,
+		IconUsers as Users,
+		IconBookFilled as BookOpen,
+		IconListFilled as List,
+		IconChartBar as BarChart3,
+		IconSettingsFilled as Settings
+	} from '@tabler/icons-svelte';
 	import { auth } from '$lib/stores/auth';
 
 	let sidebarOpen = false;
