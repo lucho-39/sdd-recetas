@@ -10,6 +10,9 @@
 		IconUsers as Users,
 		IconBookFilled as Recipes,
 		IconListFilled as Ingredients,
+		IconChartBar as Metrics,
+		IconSettingsFilled as Config,
+		IconHistory as Audit,
 		IconMenu2 as Menu,
 		IconLogout as Logout,
 		IconChevronLeft as Collapse
@@ -21,11 +24,14 @@
 
 	const nav = [
 		{ href: '/', label: 'Dashboard', icon: Dashboard },
+		{ href: '/metricas', label: 'Métricas', icon: Metrics },
 		{ href: '/usuarios', label: 'Usuarios', icon: Users },
 		{ href: '/recetas', label: 'Recetas', icon: Recipes },
 		{ href: '/ingredientes', label: 'Ingredientes', icon: Ingredients },
 		{ href: '/categorias', label: 'Categorías', icon: Tag },
-		{ href: '/tags', label: 'Tags', icon: Tags }
+		{ href: '/tags', label: 'Tags', icon: Tags },
+		{ href: '/audit-log', label: 'Audit log', icon: Audit },
+		{ href: '/config', label: 'Configuración', icon: Config }
 	];
 
 	const isLoginPage = $derived($page.url.pathname.startsWith('/admin/login'));
