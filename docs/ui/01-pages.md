@@ -248,10 +248,10 @@ gap: 1.5rem;              /* gap-6 */
 dificultad, visitas), tags enlazados a `/buscar?tag=`, **rating interactivo**
 (1–5 estrellas → `POST /api/v1/ratings/:id`), botón **Guardar** (favorito),
 compartir (Web Share/copiar), **nombres de ingredientes resueltos** desde el
-catálogo (`RecipeResponse.ingredients[].name`), **distribución de barras (5★→1★)**
-y **formulario de reseña** (puntaje + texto) y **lista paginada de reseñas**
+catálogo (`RecipeResponse.ingredients[].name`), **distribución de barras (5★→1★)**,
+**formulario de reseña** (puntaje + texto), **eliminar la propia calificación**
+(`DELETE /api/v1/ratings/:id`) y **lista paginada de reseñas**
 (`GET /api/v1/ratings/:id`, con "cargar más").
-**Pendiente**: eliminar la propia calificación desde el detalle.
 
 ---
 

@@ -90,6 +90,7 @@ export interface Recipe {
 	deleted_at?: string | null;
 	author?: User;
 	similar_recipes?: SimilarRecipe[];
+	my_rating?: number | null;
 }
 
 export interface SimilarRecipe {

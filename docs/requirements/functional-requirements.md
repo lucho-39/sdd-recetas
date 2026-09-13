@@ -63,9 +63,11 @@
 
 > Implementado: calificar 1–5 (`POST /api/v1/ratings/:id`), reseña textual
 > opcional, promedio y **distribución de estrellas** (`GET /api/v1/ratings/:id`
-> → `distribution`), y **lista paginada de reseñas** en el detalle (`ReviewList`).
-> El upsert por usuario cubre editar la propia calificación (RF-05.3).
-> Falta: eliminar la propia calificación (RF-05.4).
+> → `distribution`), **mi calificación** (`GET /api/v1/ratings/:id/mine` y
+> `my_rating` en el detalle), **eliminar la propia calificación**
+> (`DELETE /api/v1/ratings/:id`) y **lista paginada de reseñas** en el detalle
+> (`ReviewList`). El upsert por usuario cubre editar la propia calificación
+> (RF-05.3).
 
 ## RF-06: Generación de recetas por IA **[v2 — no implementado]**
 | ID | Requisito | Fortaleza | RB |

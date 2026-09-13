@@ -25,7 +25,8 @@
 	let avgRating = recipe.avg_rating ?? 0;
 	let ratingCount = recipe.rating_count ?? 0;
 	let rateBusy = false;
-	let myScore = 0;
+	let myScore = recipe.my_rating ?? 0;
+	let hasMyRating = (recipe.my_rating ?? 0) > 0;
 	let reviewText = '';
 	let reviewRefresh = 0;
 	let ratingMsg = '';
@@ -98,11 +99,35 @@
 			const body = await res.json();
 			avgRating = body.avg_rating;
 			ratingCount = body.rating_count;
+			hasMyRating = true;
 			ratingMsg = '¡Gracias por tu reseña!';
 			reviewRefresh += 1;
 			await loadDistribution();
 		} else {
 			ratingMsg = 'No se pudo guardar la reseña.';
+		}
+		rateBusy = false;
+	}
+
+	async function deleteRating() {
+		if (!(await ensureAuth())) return;
+		rateBusy = true;
+		ratingMsg = '';
+		const res = await fetch(`/api/v1/ratings/${recipe.id}`, {
+			method: 'DELETE',
+			headers: { Authorization: `Bearer ${$auth.accessToken}` }
+		});
+		if (res.ok) {
+			const body = await res.json();
+			avgRating = body.avg_rating;
+			ratingCount = body.rating_count;
+			myScore = 0;
+			hasMyRating = false;
+			ratingMsg = 'Tu calificación fue eliminada.';
+			reviewRefresh += 1;
+			await loadDistribution();
+		} else {
+			ratingMsg = 'No se pudo eliminar la calificación.';
 		}
 		rateBusy = false;
 	}
@@ -119,12 +144,20 @@
 		loadDistribution();
 		if (!$auth.isAuthenticated && !$auth.loading) await auth.init();
 		if ($auth.isAuthenticated) {
-			const res = await fetch('/api/v1/favorites', {
-				headers: { Authorization: `Bearer ${$auth.accessToken}` }
-			});
-			if (res.ok) {
-				const favs = await res.json();
+			const authHeader = { Authorization: `Bearer ${$auth.accessToken}` };
+			const [favRes, mineRes] = await Promise.all([
+				fetch('/api/v1/favorites', { headers: authHeader }),
+				fetch(`/api/v1/ratings/${recipe.id}/mine`, { headers: authHeader })
+			]);
+			if (favRes.ok) {
+				const favs = await favRes.json();
 				isFavorited = favs.some((f: { recipe_id: string }) => f.recipe_id === recipe.id);
+			}
+			if (mineRes.ok) {
+				const mine = await mineRes.json();
+				myScore = mine.score ?? 0;
+				hasMyRating = (mine.score ?? 0) > 0;
+				reviewText = mine.review_text ?? '';
 			}
 		}
 	});
@@ -256,9 +289,16 @@
 			<div class="mt-4">
 				<label for="review-text" class="mb-1 block text-sm font-medium text-foreground">Tu reseña (opcional)</label>
 				<textarea id="review-text" bind:value={reviewText} rows="2" class="input-base" placeholder="Contá tu experiencia con esta receta…"></textarea>
-				<button type="button" class="btn btn-primary btn-sm mt-2" on:click={submitRating} disabled={rateBusy || myScore === 0}>
-					{rateBusy ? 'Enviando…' : 'Publicar reseña'}
-				</button>
+				<div class="mt-2 flex flex-wrap gap-2">
+					<button type="button" class="btn btn-primary btn-sm" on:click={submitRating} disabled={rateBusy || myScore === 0}>
+						{rateBusy ? 'Enviando…' : 'Publicar reseña'}
+					</button>
+					{#if hasMyRating}
+						<button type="button" class="btn btn-ghost btn-sm text-destructive" on:click={deleteRating} disabled={rateBusy}>
+							Eliminar mi calificación
+						</button>
+					{/if}
+				</div>
 			</div>
 		</section>
 
