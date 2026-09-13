@@ -110,6 +110,7 @@ Ver `docs/ui/02-components.md` para especificación completa.
 | `CategoryBadge` | Custom | Usa `category.color` + icon, variant `outline` con color custom |
 | `IngredientSelector` | Custom | Autocomplete catálogo 300 items + crear nuevo + cantidad/unidad/notas |
 | `CookingStepper` | Custom | Fullscreen, wake lock, swipe/voz, timer por paso |
+| `NotificationBell` | Custom | Campanita con badge de no leídas + dropdown (Socket.IO en tiempo real) |
 
 ---
 

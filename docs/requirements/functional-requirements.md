@@ -133,6 +133,18 @@
 | RF-12.7 | Búsqueda por ingrediente: catálogo (exacto) + nombre parcial (ILIKE) | MUST | RB-ING-04 |
 | RF-12.8 | Whitelist unidades compatibles por ingrediente (default_unit + alternativas) | SHOULD | RB-ING-02 |
 
+## RF-13: Notificaciones en tiempo real (in-app) **[implementado]**
+| ID | Requisito | Fortaleza | RB |
+|----|-----------|-----------|-----|
+| RF-13.1 | Al guardar (favorito) una receta, notificar al autor en tiempo real | SHOULD | RB-05 |
+| RF-13.2 | Al calificar una receta, notificar al autor en tiempo real (con puntaje) | SHOULD | RB-06 |
+| RF-13.3 | Campanita con badge de no leídas en el navbar | SHOULD | — |
+| RF-13.4 | Dropdown con últimas notificaciones; click marca leída y navega a la receta | SHOULD | — |
+| RF-13.5 | Eliminar notificaciones individualmente o todas | SHOULD | — |
+
+> Transporte: **Socket.IO** (`python-socketio` en FastAPI + `socket.io-client`
+> en SvelteKit). Sin auto-notificación; repetir la acción refresca la existente.
+
 ---
 
 ## Matriz de cobertura (RF → Casos de uso en docs/use-cases/)
@@ -153,3 +165,4 @@
 | RF-09 | `tags.md` (pendiente) |
 | RF-10 | `admin.md` ✅ |
 | RF-12 | `ingredients.md` ✅ |
+| RF-13 | `notifications.md` ✅ |

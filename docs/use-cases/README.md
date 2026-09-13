@@ -14,6 +14,7 @@ objetivo concreto.
 | `search.md` | Búsqueda Unificada de Recetas | ✅ Completado | Epic 3: Búsqueda |
 | `ingredients.md` | Catálogo Ingredientes (seed, autocomplete, búsqueda) | ✅ Completado | Epic 2: Recetas |
 | `admin.md` | Panel Admin (categorías, usuarios, ingredientes, métricas) | ✅ Completado | Epic 9: Admin |
+| `notifications.md` | Notificaciones en Tiempo Real (favoritos/ratings) | ✅ Completado | Epic 6/4 |
 | `recipes.md` | CRUD Recetas (Crear, Editar, Borrar, Listar propias) | 🔲 Pendiente | Epic 2: Recetas |
 | `favorites.md` | Favoritos y Colecciones | 🔲 Pendiente | Epic 4: Favoritos |
 | `ratings.md` | Calificaciones y Reseñas | 🔲 Pendiente | Epic 6: Ratings |

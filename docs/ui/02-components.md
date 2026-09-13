@@ -532,7 +532,38 @@ La voz es opcional y degrada con aviso si el navegador no expone `SpeechRecognit
 
 ---
 
-## 9. Common / Feedback
+## 9. Notifications
+
+### NotificationBell (`components/ui/NotificationBell.svelte`)
+
+**Ubicación**: navbar, junto al usuario logueado (antes del `AvatarDropdown`).
+
+**UI**:
+```
+[🔔 +badge]  → dropdown:
+  Notificaciones            [Marcar leídas] [Borrar todas]
+  ─────────────────────────────────────────────
+  (avatar) Fulano guardó tu receta        🗑
+           Tarta de manzana · hace 3 min
+  (avatar) Mengano calificó tu receta con 5★
+           Sopa de calabaza · hace 1 h
+```
+
+**Estado**: `$lib/stores/notifications.ts` (REST + Socket.IO).
+- Badge = no leídas; `99+` si supera 99.
+- Click en una notificación → `POST /notifications/{id}/read` + navega a
+  `/receta/<slug>`.
+- Borrar individual (`DELETE /notifications/{id}`) y todas
+  (`DELETE /notifications`).
+
+**A11y**: `aria-label` con el conteo, `aria-expanded`/`aria-haspopup` en la
+campanita, `role="menu"` en el dropdown.
+
+**Icono**: `IconBellFilled` (Tabler, variante filled según `03-design-system.md`).
+
+---
+
+## 10. Common / Feedback
 
 ### Toast (`components/ui/Toast.svelte` / Sonner)
 
