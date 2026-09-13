@@ -248,10 +248,10 @@ gap: 1.5rem;              /* gap-6 */
 dificultad, visitas), tags enlazados a `/buscar?tag=`, **rating interactivo**
 (1–5 estrellas → `POST /api/v1/ratings/:id`), botón **Guardar** (favorito),
 compartir (Web Share/copiar), **nombres de ingredientes resueltos** desde el
-catálogo (`RecipeResponse.ingredients[].name`) y **lista paginada de reseñas**
+catálogo (`RecipeResponse.ingredients[].name`), **distribución de barras (5★→1★)**
+y **formulario de reseña** (puntaje + texto) y **lista paginada de reseñas**
 (`GET /api/v1/ratings/:id`, con "cargar más").
-**Pendiente**: distribución de barras de calificaciones (5★→1★) y formulario de
-reseña con texto desde el detalle.
+**Pendiente**: eliminar la propia calificación desde el detalle.
 
 ---
 
@@ -372,10 +372,11 @@ manual), preparación (un paso por línea) y visibilidad pública/privada.
 - **Crear**: `POST /api/v1/recipes`; al guardar redirige a `/receta/:slug`.
 - **Editar**: `PATCH /api/v1/recipes/:slug`; solo el autor (el backend
   devuelve 404 si no lo es y la página redirige al detalle).
+- **Etiquetas**: autocomplete del catálogo con creación de etiquetas nuevas
+  (se envían como `tags: string[]` y el backend crea/asocia por slug).
 - Ambas requieren sesión; sin sesión redirigen a `/login?returnTo=...`.
 
-**Pendiente**: etiquetas en el formulario (el backend aún no asocia tags en
-crear/editar) y soporte de subida de imágenes (hoy solo URL).
+**Pendiente**: soporte de subida de imágenes (hoy solo URL).
 
 ---
 

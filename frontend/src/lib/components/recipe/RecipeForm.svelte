@@ -4,6 +4,7 @@
 	import { IconTrashFilled as Trash, IconPlus } from '@tabler/icons-svelte';
 	import { auth } from '$lib/stores/auth';
 	import { categoriesStore } from '$lib/stores/categories';
+	import TagAutocomplete from '$components/search/TagAutocomplete.svelte';
 	import type { Recipe } from '$lib/types';
 
 	export let initial: Recipe | null = null;
@@ -34,6 +35,7 @@
 	let difficulty = initial?.difficulty ?? '';
 	let isPublic = initial?.is_public ?? true;
 	let instructions = initial?.instructions ?? '';
+	let tagSlugs: string[] = initial?.tags?.map((t) => t.slug) ?? [];
 	let rows: IngredientRow[] =
 		initial?.ingredients?.map((i) => ({
 			ingredient_id: i.ingredient_id,
@@ -106,6 +108,7 @@
 			difficulty: difficulty || null,
 			instructions: instructions.trim(),
 			is_public: isPublic,
+			tags: tagSlugs,
 			ingredients: rows.map((r) => ({
 				ingredient_id: r.ingredient_id || r.name.toLowerCase().replace(/\s+/g, '-'),
 				name: r.name,
@@ -238,6 +241,15 @@
 				</ul>
 			{/if}
 		</div>
+	</fieldset>
+
+	<fieldset class="rounded-lg border border-border p-4">
+		<legend class="px-1 text-sm font-medium text-foreground">Etiquetas</legend>
+		<TagAutocomplete
+			selected={tagSlugs}
+			onChange={(tags) => (tagSlugs = tags)}
+			placeholder="Buscar o crear etiquetas…"
+		/>
 	</fieldset>
 
 	<div>

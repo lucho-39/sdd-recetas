@@ -23,6 +23,11 @@
 | RF-02.5 | Ver detalle de receta propia | MUST | — |
 | RF-02.6 | Toggle público/privado en receta propia | SHOULD | RB-09 |
 
+> Implementado en `/recetas/nueva` y `/recetas/:slug/editar` con `RecipeForm`.
+> Crear/editar asocian etiquetas por slug (`tags` en `RecipeCreate`/`RecipeUpdate`),
+> creando las faltantes y manteniendo `usage_count`. Borrar/restaurar soft delete.
+> Falta: subida de imágenes (hoy solo URL).
+
 ## RF-03: Búsqueda y descubrimiento público
 | ID | Requisito | Fortaleza | RB |
 |----|-----------|-----------|-----|
@@ -55,6 +60,12 @@
 | RF-05.4 | Eliminar propia calificación | SHOULD | RB-06 |
 | RF-05.5 | Ver promedio y distribución de estrellas en detalle (estrellas fraccionales) | MUST | RB-06 |
 | RF-05.6 | Listar reseñas con paginación | SHOULD | — |
+
+> Implementado: calificar 1–5 (`POST /api/v1/ratings/:id`), reseña textual
+> opcional, promedio y **distribución de estrellas** (`GET /api/v1/ratings/:id`
+> → `distribution`), y **lista paginada de reseñas** en el detalle (`ReviewList`).
+> El upsert por usuario cubre editar la propia calificación (RF-05.3).
+> Falta: eliminar la propia calificación (RF-05.4).
 
 ## RF-06: Generación de recetas por IA **[v2 — no implementado]**
 | ID | Requisito | Fortaleza | RB |

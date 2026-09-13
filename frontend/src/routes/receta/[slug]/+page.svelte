@@ -25,6 +25,14 @@
 	let avgRating = recipe.avg_rating ?? 0;
 	let ratingCount = recipe.rating_count ?? 0;
 	let rateBusy = false;
+	let myScore = 0;
+	let reviewText = '';
+	let reviewRefresh = 0;
+	let ratingMsg = '';
+	let dist: Record<string, number> = {};
+
+	$: distMax = Math.max(1, ...Object.values(dist));
+	$: distTotal = Object.values(dist).reduce((a, b) => a + b, 0);
 
 	const starPath =
 		'M12 2.5l2.95 5.98 6.6.96-4.78 4.66 1.13 6.57L12 17.77l-5.9 3.9 1.13-6.57L2.45 9.44l6.6-.96L12 2.5z';
@@ -68,9 +76,21 @@
 	}
 
 	async function rate(score: number) {
+		myScore = score;
+		await submitRating();
+	}
+
+	async function submitRating() {
+		if (myScore === 0) {
+			ratingMsg = 'Elegí una puntuación de 1 a 5.';
+			return;
+		}
 		if (!(await ensureAuth())) return;
 		rateBusy = true;
-		const res = await fetch(`/api/v1/ratings/${recipe.id}?score=${score}`, {
+		ratingMsg = '';
+		const params = new URLSearchParams({ score: String(myScore) });
+		if (reviewText.trim()) params.set('review_text', reviewText.trim());
+		const res = await fetch(`/api/v1/ratings/${recipe.id}?${params.toString()}`, {
 			method: 'POST',
 			headers: { Authorization: `Bearer ${$auth.accessToken}` }
 		});
@@ -78,11 +98,25 @@
 			const body = await res.json();
 			avgRating = body.avg_rating;
 			ratingCount = body.rating_count;
+			ratingMsg = '¡Gracias por tu reseña!';
+			reviewRefresh += 1;
+			await loadDistribution();
+		} else {
+			ratingMsg = 'No se pudo guardar la reseña.';
 		}
 		rateBusy = false;
 	}
 
+	async function loadDistribution() {
+		const res = await fetch(`/api/v1/ratings/${recipe.id}?page=1&limit=1`);
+		if (res.ok) {
+			const body = await res.json();
+			dist = body.distribution ?? {};
+		}
+	}
+
 	onMount(async () => {
+		loadDistribution();
 		if (!$auth.isAuthenticated && !$auth.loading) await auth.init();
 		if ($auth.isAuthenticated) {
 			const res = await fetch('/api/v1/favorites', {
@@ -178,23 +212,53 @@
 		<!-- Rating -->
 		<section class="mb-6 rounded-lg border border-border p-4" aria-labelledby="rating-heading">
 			<h2 id="rating-heading" class="mb-3 text-sm font-medium text-foreground">Calificá esta receta</h2>
-			<div class="flex items-center gap-1" role="radiogroup" aria-label="Puntaje de 1 a 5 estrellas">
-				{#each [1, 2, 3, 4, 5] as score}
-					<button
-						type="button"
-						class="p-1 text-rating transition-transform hover:scale-110 disabled:opacity-50"
-						on:click={() => rate(score)}
-						disabled={rateBusy}
-						aria-label={`${score} estrella${score === 1 ? '' : 's'}`}
-					>
-						<svg class="h-7 w-7" viewBox="0 0 24 24" fill={score <= Math.round(avgRating) ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-							<path d={starPath} />
-						</svg>
-					</button>
-				{/each}
-				<span class="ml-2 text-sm text-muted-foreground">
-					{avgRating.toFixed(1)} / 5 ({ratingCount} reseña{ratingCount === 1 ? '' : 's'})
-				</span>
+
+			<div class="grid gap-4 sm:grid-cols-2">
+				<div>
+					<div class="flex items-center gap-1" role="radiogroup" aria-label="Puntaje de 1 a 5 estrellas">
+						{#each [1, 2, 3, 4, 5] as score}
+							<button
+								type="button"
+								role="radio"
+								aria-checked={myScore === score ? 'true' : 'false'}
+								class="p-1 text-rating transition-transform hover:scale-110 disabled:opacity-50"
+								on:click={() => rate(score)}
+								disabled={rateBusy}
+								aria-label={`${score} estrella${score === 1 ? '' : 's'}`}
+							>
+								<svg class="h-7 w-7" viewBox="0 0 24 24" fill={score <= (myScore || Math.round(avgRating)) ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+									<path d={starPath} />
+								</svg>
+							</button>
+						{/each}
+						<span class="ml-2 text-sm text-muted-foreground">
+							{avgRating.toFixed(1)} / 5 ({ratingCount} reseña{ratingCount === 1 ? '' : 's'})
+						</span>
+					</div>
+					{#if ratingMsg}<p class="mt-2 text-sm text-muted-foreground" aria-live="polite">{ratingMsg}</p>{/if}
+				</div>
+
+				<div class="space-y-1" aria-label="Distribución de calificaciones">
+					{#each [5, 4, 3, 2, 1] as score}
+						<div class="flex items-center gap-2 text-xs text-muted-foreground">
+							<span class="w-3 text-right">{score}</span>
+							<span aria-hidden="true">★</span>
+							<span class="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+								<span class="block h-full rounded-full bg-rating" style="width: {((dist[String(score)] ?? 0) / distMax) * 100}%"></span>
+							</span>
+							<span class="w-6 text-right">{dist[String(score)] ?? 0}</span>
+						</div>
+					{/each}
+					<p class="pt-1 text-right text-xs text-muted-foreground">{distTotal} en total</p>
+				</div>
+			</div>
+
+			<div class="mt-4">
+				<label for="review-text" class="mb-1 block text-sm font-medium text-foreground">Tu reseña (opcional)</label>
+				<textarea id="review-text" bind:value={reviewText} rows="2" class="input-base" placeholder="Contá tu experiencia con esta receta…"></textarea>
+				<button type="button" class="btn btn-primary btn-sm mt-2" on:click={submitRating} disabled={rateBusy || myScore === 0}>
+					{rateBusy ? 'Enviando…' : 'Publicar reseña'}
+				</button>
 			</div>
 		</section>
 
@@ -242,6 +306,6 @@
 			</section>
 		</div>
 
-		<ReviewList recipeId={recipe.id} />
+		<ReviewList recipeId={recipe.id} refreshKey={reviewRefresh} />
 	</article>
 </div>

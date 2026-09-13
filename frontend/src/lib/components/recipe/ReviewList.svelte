@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import RatingStars from '$components/recipe/RatingStars.svelte';
 	import AuthorAvatar from '$components/common/AuthorAvatar.svelte';
 	import { formatDate } from '$lib/utils';
 
 	export let recipeId: string;
+	export let refreshKey = 0;
 
 	type Review = {
 		id: string;
@@ -40,6 +42,8 @@
 	}
 
 	onMount(() => fetchPage(1, false));
+
+	$: if (browser && refreshKey > 0) fetchPage(1, false);
 </script>
 
 <section class="mt-10" aria-labelledby="reviews-heading">
