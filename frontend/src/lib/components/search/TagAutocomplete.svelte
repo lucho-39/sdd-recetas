@@ -18,10 +18,10 @@
 			return;
 		}
 		try {
-			const response = await fetch(`/api/tags/autocomplete?q=${encodeURIComponent(query)}`);
+			const response = await fetch(`/api/v1/tags?query=${encodeURIComponent(query)}&limit=10`);
 			if (response.ok) {
 				const data = await response.json();
-				suggestions = data.tags || [];
+				suggestions = Array.isArray(data) ? data : [];
 				showSuggestions = suggestions.length > 0;
 			}
 		} catch (error) {
@@ -83,7 +83,7 @@
 <div class="relative">
 	<div class="flex flex-wrap gap-1.5 mb-2" role="group" aria-label="Etiquetas seleccionadas">
 		{#each selected as tagSlug}
-			<span class="badge bg-muted text-muted-foreground flex items-center gap-1" role="option" aria-selected="true">
+			<span class="badge bg-muted text-muted-foreground flex items-center gap-1">
 				{tagSlug}
 				<button
 					type="button"
@@ -109,8 +109,6 @@
 			on:blur={() => setTimeout(() => showSuggestions = false, 200)}
 			aria-autocomplete="list"
 			aria-controls="tag-suggestions"
-			aria-expanded={showSuggestions}
-			aria-owns="tag-suggestions"
 		/>
 		{#if showSuggestions && suggestions.length > 0}
 			<ul
@@ -123,6 +121,7 @@
 					<button
 						type="button"
 						role="option"
+						aria-selected="false"
 						class="w-full px-3 py-2 text-left text-sm hover:bg-accent flex items-center gap-2"
 						on:click={() => selectTag(suggestion)}
 					>
@@ -142,6 +141,7 @@
 			</ul>
 		{/if}
 	</div>
+</div>
 
 <style>
 	:global(.tag-autocomplete) {

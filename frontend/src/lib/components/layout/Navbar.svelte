@@ -26,6 +26,7 @@
 		<!-- Desktop nav -->
 		<div class="hidden items-center gap-1 md:flex">
 			<a href="/" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Explorar</a>
+			<a href="/buscar" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Buscar</a>
 			{#if $auth.isAuthenticated}
 				<a href="/mis-recetas" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Mis Recetas</a>
 				<a href="/mis-favoritos" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Favoritos</a>
@@ -44,6 +45,7 @@
 			</button>
 
 			{#if $auth.isAuthenticated}
+				<a href="/recetas/nueva" class="btn btn-primary btn-sm hidden sm:inline-flex">Crear receta</a>
 				<AvatarDropdown />
 			{:else}
 				<a href="/login" class="btn btn-ghost btn-sm hidden sm:inline-flex">Iniciar sesión</a>
@@ -71,7 +73,9 @@
 		<div class="border-t border-border bg-background px-4 py-4 md:hidden">
 			<div class="flex flex-col gap-1">
 				<a href="/" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground" on:click={() => (mobileMenuOpen = false)}>Explorar</a>
+				<a href="/buscar" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground" on:click={() => (mobileMenuOpen = false)}>Buscar</a>
 				{#if $auth.isAuthenticated}
+					<a href="/recetas/nueva" class="rounded-md px-3 py-2 text-sm font-medium text-primary hover:bg-accent" on:click={() => (mobileMenuOpen = false)}>Crear receta</a>
 					<a href="/mis-recetas" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground" on:click={() => (mobileMenuOpen = false)}>Mis Recetas</a>
 					<a href="/mis-favoritos" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground" on:click={() => (mobileMenuOpen = false)}>Favoritos</a>
 					<button

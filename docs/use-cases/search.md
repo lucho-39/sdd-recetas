@@ -197,3 +197,21 @@ flowchart TD
 - **Reglas**: RB-01, RB-02, RB-03, RB-04, RB-05, RB-06, RB-07, RB-09, RB-15, RB-16, RB-17
 - **Dominio**: `docs/domain/domain-model.md`, `docs/domain/data-model.md` (función `buscar_recetas`, `generate_recipe_slug`)
 - **Especs SDD**: `docs/specs/` (delta spec cuando se implemente)
+
+---
+
+## Estado de Implementación
+
+- ✅ Página `/buscar` con sidebar (texto, categoría, etiquetas, ingredientes,
+  dificultad, tiempo máximo, orden) y sincronización con URL (deep links).
+- ✅ Paginación por offset con "cargar más" (infinite scroll vía
+  `IntersectionObserver` en `RecipeGrid`). Cursor-based sigue **[v2]**.
+- ✅ Backend `GET /api/v1/recipes` soporta `category`, `tags` (AND),
+  `ingredients`, `query` (ILIKE en título+descripción), `difficulty`,
+  `max_time`, `sort`, `page`/`limit`.
+- ✅ Autocompletes de etiquetas e ingredientes **públicos** (`GET /api/v1/tags`,
+  `GET /api/v1/ingredients`) para permitir búsqueda anónima.
+- 🟡 Ingredientes: coincidencia exacta por `ingredient_id` en el filtro; la
+  coincidencia parcial por nombre (ILIKE/trigram) sigue **[v2]**.
+- 🔲 Sidebar sticky con scroll independiente y sincronización atrás/adelante
+  del navegador.

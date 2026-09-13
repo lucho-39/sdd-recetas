@@ -57,6 +57,7 @@ export interface Ingredient {
 
 export interface RecipeIngredient {
 	ingredient_id: string;
+	name?: string | null;
 	amount: number;
 	unit: string;
 	notes?: string | null;
@@ -103,6 +104,8 @@ export interface RecipeFilters {
 	tags?: string[];
 	ingredients?: string[];
 	query?: string;
+	difficulty?: string;
+	maxTime?: number;
 	sort?: 'recent' | 'visited' | 'saved' | 'top_rated';
 	page?: number;
 	limit?: number;

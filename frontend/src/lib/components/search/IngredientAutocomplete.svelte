@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 
 	export let selected: string[] = [];
 	export let onChange: (ingredients: string[]) => void;
@@ -8,6 +8,7 @@
 	let query = '';
 	let showSuggestions = false;
 	let suggestions: { id: string; name: string; category: string; default_unit: string }[] = [];
+	let labels: Record<string, string> = {};
 	let debounceTimer: ReturnType<typeof setTimeout>;
 
 	async function fetchSuggestions() {
@@ -17,10 +18,12 @@
 			return;
 		}
 		try {
-			const response = await fetch(`/api/ingredients/autocomplete?q=${encodeURIComponent(query)}`);
+			const response = await fetch(
+				`/api/v1/ingredients?query=${encodeURIComponent(query)}&limit=10`
+			);
 			if (response.ok) {
 				const data = await response.json();
-				suggestions = data.ingredients || [];
+				suggestions = Array.isArray(data) ? data : [];
 				showSuggestions = suggestions.length > 0;
 			}
 		} catch (error) {
@@ -30,6 +33,25 @@
 		}
 	}
 
+	async function resolveLabels() {
+		const missing = selected.filter((id) => !labels[id]);
+		await Promise.all(
+			missing.map(async (id) => {
+				try {
+					const res = await fetch(`/api/v1/ingredients/${id}`);
+					if (res.ok) {
+						const ing = await res.json();
+						labels = { ...labels, [id]: ing.name };
+					}
+				} catch {
+					/* keep the raw id as label */
+				}
+			})
+		);
+	}
+
+	$: if (browser && selected.length) resolveLabels();
+
 	function handleInput() {
 		showSuggestions = true;
 		if (debounceTimer) clearTimeout(debounceTimer);
@@ -38,12 +60,18 @@
 
 	function selectIngredient(ing: { id: string; name: string; category: string; default_unit: string }) {
 		if (!selected.includes(ing.id)) {
+			labels = { ...labels, [ing.id]: ing.name };
 			selected = [...selected, ing.id];
 			onChange(selected);
 		}
 		query = '';
 		suggestions = [];
 		showSuggestions = false;
+	}
+
+	function removeIngredient(id: string) {
+		selected = selected.filter((s) => s !== id);
+		onChange(selected);
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -58,13 +86,13 @@
 <div class="relative">
 	<div class="flex flex-wrap gap-1.5 mb-2" role="group" aria-label="Ingredientes seleccionados">
 		{#each selected as ingId}
-			<span class="badge bg-muted text-muted-foreground flex items-center gap-1" role="option" aria-selected="true">
-				{ingId}
+			<span class="badge bg-muted text-muted-foreground flex items-center gap-1">
+				{labels[ingId] ?? ingId}
 				<button
 					type="button"
 					class="ml-1 p-0.5 hover:bg-muted-foreground/20 rounded"
-					on:click={() => { selected = selected.filter(s => s !== ingId); onChange(selected); }}
-					aria-label="Quitar ingrediente {ingId}"
+					on:click={() => removeIngredient(ingId)}
+					aria-label="Quitar ingrediente {labels[ingId] ?? ingId}"
 				>
 					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
 				</button>
@@ -76,7 +104,7 @@
 		<input
 			type="text"
 			bind:value={query}
-			placeholder="Buscar ingredientes..."
+			placeholder={placeholder}
 			class="input-base pr-8"
 			on:input={handleInput}
 			on:keydown={handleKeydown}
@@ -84,8 +112,6 @@
 			on:blur={() => setTimeout(() => showSuggestions = false, 200)}
 			aria-autocomplete="list"
 			aria-controls="ingredient-suggestions"
-			aria-expanded={showSuggestions}
-			aria-owns="ingredient-suggestions"
 		/>
 		{#if showSuggestions && suggestions.length > 0}
 			<ul
@@ -98,6 +124,7 @@
 					<button
 						type="button"
 						role="option"
+						aria-selected="false"
 						class="w-full px-3 py-2 text-left text-sm hover:bg-accent flex flex-col gap-1"
 						on:click={() => selectIngredient(ing)}
 					>
@@ -111,3 +138,4 @@
 			</ul>
 		{/if}
 	</div>
+</div>

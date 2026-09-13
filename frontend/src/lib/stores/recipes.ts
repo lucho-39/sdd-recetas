@@ -24,9 +24,10 @@ function buildQuery(filters: RecipeFilters, page: number, limit: number): string
 	if (filters.query) params.set('query', filters.query);
 	if (filters.category) params.set('category', filters.category);
 	if (filters.sort) params.set('sort', filters.sort);
-	if (filters.tags && filters.tags.length) params.set('tags', filters.tags.join(','));
-	if (filters.ingredients && filters.ingredients.length)
-		params.set('ingredients', filters.ingredients.join(','));
+	if (filters.difficulty) params.set('difficulty', filters.difficulty);
+	if (filters.maxTime) params.set('max_time', String(filters.maxTime));
+	filters.tags?.forEach((tag) => params.append('tags', tag));
+	filters.ingredients?.forEach((ingredient) => params.append('ingredients', ingredient));
 	return params.toString();
 }
 

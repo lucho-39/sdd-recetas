@@ -244,6 +244,14 @@ gap: 1.5rem;              /* gap-6 */
 
 **Modo Cocinando**: Botón "Cocinar" → abre `/cooking/:slug` (pantalla completa, wake lock).
 
+**Implementado**: hero, breadcrumb, meta (autor enlazado, tiempo, porciones,
+dificultad, visitas), tags enlazados a `/buscar?tag=`, **rating interactivo**
+(1–5 estrellas → `POST /api/v1/ratings/:id`), botón **Guardar** (favorito),
+compartir (Web Share/copiar) y **nombres de ingredientes resueltos** desde el
+catálogo (`RecipeResponse.ingredients[].name`).
+**Pendiente**: lista paginada de reseñas + distribución de barras y trigger de
+Modo Cocinando.
+
 ---
 
 ## 3. Búsqueda — `/buscar`
@@ -277,6 +285,16 @@ gap: 1.5rem;              /* gap-6 */
 ```
 
 **Responsive**: `< lg`: Sidebar en Sheet (Drawer) activado por botón "Filtros" en toolbar.
+
+**Implementado**: sidebar con búsqueda de texto (debounce 300ms), categoría
+(radio), etiquetas e ingredientes (autocompletes públicos contra `/api/v1/tags`
+y `/api/v1/ingredients`), dificultad, tiempo máximo y orden (recientes,
+mejor calificadas, más vistas, más guardadas). Sincroniza estado ↔ URL
+(deep links) y usa infinite scroll con el `RecipeGrid`. Filtros de backend:
+`category`, `tags` (AND), `ingredients`, `query`, `difficulty`, `max_time`,
+`sort`, `page`/`limit`.
+**Pendiente**: sidebar sticky con scroll propio y sincronización de
+atrás/adelante del navegador.
 
 ---
 
@@ -336,9 +354,27 @@ gap: 1.5rem;              /* gap-6 */
 - Empty state por tab
 
 **Implementado**: tabs Publicadas/Privadas/Borradas, grid de `RecipeCard`,
-toggle público/privado y borrado (soft delete). Datos desde
+toggle público/privado, borrado (soft delete), **editar** (→ `/recetas/:slug/editar`)
+y **restaurar** borradas (`POST /api/v1/recipes/:slug/restore`). Datos desde
 `GET /api/v1/users/me/recipes?include_deleted=true`.
-**Pendiente**: editar (navegación al formulario) y restaurar borradas.
+**Pendiente**: búsqueda/filtros dentro de la vista.
+
+---
+
+## 6b. Crear / Editar Receta — `/recetas/nueva`, `/recetas/:slug/editar`
+
+Formulario compartido (`RecipeForm.svelte`): título, descripción, categoría,
+imagen (URL), tiempos de preparación/cocción, porciones, dificultad,
+ingredientes (autocomplete del catálogo + cantidad/unidad/notas, o carga
+manual), preparación (un paso por línea) y visibilidad pública/privada.
+
+- **Crear**: `POST /api/v1/recipes`; al guardar redirige a `/receta/:slug`.
+- **Editar**: `PATCH /api/v1/recipes/:slug`; solo el autor (el backend
+  devuelve 404 si no lo es y la página redirige al detalle).
+- Ambas requieren sesión; sin sesión redirigen a `/login?returnTo=...`.
+
+**Pendiente**: etiquetas en el formulario (el backend aún no asocia tags en
+crear/editar) y soporte de subida de imágenes (hoy solo URL).
 
 ---
 
@@ -349,9 +385,14 @@ toggle público/privado y borrado (soft delete). Datos desde
 - Header colección: nombre + contador + acciones (renombrar, borrar)
 - Vacío: CTA "Empieza a guardar recetas"
 
-**Implementado**: grid de recetas favoritas (receta anidada desde
-`GET /api/v1/favorites`) y quitar de favoritos.
-**Pendiente**: colecciones personalizadas y sidebar de colecciones.
+**Implementado**: sidebar de colecciones ("Todas" + colecciones nombradas con
+contador), grid de recetas favoritas (receta anidada desde
+`GET /api/v1/favorites`), quitar de favoritos y **gestión de colecciones**:
+mover un favorito (`PATCH /api/v1/favorites/:id`), renombrar
+(`PATCH /api/v1/favorites/collections/:name`) y borrar
+(`DELETE /api/v1/favorites/collections/:name`, devuelve las recetas a "Todas").
+Modelo actual: un favorito pertenece a una sola colección (o ninguna).
+**Pendiente**: crear colección vacía (requiere entidad `Collection`).
 
 ---
 

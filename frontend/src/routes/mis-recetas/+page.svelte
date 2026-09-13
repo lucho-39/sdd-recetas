@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { IconEyeFilled as Public, IconEyeOff as Private, IconTrashFilled as Trash } from '@tabler/icons-svelte';
+	import { IconEyeFilled as Public, IconEyeOff as Private, IconTrashFilled as Trash, IconEdit as Edit, IconRestore as Restore } from '@tabler/icons-svelte';
 	import { auth } from '$lib/stores/auth';
 	import { formatNumber } from '$lib/utils';
 	import RecipeCard from '$components/recipe/RecipeCard.svelte';
@@ -66,6 +66,14 @@
 		await load();
 	}
 
+	async function restore(r: RecipeItem) {
+		await fetch(`/api/v1/recipes/${r.slug}/restore`, {
+			method: 'POST',
+			headers: { Authorization: `Bearer ${$auth.accessToken}` }
+		});
+		await load();
+	}
+
 	onMount(async () => {
 		if (!$auth.isAuthenticated) await auth.init();
 		if (!$auth.isAuthenticated) {
@@ -106,7 +114,14 @@
 							· {formatNumber(r.avg_rating)}★ · {r.visit_count} visitas
 						</span>
 						<div class="flex gap-1">
-							{#if !r.deleted_at}
+							{#if r.deleted_at}
+								<button type="button" class="btn btn-ghost btn-sm" on:click={() => restore(r)} title="Restaurar">
+									<Restore class="h-4 w-4" aria-hidden="true" />
+								</button>
+							{:else}
+								<a href={`/recetas/${r.slug}/editar`} class="btn btn-ghost btn-sm" title="Editar">
+									<Edit class="h-4 w-4" aria-hidden="true" />
+								</a>
 								<button type="button" class="btn btn-ghost btn-sm" on:click={() => toggleVisibility(r)} title={r.is_public ? 'Hacer privada' : 'Publicar'}>
 									{#if r.is_public}<Private class="h-4 w-4" aria-hidden="true" />{:else}<Public class="h-4 w-4" aria-hidden="true" />{/if}
 								</button>
