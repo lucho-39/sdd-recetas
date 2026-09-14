@@ -159,6 +159,58 @@
 		}
 	}
 
+	let accountBusy = false;
+	let accountMessage = '';
+	let accountError = '';
+
+	async function deactivateAccount() {
+		if (!confirm('¿Dar de baja tu cuenta?')) return;
+		const deleteRecipes = confirm('¿Eliminar también tus recetas? (Cancelar = conservarlas)');
+		accountBusy = true;
+		accountMessage = '';
+		accountError = '';
+		try {
+			const res = await fetch('/api/v1/auth/deactivate', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', ...authHeaders() },
+				body: JSON.stringify({ delete_recipes: deleteRecipes })
+			});
+			if (!res.ok) {
+				const body = await res.json().catch(() => ({}));
+				throw new Error(body.detail || 'No se pudo dar de baja la cuenta');
+			}
+			await auth.logout();
+			await goto('/');
+		} catch (err) {
+			accountError = err instanceof Error ? err.message : 'Error';
+			accountBusy = false;
+		}
+	}
+
+	async function deleteAccount() {
+		if (!confirm('Esto anonimiza tu cuenta de forma irreversible. ¿Continuar?')) return;
+		if (!confirm('Última confirmación: ¿eliminar tu cuenta definitivamente?')) return;
+		accountBusy = true;
+		accountMessage = '';
+		accountError = '';
+		try {
+			const res = await fetch('/api/v1/auth/delete-account', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', ...authHeaders() },
+				body: JSON.stringify({ confirm: true })
+			});
+			if (!res.ok) {
+				const body = await res.json().catch(() => ({}));
+				throw new Error(body.detail || 'No se pudo eliminar la cuenta');
+			}
+			await auth.logout();
+			await goto('/');
+		} catch (err) {
+			accountError = err instanceof Error ? err.message : 'Error';
+			accountBusy = false;
+		}
+	}
+
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
 			await auth.init();
@@ -309,15 +361,17 @@
 				<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 					<div class="flex items-start gap-2 text-sm text-muted-foreground">
 						<AlertTriangle class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-						<p>Darte de baja o eliminar la cuenta estará disponible próximamente (<strong>v2</strong>).</p>
+						<p>La baja es reversible por soporte; la eliminación anonimiza tus datos de forma permanente.</p>
 					</div>
 					<div class="flex gap-2">
-						<button type="button" class="btn btn-outline btn-sm" disabled>Darme de baja</button>
-						<button type="button" class="btn btn-destructive btn-sm" disabled>
+						<button type="button" class="btn btn-outline btn-sm" on:click={deactivateAccount} disabled={accountBusy}>Darme de baja</button>
+						<button type="button" class="btn btn-destructive btn-sm" on:click={deleteAccount} disabled={accountBusy}>
 							<Trash class="h-4 w-4" aria-hidden="true" /> Eliminar cuenta
 						</button>
 					</div>
 				</div>
+				{#if accountMessage}<p class="text-sm text-success">{accountMessage}</p>{/if}
+				{#if accountError}<p class="text-sm text-destructive" role="alert">{accountError}</p>{/if}
 			</div>
 		</section>
 	{/if}

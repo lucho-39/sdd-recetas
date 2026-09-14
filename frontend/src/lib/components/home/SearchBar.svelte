@@ -1,27 +1,22 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import {
 		IconSearch as Search,
 		IconAdjustmentsFilled as SlidersHorizontal,
 		IconX as X
 	} from '@tabler/icons-svelte';
+	import { categoriesStore, categories as categoriesData } from '$lib/stores/categories';
 
 	export let query = '';
 	export let category = '';
 	export let loading = false;
 	export let onSearch: (filters: { query?: string; category?: string }) => void = () => {};
 
-	const categories = [
-		{ slug: 'postre', name: 'Postre', icon: '🍰' },
-		{ slug: 'entrada', name: 'Entrada', icon: '🥗' },
-		{ slug: 'snack', name: 'Snack', icon: '🍿' },
-		{ slug: 'plato-principal', name: 'Plato principal', icon: '🍽️' },
-		{ slug: 'acompañamiento', name: 'Acompañamiento', icon: '🥔' },
-		{ slug: 'bebida', name: 'Bebida', icon: '🥤' },
-		{ slug: 'desayuno', name: 'Desayuno', icon: '☕' },
-		{ slug: 'sopa-crema', name: 'Sopa / Crema', icon: '🍲' },
-		{ slug: 'ensalada', name: 'Ensalada', icon: '🥗' },
-		{ slug: 'horneados', name: 'Horneados', icon: '🍞' }
-	];
+	// Categories come from the API (real data), not a hardcoded list.
+	$: categories = $categoriesData;
+	onMount(() => {
+		if ($categoriesData.length === 0) categoriesStore.fetchCategories();
+	});
 
 	let showFilters = false;
 	let debounceTimer: ReturnType<typeof setTimeout>;

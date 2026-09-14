@@ -73,9 +73,36 @@
 		ingSuggestions = [];
 	}
 
-	function addManual() {
-		if (!ingQuery.trim()) return;
-		rows = [...rows, { ingredient_id: '', name: ingQuery.trim(), amount: '', unit: '', notes: '' }];
+	async function addManual() {
+		const name = ingQuery.trim();
+		if (!name) return;
+		try {
+			const res = await fetch('/api/v1/ingredients', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${$auth.accessToken}`
+				},
+				body: JSON.stringify({ name })
+			});
+			if (res.ok) {
+				const ingredient = await res.json();
+				rows = [
+					...rows,
+					{
+						ingredient_id: ingredient.id,
+						name: ingredient.name,
+						amount: '',
+						unit: ingredient.default_unit ?? '',
+						notes: ''
+					}
+				];
+			} else {
+				rows = [...rows, { ingredient_id: '', name, amount: '', unit: '', notes: '' }];
+			}
+		} catch {
+			rows = [...rows, { ingredient_id: '', name, amount: '', unit: '', notes: '' }];
+		}
 		ingQuery = '';
 		ingSuggestions = [];
 	}
