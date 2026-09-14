@@ -29,22 +29,24 @@ Resoluciones canónicas:
 |---|------|----------|
 | 1 | Categorías de receta | **10** slugs: `postre, entrada, snack, plato-principal, acompañamiento, bebida, desayuno, sopa-crema, ensalada, horneados`. Sin `otro`. |
 | 2 | Algoritmo JWT | **HS256** con secreto simétrico (`JWT_SECRET`) en desarrollo/MVP. RS256 con par de claves queda como mejora v2. |
-| 3 | Refresh token | **JWT firmado** (HS256) con `jti`, en cookie HttpOnly, rotación por reuso y blacklist en memoria. Refresh opaque queda v2. |
+| 3 | Refresh token | **JWT firmado** (HS256) con `jti`, en cookie HttpOnly; rotación persistida en `refresh_tokens` con **detección de reuso por familia**. Refresh opaque queda v2. |
 | 4 | Bootstrap admin | Variables **`ADMIN_INITIAL_USER` / `ADMIN_INITIAL_PASSWORD`**; campo `must_change_password` (no `force_password_change`). |
 | 5 | Nombres físicos | Tablas/columnas en **inglés** (`users`, `recipes`, `categories`, `ingredients`, `tags`, `recipe_tags`, `favorites`, `visits`, `ratings`). Los docs de dominio pueden usar términos en español pero deben referenciar el nombre físico. |
 | 6 | Slug de receta | **`slugify(title)` + desambiguación numérica** (`-2`, `-3`). `nanoid` descartado. |
 | 7 | Búsqueda | **ILIKE** para texto e ingredientes + JSONB `contains` por `ingredient_id`. `pg_trgm` / `jsonb_path_query` quedan v2. |
-| 8 | Panel admin | **Existe** como proyecto SvelteKit separado con auth propia. Los endpoints `/api/admin/*` están **pendientes**. |
-| 9 | Contadores denormalizados | `visit_count` y `avg_rating`/`rating_count` se actualizan en la capa de aplicación. `save_count` **no se actualiza aún** (pendiente). No hay triggers de BD. |
+| 8 | Panel admin | **Implementado** como proyecto SvelteKit separado; la API `/api/admin/*` está implementada (auth con rol `admin`). |
+| 9 | Contadores denormalizados | `visit_count`, `avg_rating`/`rating_count` y **`save_count`** se actualizan en la capa de aplicación. No hay triggers de BD. |
 | 10 | Ingredientes en receta | JSONB con `{ingredient_id, amount, unit, notes}`; `ingredient_id` referencia al catálogo. |
-| 11 | Seed de ingredientes | Objetivo 300; el seed documentado está incompleto (257 filas, con slugs duplicados). Debe completarse. |
+| 11 | Seed de ingredientes | **Implementado**: 317 ingredientes (`backend/app/core/ingredients_seed.py`), sin duplicados. Sin columna `usage_count` (ranking por uso v2). |
 
 ## Reclasificado a v2 / post-MVP
 
-OAuth Google/GitHub · Generación de recetas por IA · Modo "Cocinando" · PWA
-offline · Rate limiting · Verificación de email y reset de contraseña reales ·
-Triggers de BD · Búsqueda trigram · Redis · Read replicas · CDN ·
-Observabilidad (Prometheus/OpenTelemetry) · Deactivate/Reactivate/Delete-account.
+Rate limiting por endpoint · Triggers de BD · Búsqueda trigram · Redis ·
+Read replicas · CDN · Observabilidad (Prometheus/OpenTelemetry) · RS256/opaque ·
+Auto-reactivación por magic link.
+
+> OAuth, generación por IA, Modo Cocinando, PWA, verificación de email, reset de
+> contraseña y deactivate/reactivate/delete-account **ya están implementados**.
 
 ## Alternativas
 

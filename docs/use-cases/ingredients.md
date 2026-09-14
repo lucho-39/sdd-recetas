@@ -191,3 +191,19 @@ flowchart TD
 - **Reglas**: RB-ING-01 a RB-ING-04, RB-02, RB-03
 - **Dominio**: `docs/domain/domain-model.md` (Ingrediente), `docs/domain/data-model.md` (tabla + seed)
 - **Especs SDD**: `docs/specs/` (delta spec cuando se implemente)
+
+---
+
+## Estado de Implementación
+
+- ✅ **Seed**: **317** ingredientes idempotentes por slug (`backend/app/core/ingredients_seed.py`),
+  marcados `validated_by_admin=true` (no caen en la cola de pendientes del admin).
+- ✅ **Autocomplete**: `GET /api/v1/ingredients?query=` (público), ordenado por nombre.
+- ✅ **Alta desde el selector**: `POST /api/v1/ingredients` (auth) crea un ingrediente
+  **pendiente** de validación (o devuelve el existente si el slug coincide); el
+  form de receta lo usa para el alta manual y queda referenciado por `ingredient_id`.
+- ✅ **JSONB** `{ingredient_id, amount, unit, notes}`; el detalle resuelve el nombre
+  desde el catálogo.
+- ⚠️ **Desviaciones**: no hay columna `usage_count` en ingredientes (el orden es por
+  nombre, no por uso); la búsqueda por ingrediente es por `ingredient_id` exacto
+  (la coincidencia parcial por nombre queda **[v2]**).

@@ -12,7 +12,7 @@
 |-------|------|------------|----------------|-----|
 | Access Token | JWT (HS256) | 15 min | Memoria (JS variable) | Authorization header `Bearer <token>` |
 | Refresh Token | JWT (HS256) con `jti` | 30 días | HttpOnly cookie (Secure, SameSite=Lax, path=/api/v1/auth/refresh) | POST `/auth/refresh` → nuevo access + refresh rotado |
-| Email Verification | JWT (HS256) | 24 h | Email link (dev: link en la respuesta) | **POST** `/auth/verify-email` con `{token}`; el envío real de email queda **[v2]** |
+| Email Verification | JWT (HS256) | 24 h | Email link (dev: link en la respuesta) | **POST** `/auth/verify-email` con `{token}`; envío por SMTP (o `email_outbox`) |
 | Password Reset | JWT (HS256) | 1 h | Email link | **Implementado** `POST /auth/forgot-password` + `/auth/reset-password` (envío vía SMTP/outbox) |
 
 > **Nota**: la spec original definía access RS256 + refresh *opaque*. El MVP
@@ -34,7 +34,8 @@
 ```
 > Los claims `email`, `provider` y `name` **no** se incluyen hoy (se obtienen
 > de la BD al resolver la dependencia de auth). El claim `role` se reserva para
-> la auth admin **[v2]**. El refresh token usa la misma forma con `type: "refresh"`.
+> la auth admin (el panel valida `role="admin"`). El refresh token usa la misma
+> forma con `type: "refresh"`.
 
 ## Endpoints de Auth
 
@@ -88,9 +89,9 @@ Campos clave:
 
 | Método | Ruta | Descripción | Auth |
 |--------|------|-------------|------|
-| POST | `/auth/deactivate` | Baja lógica (soft delete) con opción `delete_recipes: boolean` **[v2]** | Access token |
-| POST | `/auth/reactivate` | Reactivar cuenta (requiere nuevo display_name) **[v2]** | Access token (o magic link) |
-| POST | `/auth/delete-account` | Eliminación definitiva GDPR (irreversible) **[v2]** | Access token + confirmación expresa |
+| POST | `/auth/deactivate` | Baja lógica (soft delete) con opción `delete_recipes: boolean` | Access token |
+| POST | `/auth/reactivate` | Reactivar cuenta — **solo admin** (`/api/admin/users/{id}/reactivate`); auto-reactivación por magic link **[v2]** | Access token |
+| POST | `/auth/delete-account` | Eliminación definitiva GDPR (irreversible) | Access token + confirmación expresa |
 
 ### POST `/auth/deactivate` — Baja Lógica
 **Request**:
@@ -274,12 +275,12 @@ Si usuario existente (email) hace login con OAuth nuevo:
 - [x] Bootstrap admin por variables de entorno
 - [x] Tests de integración de auth (`backend/tests/test_auth.py`)
 - [ ] Middleware ownership explícito (hoy la verificación es por consulta `author_id == user.id`)
-- [ ] OAuth Google + GitHub **[v2]**
+- [x] OAuth Google + GitHub (config-gated)
 - [ ] JWT RS256 con par de claves **[v2]**
-- [ ] Refresh token opaque + detección de reuso por familia **[v2]**
-- [ ] Rate limiting en auth endpoints **[v2]**
-- [ ] Email verification flow (envío) **[v2]**
-- [ ] Password reset flow real **[v2]**
+- [x] Detección de reuso por familia (`refresh_tokens`); refresh opaque **[v2]**
+- [ ] Rate limiting por endpoint **[v2]** (hay rate limit global configurable)
+- [x] Email verification flow (token + envío por SMTP/outbox)
+- [x] Password reset flow real
 - [ ] Password strength validation (complejidad) **[v2]**
-- [ ] Account linking (email match) **[v2]**
-- [ ] Soft delete + anonimización **[v2]**
+- [x] Account linking (email match)
+- [x] Soft delete + anonimización (self y admin)

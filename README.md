@@ -13,7 +13,7 @@ Aplicación mobile-first PWA para gestión de recetas de cocina con:
 - **Panel de administración** independiente (dashboard, métricas, config, audit log)
 - **Subida de imágenes** de recetas (disco local)
 - **Generación de recetas por IA** a partir de ingredientes (config-gated)
-- **Catálogo de ingredientes normalizados** con autocomplete *(seed objetivo 300; actual incompleto)*
+- **Catálogo de ingredientes normalizados** con seed de **317** ingredientes y autocomplete
 
 ## 🏗️ Stack Tecnológico
 
@@ -174,7 +174,7 @@ sdd-recetas/
 
 ### Admin (Proyecto Separado)
 - **Proyecto SvelteKit independiente** (`admin/`)
-- **Auth independiente**: cookies propias; endpoints `/api/admin/*` pendientes
+- **Auth por rol `admin`** (JWT propio reutilizado); API `/api/admin/*` implementada
 - **Bootstrap**: Variables `ADMIN_INITIAL_*` → cambio de contraseña forzado en primer login
 
 ## 🗄️ Base de Datos - Esquema Principal
@@ -191,7 +191,7 @@ users, categories, tags, recipes, recipe_tags, favorites, visits, ratings, ingre
 - Soft deletes (deleted_at)
 - JSONB para ingredients (referencia al catálogo por ingredient_id)
 - Búsqueda por ILIKE (pg_trgm queda v2)
-- Contadores denormalizados calculados en la app (visit_count, avg_rating); save_count pendiente
+- Contadores denormalizados calculados en la app (visit_count, avg_rating, save_count); sin triggers de BD
 - Soft delete admin con anonimización GDPR (v2)
 ```
 
@@ -210,7 +210,7 @@ GET /api/recipes?category=postre&tags=vegano,sin-tacc&ingredients=almendra&q=bro
 ## 🧪 Testing
 
 ```bash
-# Backend (172 tests, incluida la integración de Socket.IO)
+# Backend (179 tests, incluida la integración de Socket.IO)
 cd backend && uv run pytest
 
 # CI: .github/workflows/ci.yml corre la suite de backend con Postgres

@@ -17,12 +17,16 @@ El proyecto está en fase **MVP (0.x)**.
 - **Rotación de refresh con detección de reuso**: presentar un token ya rotado revoca su familia.
 - **OAuth Google/GitHub** (config-gated): `GET /auth/oauth/{provider}` + callback, vinculación
   de cuentas y emisión de tokens; 503 si faltan credenciales.
+- **Baja y eliminación de cuenta** propias: `POST /auth/deactivate` (opcional borrar recetas) y
+  `POST /auth/delete-account` (anonimización GDPR), con botones en `/perfil`.
 - Perfil privado (`/perfil`) y **perfil público** (`/usuario/:id`) sin datos sensibles.
 
 ### Added — Recetas
 - CRUD completo: crear/editar/borrar (soft delete) y **restaurar**; detalle por slug con
   contador de visitas; generación de slug con desambiguación.
-- **Ingredientes**: catálogo con autocomplete, nombres resueltos en el detalle, cantidad/unidad/notas.
+- **Ingredientes**: catálogo con **seed de 317 ingredientes** (`ingredients_seed.py`), autocomplete
+  sobre datos reales y **alta desde el selector** (`POST /api/v1/ingredients`, pendiente de validación);
+  nombres resueltos en el detalle, cantidad/unidad/notas.
 - **Tags**: asociación por slug al crear/editar, con `usage_count` sincronizado.
 - **Favoritos y colecciones**: guardar/quitar, mover, renombrar y borrar colecciones.
 - **Calificaciones y reseñas**: 1–5 estrellas, reseña textual, promedio y **distribución**,
@@ -90,6 +94,8 @@ El proyecto está en fase **MVP (0.x)**.
   y valida autenticación, unión al room y entrega del evento.
 
 ### Fixed
+- `save_count` ahora se incrementa/decrementa al guardar/quitar favoritos (antes quedaba en 0).
+- El buscador del home obtiene las **categorías desde la API** en vez de una lista hardcodeada.
 - 10 bugs reales de endpoints detectados al escribir la suite de tests.
 - Build del frontend por markup inválido en `CategoryFilter`/`TagAutocomplete`.
 - Autocompletes apuntaban a endpoints inexistentes; `recipesStore` armaba mal los arrays de filtros.
@@ -102,6 +108,6 @@ El proyecto está en fase **MVP (0.x)**.
   casos de uso (`search`, `ingredients`, `admin`, `notifications`), testing y este CHANGELOG.
 
 ### Tests
-- Suite de endpoints con Postgres real (`recetario_test`) y `ASGITransport`: **172 tests** verdes,
+- Suite de endpoints con Postgres real (`recetario_test`) y `ASGITransport`: **179 tests** verdes,
   incluidos notificaciones (preferencias/email/Web Push), administración v2, OAuth/reset/refresh,
-  IA (gating) e integración de Socket.IO.
+  IA (gating), seed del catálogo e integración de Socket.IO.

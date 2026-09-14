@@ -45,7 +45,7 @@
 - INSERT en `favorites` → `save_count++`
 - DELETE de `favorites` → `save_count--`
 - Una misma receta puede estar en múltiples colecciones del mismo usuario → cada par (user, recipe, collection) cuenta como 1
-**Estado**: **Pendiente**. El alta/baja de favoritos existe, pero `save_count` **no se actualiza todavía**. No hay triggers de BD.
+**Estado**: **Implementado** (capa de aplicación, sin triggers): alta de favorito `save_count++`, baja `save_count--`.
 
 ## RB-06: Calificación 1-5 + reseña opcional
 **Descripción**: Usuario logueado califica 1-5 estrellas + texto opcional. Una calificación por usuario por receta.
@@ -126,7 +126,7 @@
 - **Compartir**: Web Share API nativo + botón "Copiar link" → genera URL `/receta/<slug>` con `utm_source=share`.
 - **Seguimiento (followers/following)**: **NO en MVP**. Sin grafo social, sin feed de actividad.
 - **Perfil público**: Accesible en `/usuario/<user_id>` o `/u/<display_name_slug>` → muestra **solo recetas públicas del autor** (grid + paginación). No muestra favoritos, colecciones, ratings dados, ni métricas privadas.
-**Estado**: **[v2]** — no implementado (no hay perfil público ni share en el MVP actual).
+**Estado**: **Implementado** — perfil público (`/usuario/:id`) sin datos sensibles y compartir (Web Share API + copiar link). Sin seguimiento/feed (RB-17).
 
 ---
 
@@ -136,52 +136,47 @@
 **Error**: "Email already registered".
 **Estado**: Implementado.
 
-## RB-AUTH-02: Vinculación de cuentas (Account Linking) **[v2]**
+## RB-AUTH-02: Vinculación de cuentas (Account Linking)
 **Descripción**: Si un usuario existente hace login con OAuth y el email coincide, se vincula el provider_id al mismo usuario.
-**Estado**: No implementado (OAuth es v2).
+**Estado**: **Implementado** — OAuth Google/GitHub crea o vincula (`oauth_accounts`) por email de proveedor verificado.
 
 ## RB-AUTH-03: Política de contraseña
 **Descripción**: Mínimo 8 caracteres (implementado). Requisitos de complejidad (mayúscula, minúscula, número, especial) quedan **[v2]**.
 **Hash**: bcrypt (implementado con la librería `bcrypt` directa; `passlib` fue descartado por incompatibilidad con bcrypt 5.x).
 **Aplicable**: Registro, cambio de password.
 
-## RB-AUTH-04: Rate limiting en auth endpoints **[v2]**
+## RB-AUTH-04: Rate limiting
 **Descripción**: Protección contra brute force y enumeración.
-| Endpoint | Límite | Ventana |
-|----------|--------|---------|
-| POST /auth/login | 5 intentos | 15 min / IP |
-| POST /auth/register | 5 intentos | 15 min / IP |
-| POST /auth/forgot-password | 3 intentos | 1 hora / email |
-**Estado**: No implementado.
+**Estado**: **Parcial** — hay un **rate limit global por IP/minuto** configurable (`rate_limit_per_minute`, exento `/api/admin`). Los límites específicos por endpoint (login/register/forgot) quedan **[v2]**.
 
 ## RB-AUTH-05: Tokens JWT + Refresh Rotation
 **Descripción**: Access token **JWT HS256** (15 min) + Refresh token **JWT HS256** con `jti` (30 días, HttpOnly cookie).
 **Rotación**: Cada uso de refresh → nuevo access + nuevo refresh.
-**Detección de reuso / familias**: **[v2]** (hoy hay blacklist en memoria del token usado).
-**Logout**: Revoca el refresh actual (blacklist en memoria) y borra la cookie.
+**Detección de reuso / familias**: **Implementado** — cada refresh se persiste en `refresh_tokens`; presentar un token ya rotado revoca toda su familia (`family_id`) con 401.
+**Logout**: Revoca la fila del refresh presentado y borra la cookie.
 **Nota**: La spec original decía RS256 + refresh opaque. Se adopta HS256 + refresh JWT (ver ADR-000). RS256/opaque quedan **[v2]**.
 **Estado**: Implementado.
 
 ## RB-AUTH-06: Verificación de email
 **Descripción**: El login rechaza cuentas con `is_verified=false` (403).
-**MVP**: como el **envío** del email de verificación es **[v2]**, el registro crea
-cuentas **verificadas** (`REQUIRE_EMAIL_VERIFICATION=false`) para que sean usables
-de inmediato. Al implementar el envío, poner `REQUIRE_EMAIL_VERIFICATION=true`.
-**Estado**: Parcial. El gate está implementado; el envío del email es **[v2]**.
+**MVP**: el registro crea cuentas **verificadas** (`REQUIRE_EMAIL_VERIFICATION=false`)
+para que sean usables de inmediato; con `true` quedan pendientes y se verifica por
+enlace. El envío usa SMTP si está configurado (si no, `email_outbox`).
+**Estado**: **Implementado** (token 24 h, `POST /auth/verify-email` y `request-verification`).
 
 ## RB-AUTH-07: Recuperación de contraseña
-**Descripción**: Flujo "olvidé mi contraseña" por email con token de 1 hora, un solo uso.
-**Estado**: **[v2]**. `POST /auth/forgot-password` existe y responde sin filtrar existencia de cuentas; `POST /auth/reset-password` es un stub que no valida token.
+**Descripción**: Flujo "olvidé mi contraseña" por email con token de 1 hora.
+**Estado**: **Implementado** — `POST /auth/forgot-password` (email vía SMTP/outbox, sin filtrar existencia) y `POST /auth/reset-password` (valida token y cambia la contraseña).
 
-## RB-AUTH-08: Baja lógica de usuario (Soft Delete) **[v2]**
+## RB-AUTH-08: Baja lógica de usuario (Soft Delete)
 **Descripción**: Usuario se desactiva (`is_active=false`), no se borra físicamente.
-**Estado**: No implementado (`POST /auth/deactivate` no existe).
+**Estado**: **Implementado** — `POST /auth/deactivate` (propia cuenta, opcional borrar recetas) y desactivación por admin.
 
-## RB-AUTH-09: Reactivación de usuario **[v2]**
-**Estado**: No implementado.
+## RB-AUTH-09: Reactivación de usuario
+**Estado**: **Implementado por admin** (`POST /api/admin/users/{id}/reactivate`). La auto-reactivación por magic link queda **[v2]**.
 
-## RB-AUTH-10: Eliminación definitiva (GDPR) **[v2]**
-**Estado**: No implementado.
+## RB-AUTH-10: Eliminación definitiva (GDPR)
+**Estado**: **Implementado** — `POST /auth/delete-account` (anonimiza PII y da de baja las recetas) y `POST /api/admin/users/{id}/gdpr-erase`.
 
 ## RB-AUTH-11: Último login tracking
 **Descripción**: `last_login_at` se actualiza en cada login exitoso.
@@ -194,7 +189,7 @@ de inmediato. Al implementar el envío, poner `REQUIRE_EMAIL_VERIFICATION=true`.
 **Categorías**: proteina, verdura, fruta, lacteo, grano, condimento, grasa, otro.
 **Unidades por defecto**: g, kg, ml, l, unidad, cucharada, cucharadita, taza, pizca.
 **Aliases**: Array de sinónimos para búsqueda (ej: pollo → {pechuga, suprema}).
-**Objetivo de seed**: 300 ingredientes. **Estado**: el seed documentado está incompleto (257 filas y slugs duplicados); debe completarse.
+**Objetivo de seed**: 300 ingredientes. **Estado**: **Implementado** — seed idempotente con **317** ingredientes (`backend/app/core/ingredients_seed.py`), sin slugs duplicados, marcados `validated_by_admin=true`. No hay columna `usage_count` en ingredientes: el autocomplete ordena por nombre (ranking por uso queda **[v2]**).
 
 ## RB-ING-02: Ingredientes en Recetas — Referencia a Catálogo
 **Descripción**: `recipes.ingredients` JSONB array de objetos `{ingredient_id, amount, unit, notes?}`.

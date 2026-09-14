@@ -7,8 +7,8 @@
 |----|-----------|-----------|-----|
 | RF-01.1 | Registrarse con email + contraseña | MUST | — |
 | RF-01.2 | Iniciar sesión con email + contraseña | MUST | — |
-| RF-01.3 | Registrarse/iniciar sesión con OAuth Google **[v2]** | SHOULD | — |
-| RF-01.4 | Registrarse/iniciar sesión con OAuth GitHub **[v2]** | SHOULD | — |
+| RF-01.3 | Registrarse/iniciar sesión con OAuth Google (config-gated) | SHOULD | — |
+| RF-01.4 | Registrarse/iniciar sesión con OAuth GitHub (config-gated) | SHOULD | — |
 | RF-01.5 | Cerrar sesión | MUST | — |
 | RF-01.6 | Recuperar contraseña (email reset) | SHOULD | — |
 | RF-01.7 | Sesión persistente (refresh token, 30 días) | SHOULD | — |
@@ -172,7 +172,7 @@
 | RF-06 | `ai-generation.md` ✅ |
 | RF-07 | `cooking-mode.md` ✅ |
 | RF-08 | `visit-tracking.md` ✅ |
-| RF-09 | `tags.md` (pendiente) |
+| RF-09 | `search.md` / `ingredients.md` (cubierto) |
 | RF-10 | `admin.md` ✅ |
 | RF-12 | `ingredients.md` ✅ |
 | RF-13 | `notifications.md` ✅ |
