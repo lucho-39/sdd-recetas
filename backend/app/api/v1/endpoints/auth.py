@@ -29,7 +29,7 @@ from app.core.security import (
     decode_token,
     blacklist_token,
 )
-from app.models import OAuthAccount, RefreshToken, User, UserRole
+from app.models import OAuthAccount, RefreshToken, Recipe, User, UserRole
 from app.schemas.auth import (
     Token,
     TokenRefresh,
@@ -39,6 +39,8 @@ from app.schemas.auth import (
     PasswordResetRequest,
     PasswordResetConfirm,
     PasswordChange as PasswordChangeSchema,
+    AccountDeactivateRequest,
+    AccountDeleteRequest,
 )
 from app.services.email import send_email
 
@@ -440,6 +442,88 @@ async def verify_email(
     user.is_verified = True
     await db.commit()
     return {"message": "Email verified successfully"}
+
+
+async def _revoke_all_refresh_tokens(db: AsyncSession, user_id) -> None:
+    rows = (
+        await db.execute(
+            select(RefreshToken).where(
+                RefreshToken.user_id == user_id, RefreshToken.revoked == False  # noqa: E712
+            )
+        )
+    ).scalars().all()
+    for row in rows:
+        row.revoked = True
+    await db.commit()
+
+
+@router.post("/deactivate", summary="Deactivate my account")
+async def deactivate_account(
+    data: AccountDeactivateRequest,
+    response: Response,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Soft-delete the current account (optionally its recipes)."""
+    recipes_deleted = 0
+    if data.delete_recipes:
+        recipes = (
+            await db.execute(
+                select(Recipe).where(
+                    Recipe.author_id == current_user.id, Recipe.deleted_at.is_(None)
+                )
+            )
+        ).scalars().all()
+        for recipe in recipes:
+            recipe.deleted_at = datetime.utcnow()
+            recipe.is_public = False
+            recipes_deleted += 1
+
+    current_user.is_active = False
+    current_user.deactivated_at = datetime.utcnow()
+    await _revoke_all_refresh_tokens(db, current_user.id)
+    await db.commit()
+
+    response.delete_cookie(key="refresh_token", path="/api/v1/auth/refresh")
+    return {"deactivated": True, "recipes_deleted": recipes_deleted}
+
+
+@router.post("/delete-account", summary="Delete my account (GDPR)")
+async def delete_account(
+    data: AccountDeleteRequest,
+    response: Response,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Irreversibly anonymize the account and soft-delete its recipes."""
+    if not data.confirm:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Confirmation required",
+        )
+
+    recipes = (
+        await db.execute(
+            select(Recipe).where(Recipe.author_id == current_user.id, Recipe.deleted_at.is_(None))
+        )
+    ).scalars().all()
+    for recipe in recipes:
+        recipe.deleted_at = datetime.utcnow()
+        recipe.is_public = False
+
+    current_user.email = f"deleted+{current_user.id}@recetario.local"
+    current_user.display_name = "Usuario eliminado"
+    current_user.avatar_url = None
+    current_user.password_hash = get_password_hash(str(uuid4()))
+    current_user.is_active = False
+    current_user.is_verified = False
+    current_user.deleted_at = datetime.utcnow()
+
+    await _revoke_all_refresh_tokens(db, current_user.id)
+    await db.commit()
+
+    response.delete_cookie(key="refresh_token", path="/api/v1/auth/refresh")
+    return {"deleted": True, "recipes_deleted": len(recipes)}
 
 
 @router.post("/forgot-password")

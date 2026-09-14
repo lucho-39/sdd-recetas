@@ -82,6 +82,7 @@ async def add_favorite(
         collection_name=collection,
     )
     db.add(favorite)
+    recipe.save_count += 1
     await db.commit()
 
     await notify_recipe_author(db, actor=current_user, recipe=recipe, type="favorite")
@@ -117,6 +118,9 @@ async def remove_favorite(
             Favorite.collection_name == favorite.collection_name,
         )
     )
+    recipe = await db.get(Recipe, recipe_id)
+    if recipe is not None:
+        recipe.save_count = max(0, recipe.save_count - 1)
     await db.commit()
 
     return None

@@ -8,7 +8,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
-from app.models import Category, Recipe, User
+from app.core.ingredients_seed import INGREDIENTS
+from app.models import Category, Ingredient, Recipe, User
 
 CATEGORIES: list[tuple[str, str, str, str]] = [
     ("postre", "Postre", "🍰", "#FB923C"),
@@ -61,11 +62,28 @@ DEMO_RECIPES: list[dict] = [
 
 
 async def seed_initial_data(db: AsyncSession) -> None:
-    """Seed categories and demo recipes if they do not exist yet."""
+    """Seed categories, the ingredient catalog and demo recipes if missing."""
     for order, (slug, name, icon, color) in enumerate(CATEGORIES):
         exists = await db.scalar(select(Category.id).where(Category.slug == slug))
         if not exists:
             db.add(Category(slug=slug, name=name, icon=icon, color=color, sort_order=order))
+    await db.commit()
+
+    # Ingredient catalog (RB-ING-01): idempotent by slug.
+    for slug, name, category, default_unit, aliases in INGREDIENTS:
+        exists = await db.scalar(select(Ingredient.id).where(Ingredient.slug == slug))
+        if not exists:
+            db.add(
+                Ingredient(
+                    slug=slug,
+                    name=name,
+                    category=category,
+                    default_unit=default_unit,
+                    aliases=aliases,
+                    is_active=True,
+                    validated_by_admin=True,
+                )
+            )
     await db.commit()
 
     settings = get_settings()

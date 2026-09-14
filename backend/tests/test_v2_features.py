@@ -123,3 +123,52 @@ async def test_ai_generate_validates_input(client: AsyncClient, auth_headers: di
         "/api/v1/ai/generate", headers=auth_headers, json={"ingredients": "x"}
     )
     assert response.status_code == 422
+
+
+async def test_deactivate_my_account(client: AsyncClient, db_session: AsyncSession) -> None:
+    from app.core.security import create_access_token
+
+    user = await create_user(db_session, email="deact@example.com")
+    headers = {"Authorization": f"Bearer {create_access_token(subject=str(user.id))}"}
+
+    response = await client.post(
+        "/api/v1/auth/deactivate", headers=headers, json={"delete_recipes": False}
+    )
+    assert response.status_code == 200
+    assert response.json()["deactivated"] is True
+
+    await db_session.refresh(user)
+    assert user.is_active is False
+
+
+async def test_delete_account_requires_confirmation(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    from app.core.security import create_access_token
+
+    user = await create_user(db_session, email="del1@example.com")
+    headers = {"Authorization": f"Bearer {create_access_token(subject=str(user.id))}"}
+
+    response = await client.post(
+        "/api/v1/auth/delete-account", headers=headers, json={"confirm": False}
+    )
+    assert response.status_code == 400
+
+
+async def test_delete_account_anonymizes(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    from app.core.security import create_access_token
+
+    user = await create_user(db_session, email="del2@example.com")
+    headers = {"Authorization": f"Bearer {create_access_token(subject=str(user.id))}"}
+
+    response = await client.post(
+        "/api/v1/auth/delete-account", headers=headers, json={"confirm": True}
+    )
+    assert response.status_code == 200
+
+    await db_session.refresh(user)
+    assert user.email.startswith("deleted+")
+    assert user.display_name == "Usuario eliminado"
+    assert user.is_active is False

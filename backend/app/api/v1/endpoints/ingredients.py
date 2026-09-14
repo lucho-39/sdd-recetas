@@ -1,9 +1,11 @@
 """
 Ingredient endpoints
 """
+import re
 from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from pydantic import BaseModel, Field
 from sqlalchemy import select, func, or_, cast, Text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +14,36 @@ from app.core.security import get_current_active_user, get_current_user_optional
 from app.models import Ingredient
 
 router = APIRouter()
+
+VALID_CATEGORIES = {"proteina", "verdura", "fruta", "lacteo", "grano", "condimento", "grasa", "otro"}
+VALID_UNITS = {"g", "kg", "ml", "l", "unidad", "cucharada", "cucharadita", "taza", "pizca"}
+
+
+def slugify(text: str) -> str:
+    text = text.lower().strip()
+    text = re.sub(r"[^\w\s-]", "", text, flags=re.UNICODE)
+    text = re.sub(r"[\s_-]+", "-", text, flags=re.UNICODE)
+    return re.sub(r"^-+|-+$", "", text)
+
+
+class IngredientCreate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=100)
+    category: str = Field("otro", max_length=30)
+    default_unit: str = Field("unidad", max_length=20)
+    aliases: List[str] = Field(default_factory=list)
+
+
+def _serialize(ingredient: Ingredient) -> dict:
+    return {
+        "id": str(ingredient.id),
+        "slug": ingredient.slug,
+        "name": ingredient.name,
+        "category": ingredient.category,
+        "default_unit": ingredient.default_unit,
+        "aliases": ingredient.aliases or [],
+        "is_active": ingredient.is_active,
+        "validated_by_admin": ingredient.validated_by_admin,
+    }
 
 
 @router.get("", summary="Search ingredients")
@@ -41,6 +73,46 @@ async def search_ingredients(
     query_stmt = query_stmt.order_by(Ingredient.name).limit(limit)
     result = await db.execute(query_stmt)
     return result.scalars().all()
+
+
+@router.post("", status_code=status.HTTP_201_CREATED, summary="Create an ingredient")
+async def create_ingredient(
+    data: IngredientCreate,
+    current_user=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a catalog ingredient (pending admin validation).
+
+    If the slug already exists the existing ingredient is returned, so the
+    selector can safely reuse it.
+    """
+    if data.category not in VALID_CATEGORIES:
+        raise HTTPException(status_code=400, detail="Invalid category")
+    if data.default_unit not in VALID_UNITS:
+        raise HTTPException(status_code=400, detail="Invalid default unit")
+
+    slug = slugify(data.name)
+    if not slug:
+        raise HTTPException(status_code=400, detail="Invalid name")
+
+    existing = await db.scalar(select(Ingredient).where(Ingredient.slug == slug))
+    if existing is not None:
+        return _serialize(existing)
+
+    ingredient = Ingredient(
+        slug=slug,
+        name=data.name.strip(),
+        category=data.category,
+        default_unit=data.default_unit,
+        aliases=data.aliases or [],
+        is_active=True,
+        validated_by_admin=False,
+        created_by=current_user.id,
+    )
+    db.add(ingredient)
+    await db.commit()
+    await db.refresh(ingredient)
+    return _serialize(ingredient)
 
 
 @router.get("/categories", summary="List ingredient categories")

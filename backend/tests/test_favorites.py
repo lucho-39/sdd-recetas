@@ -163,3 +163,15 @@ async def test_delete_collection_moves_to_default(
 async def test_collections_require_authentication(client: AsyncClient) -> None:
     response = await client.get("/api/v1/favorites/collections")
     assert response.status_code == 401
+
+
+async def test_favorite_updates_save_count(
+    client: AsyncClient, db_session: AsyncSession, recipe: Recipe, admin_headers: dict
+) -> None:
+    await client.post(f"/api/v1/favorites/{recipe.id}", headers=admin_headers)
+    await db_session.refresh(recipe)
+    assert recipe.save_count == 1
+
+    await client.delete(f"/api/v1/favorites/{recipe.id}", headers=admin_headers)
+    await db_session.refresh(recipe)
+    assert recipe.save_count == 0

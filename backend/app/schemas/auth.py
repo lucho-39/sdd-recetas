@@ -94,3 +94,15 @@ class NotificationPreferenceUpdate(BaseModel):
     push_enabled: Optional[bool] = None
     favorites_enabled: Optional[bool] = None
     ratings_enabled: Optional[bool] = None
+
+
+class AccountDeactivateRequest(BaseModel):
+    """Baja lógica de la propia cuenta."""
+
+    delete_recipes: bool = False
+
+
+class AccountDeleteRequest(BaseModel):
+    """Eliminación definitiva (GDPR) de la propia cuenta."""
+
+    confirm: bool = False
