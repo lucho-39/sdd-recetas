@@ -11,6 +11,7 @@
 	} from '@tabler/icons-svelte';
 	import { auth } from '$lib/stores/auth';
 	import { formatNumber } from '$lib/utils';
+	import { confirmDialog } from '$lib/stores/confirm';
 	import RecipeCard from '$components/recipe/RecipeCard.svelte';
 
 	type RecipeItem = {
@@ -63,7 +64,13 @@
 	}
 
 	async function remove(r: RecipeItem) {
-		if (!confirm(`¿Eliminar la receta "${r.title}"?`)) return;
+		const confirmed = await confirmDialog({
+			title: `¿Eliminar la receta "${r.title}"?`,
+			description: 'Se muestra como eliminada desde esta página y podés restaurarla.',
+			confirmLabel: 'Eliminar',
+			destructive: true
+		});
+		if (!confirmed) return;
 		await apiFetch(`/api/v1/recipes/${r.slug}`, {
 			method: 'DELETE'
 		});

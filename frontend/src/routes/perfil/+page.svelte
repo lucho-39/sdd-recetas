@@ -11,6 +11,7 @@
 	import { auth } from '$lib/stores/auth';
 	import { apiFetch } from '$lib/api';
 	import { notifications } from '$lib/stores/notifications';
+	import { confirmDialog } from '$lib/stores/confirm';
 	import AuthorAvatar from '$components/common/AuthorAvatar.svelte';
 	import RecipeGrid from '$components/recipe/RecipeGrid.svelte';
 	import type { NotificationPreferences } from '$lib/types';
@@ -169,8 +170,22 @@
 	let accountError = '';
 
 	async function deactivateAccount() {
-		if (!confirm('¿Dar de baja tu cuenta?')) return;
-		const deleteRecipes = confirm('¿Eliminar también tus recetas? (Cancelar = conservarlas)');
+		const confirmed = await confirmDialog({
+			title: '¿Dar de baja tu cuenta?',
+			description: 'Tu cuenta queda inactiva y podés reactivarla más adelante.',
+			confirmLabel: 'Dar de baja',
+			destructive: true
+		});
+		if (!confirmed) return;
+
+		const deleteRecipes = await confirmDialog({
+			title: '¿Eliminar también tus recetas?',
+			description: 'Se marcan como eliminadas. Si cancelás, se conservan.',
+			confirmLabel: 'Sí, eliminarlas',
+			cancelLabel: 'Conservarlas',
+			destructive: true
+		});
+
 		accountBusy = true;
 		accountMessage = '';
 		accountError = '';
@@ -193,8 +208,20 @@
 	}
 
 	async function deleteAccount() {
-		if (!confirm('Esto anonimiza tu cuenta de forma irreversible. ¿Continuar?')) return;
-		if (!confirm('Última confirmación: ¿eliminar tu cuenta definitivamente?')) return;
+		const step1 = await confirmDialog({
+			title: 'Esto anonimiza tu cuenta de forma irreversible. ¿Continuar?',
+			confirmLabel: 'Continuar',
+			destructive: true
+		});
+		if (!step1) return;
+
+		const step2 = await confirmDialog({
+			title: 'Última confirmación: ¿eliminar tu cuenta definitivamente?',
+			confirmLabel: 'Eliminar definitivamente',
+			destructive: true
+		});
+		if (!step2) return;
+
 		accountBusy = true;
 		accountMessage = '';
 		accountError = '';

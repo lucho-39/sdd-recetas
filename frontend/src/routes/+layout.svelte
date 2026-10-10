@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import Navbar from '$components/layout/Navbar.svelte';
 	import Footer from '$components/layout/Footer.svelte';
+	import ConfirmHost from '$components/ui/ConfirmHost.svelte';
 	import { theme } from '$lib/stores/theme';
 	import { auth } from '$lib/stores/auth';
 	import { notifications } from '$lib/stores/notifications';
@@ -23,4 +24,5 @@
 		<slot />
 	</main>
 	<Footer />
+	<ConfirmHost />
 </div>

@@ -84,6 +84,17 @@ El proyecto está en fase **MVP (0.x)**.
 ### Added — Datos y seed
 - Seed idempotente de 10 categorías y recetas demo; bootstrap del usuario admin.
 
+### Added — Design system
+- **`Dialog`** (`components/ui/Dialog.svelte`) y **`AlertDialog`** (`components/ui/AlertDialog.svelte`),
+  que `docs/ui/00-ui-overview.md` ya marcaba como existentes: `role="dialog"`, `aria-modal`,
+  `aria-labelledby`/`aria-describedby`, ESC, focus trap con Tab y foco restaurado al cerrar,
+  overlay configurable (`closeOnOverlay`) y slot `footer`. `AlertDialog` aporta el variant
+  `destructive` para borrados, baja de cuenta y GDPR.
+- **`confirmDialog()`** (`stores/confirm.ts`) con API tipo `confirm()` nativo, servida por un único
+  `ConfirmHost` montado en `+layout.svelte`. Reemplaza los **7 `confirm()` nativos** de
+  `/mis-favoritos`, `/mis-recetas` y `/perfil`, que se leían linealmente y ahora siguen igual
+  (`if (!(await confirmDialog(...))) return;`) sin anidar callbacks.
+
 ### Infraestructura
 - `podman-compose` con **postgres + backend + frontend + admin**, healthchecks y bind mounts persistentes
   (`./.data/postgres`, `./.data/uploads`).
@@ -97,10 +108,18 @@ El proyecto está en fase **MVP (0.x)**.
   `.prettierrc.json`, `.prettierignore` y se limpiaron los 17 errores que reportó —entre ellos
   los menús con `role="menu"` sin foco ni teclado (AvatarDropdown, NotificationBell) y varias
   piezas de código muerto. El barrido de formato propio de prettier va en un commit aparte.
+- **Configuración de Ruff y uv al día**: `select`/`ignore`/`per-file-ignores` migraron a
+  `tool.ruff.lint.*` y `tool.uv.dev-dependencies` a `[dependency-groups] dev`, así cada
+  `ruff check` y `uv sync` dejan de emitir avisos de deprecación. El recuento de findings no cambió
+  (1086, deuda de Fase 4), sólo desapareció el ruido de configuración.
 
 ### CI
 - `.github/workflows/ci.yml`: job de backend (Postgres + `uv sync` + `pytest`, incluida la suite) y
-  job de build del frontend.
+  job de frontend.
+- **El job de frontend ahora corre `pnpm run check` y `pnpm run lint` antes de `pnpm run build`**
+  (job renombrado a `frontend-checks`). Vite no falla por identificadores sin import —los trata
+  como globales—, así que `build` en verde **no** prueba typecheck ni lint: sin estos pasos los
+  gates recién habilitados se habrían vuelto a apagar en silencio.
 - **Test de integración de Socket.IO** (`tests/test_realtime_socket.py`): levanta un servidor ASGI real
   y valida autenticación, unión al room y entrega del evento.
 

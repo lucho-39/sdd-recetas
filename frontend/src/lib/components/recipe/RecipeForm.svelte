@@ -5,7 +5,7 @@
 	import { IconTrashFilled as Trash, IconPlus } from '@tabler/icons-svelte';
 	import { categoriesStore } from '$lib/stores/categories';
 	import TagAutocomplete from '$components/search/TagAutocomplete.svelte';
-	import Modal from '$components/ui/Modal.svelte';
+	import Dialog from '$components/ui/Dialog.svelte';
 	import type { Recipe } from '$lib/types';
 
 	export let initial: Partial<Recipe> | null = null;
@@ -466,10 +466,10 @@
 	</div>
 </form>
 
-<Modal
+<Dialog
 	open={showNewIngredient}
 	title="Nuevo ingrediente"
-	on:close={() => (showNewIngredient = false)}
+	onClose={() => (showNewIngredient = false)}
 >
 	<div class="space-y-4">
 		<div>
@@ -532,4 +532,4 @@
 			{creatingIngredient ? 'Creando…' : 'Crear ingrediente'}
 		</button>
 	</svelte:fragment>
-</Modal>
+</Dialog>

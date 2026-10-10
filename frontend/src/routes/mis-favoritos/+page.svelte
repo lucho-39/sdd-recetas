@@ -8,6 +8,7 @@
 		IconEdit as Edit
 	} from '@tabler/icons-svelte';
 	import { auth } from '$lib/stores/auth';
+	import { confirmDialog } from '$lib/stores/confirm';
 	import RecipeCard from '$components/recipe/RecipeCard.svelte';
 
 	type Favorite = {
@@ -49,7 +50,11 @@
 	}
 
 	async function remove(fav: Favorite) {
-		if (!confirm(`¿Quitar "${fav.recipe?.title}" de favoritos?`)) return;
+		const confirmed = await confirmDialog({
+			title: `¿Quitar "${fav.recipe?.title}" de favoritos?`,
+			confirmLabel: 'Quitar'
+		});
+		if (!confirmed) return;
 		await apiFetch(`/api/v1/favorites/${fav.recipe_id}`, {
 			method: 'DELETE'
 		});
@@ -94,8 +99,13 @@
 
 	async function deleteCollection() {
 		if (selected === null) return;
-		if (!confirm(`¿Borrar la colección "${selected}"? Las recetas vuelven a la lista general.`))
-			return;
+		const confirmed = await confirmDialog({
+			title: `¿Borrar la colección "${selected}"?`,
+			description: 'Las recetas vuelven a la lista general.',
+			confirmLabel: 'Borrar',
+			destructive: true
+		});
+		if (!confirmed) return;
 		await apiFetch(`/api/v1/favorites/collections/${encodeURIComponent(selected)}`, {
 			method: 'DELETE'
 		});
