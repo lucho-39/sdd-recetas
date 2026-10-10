@@ -6,6 +6,8 @@
 		IconUsers as Users,
 		IconFlame,
 		IconShare,
+		IconLink,
+		IconCheck,
 		IconPlayerPlayFilled as Play,
 		IconEyeFilled as Eye,
 		IconHeartFilled as HeartFilled,
@@ -57,12 +59,33 @@
 		return true;
 	}
 
+	let copied = false;
+
+	/** RB-17: shared links carry utm_source=share so shares are measurable. */
+	function shareUrl(): string {
+		if (typeof window === 'undefined') return '';
+		const url = new window.URL(`/receta/${recipe.slug}`, window.location.origin);
+		url.searchParams.set('utm_source', 'share');
+		return url.toString();
+	}
+
 	async function share() {
-		const url = typeof window !== 'undefined' ? window.location.href : '';
+		const url = shareUrl();
 		if (typeof navigator !== 'undefined' && navigator.share) {
 			await navigator.share({ title: recipe.title, url }).catch(() => {});
-		} else if (typeof navigator !== 'undefined' && navigator.clipboard) {
-			await navigator.clipboard.writeText(url).catch(() => {});
+			return;
+		}
+		await copyLink();
+	}
+
+	async function copyLink() {
+		if (typeof navigator === 'undefined' || !navigator.clipboard) return;
+		try {
+			await navigator.clipboard.writeText(shareUrl());
+			copied = true;
+			setTimeout(() => (copied = false), 2000);
+		} catch {
+			/* clipboard denied — stay silent */
 		}
 	}
 
@@ -221,6 +244,18 @@
 				</button>
 				<button type="button" class="btn btn-outline btn-sm" on:click={share}>
 					<IconShare class="h-4 w-4" aria-hidden="true" /> Compartir
+				</button>
+				<button
+					type="button"
+					class="btn btn-outline btn-sm"
+					on:click={copyLink}
+					title="Copiar link de la receta"
+				>
+					{#if copied}
+						<IconCheck class="h-4 w-4 text-primary" aria-hidden="true" /> Copiado
+					{:else}
+						<IconLink class="h-4 w-4" aria-hidden="true" /> Copiar link
+					{/if}
 				</button>
 				<a href="/cooking/{recipe.slug}" class="btn btn-primary btn-sm">
 					<Play class="h-4 w-4" aria-hidden="true" /> Cocinar

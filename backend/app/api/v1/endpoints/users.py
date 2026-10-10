@@ -1,6 +1,8 @@
 """
 User endpoints: profile (private), public profile and user recipes.
 """
+import re
+import unicodedata
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -21,6 +23,36 @@ from app.schemas.recipe import RecipeListItem
 from app.services.notifications import get_preferences
 
 router = APIRouter()
+
+
+def _name_slug(display_name: str) -> str:
+    """RB-17: the public handle is the display name, slugified."""
+    text = display_name.lower().strip()
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    text = re.sub(r"[^\w\s-]", "", text, flags=re.UNICODE)
+    return re.sub(r"[\s_-]+", "-", text).strip("-")
+
+
+async def _resolve_public_user(db: AsyncSession, identifier: str) -> User | None:
+    """Resolve a public profile by UUID or by display-name slug (RB-17).
+
+    There is no slug column on ``users``, so the handle is resolved by
+    slugifying ``display_name``. Only the lightweight identity columns are
+    scanned; good enough for the MVP scale, and it reuses the exact same
+    slugification rules as recipes.
+    """
+    try:
+        user = await db.get(User, UUID(identifier))
+        if user is not None:
+            return user
+    except ValueError:
+        pass
+
+    rows = await db.execute(select(User.id, User.display_name).where(User.is_active == True))  # noqa: E712
+    wanted = identifier.lower()
+    match = next((uid for uid, name in rows.all() if _name_slug(name) == wanted), None)
+    return await db.get(User, match) if match else None
 
 
 @router.get("/me", response_model=UserResponse)
@@ -121,14 +153,14 @@ async def update_my_notification_preferences(
     return await get_preferences(db, current_user.id)
 
 
-@router.get("/{user_id}", response_model=PublicProfileResponse, summary="Public profile")
+@router.get("/{identifier}", response_model=PublicProfileResponse, summary="Public profile")
 async def get_public_profile(
-    user_id: UUID,
+    identifier: str,
     db: AsyncSession = Depends(get_db),
 ):
-    """Public profile of a user (RB-17 / RF-11): no sensitive data."""
-    user = await db.get(User, user_id)
-    if not user or not user.is_active:
+    """Public profile by UUID or display-name slug (RB-17 / RF-11)."""
+    user = await _resolve_public_user(db, identifier)
+    if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     recipe_count = await db.scalar(
@@ -150,16 +182,16 @@ async def get_public_profile(
     )
 
 
-@router.get("/{user_id}/recipes", summary="List a user's public recipes")
+@router.get("/{identifier}/recipes", summary="List a user's public recipes")
 async def list_user_public_recipes(
-    user_id: UUID,
+    identifier: str,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ):
-    """Public recipes published by a user (RB-17 / RF-11.2)."""
-    user = await db.get(User, user_id)
-    if not user or not user.is_active:
+    """Public recipes by a user, addressed by UUID or display-name slug (RB-17)."""
+    user = await _resolve_public_user(db, identifier)
+    if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     filters = [

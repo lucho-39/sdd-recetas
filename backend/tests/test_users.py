@@ -130,3 +130,46 @@ async def test_my_recipes_includes_private_and_requires_auth(
     assert response.status_code == 200
     slugs = [item["slug"] for item in response.json()["recipes"]]
     assert "receta-privada" in slugs
+
+
+async def test_public_profile_resolves_by_display_name_slug(
+    client: AsyncClient, user: User
+) -> None:
+    """RB-17: /u/<display_name_slug> is a valid public handle."""
+    response = await client.get("/api/v1/users/test-user")
+    assert response.status_code == 200
+    assert response.json()["id"] == str(user.id)
+    assert response.json()["display_name"] == user.display_name
+
+
+async def test_public_profile_slug_strips_accents_and_spaces(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    from conftest import create_user
+
+    author = await create_user(
+        db_session,
+        email="lucia.gomez@example.com",
+        display_name="Lucía Gómez",
+    )
+    response = await client.get("/api/v1/users/lucia-gomez")
+    assert response.status_code == 200
+    assert response.json()["id"] == str(author.id)
+
+
+async def test_user_recipes_resolves_by_display_name_slug(
+    client: AsyncClient, db_session: AsyncSession, user: User, category: Category
+) -> None:
+    await create_recipe(db_session, author=user, category=category)
+
+    response = await client.get("/api/v1/users/test-user/recipes")
+    assert response.status_code == 200
+    assert response.json()["total"] >= 1
+
+
+async def test_public_profile_by_uuid_still_works(
+    client: AsyncClient, user: User
+) -> None:
+    response = await client.get(f"/api/v1/users/{user.id}")
+    assert response.status_code == 200
+    assert response.json()["id"] == str(user.id)
