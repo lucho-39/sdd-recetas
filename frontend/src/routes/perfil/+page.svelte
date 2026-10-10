@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { IconUserFilled as User, IconDeviceFloppy as Save, IconLockFilled as Lock, IconAlertTriangleFilled as AlertTriangle, IconTrashFilled as Trash, IconCircleCheckFilled as Check } from '@tabler/icons-svelte';
+	import { IconDeviceFloppy as Save, IconLockFilled as Lock, IconAlertTriangleFilled as AlertTriangle, IconTrashFilled as Trash, IconCircleCheckFilled as Check } from '@tabler/icons-svelte';
 	import { auth } from '$lib/stores/auth';
 	import { apiFetch } from '$lib/api';
 	import { notifications } from '$lib/stores/notifications';

@@ -1,10 +1,8 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 
 	export let selected: string[] = [];
 	export let onChange: (tags: string[]) => void;
 	export let placeholder = 'Buscar etiquetas...';
-	export let maxTags = 10;
 
 	let query = '';
 	let showSuggestions = false;
@@ -58,11 +56,6 @@
 		showSuggestions = false;
 	}
 
-	function removeTag(slug: string) {
-		selected = selected.filter(s => s !== slug);
-		onChange(selected);
-	}
-
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter') {
 			e.preventDefault();
@@ -72,10 +65,6 @@
 		} else if (e.key === 'Escape') {
 			showSuggestions = false;
 		}
-	}
-
-	function handleBlur() {
-		setTimeout(() => { showSuggestions = false; }, 200);
 	}
 </script>
 

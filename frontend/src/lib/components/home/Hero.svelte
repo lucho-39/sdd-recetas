@@ -3,8 +3,8 @@
 </script>
 
 <section class="hero relative py-20 md:py-32 overflow-hidden">
-	<div class="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5" />
-	<div class="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03]" />
+	<div class="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5"></div>
+	<div class="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03]"></div>
 	<div class="relative container">
 		<div class="max-w-3xl mx-auto text-center">
 			<div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary border border-primary/20 mb-6 text-sm font-medium">

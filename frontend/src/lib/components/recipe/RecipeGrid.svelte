@@ -11,11 +11,9 @@
 	export let emptyVariant: 'search' | 'favorites' | 'recipes' = 'recipes';
 	export let onLoadMore: () => void = () => {};
 
-	let sentinel: HTMLDivElement | null = null;
 	let observer: IntersectionObserver | null = null;
 
 	function setSentinel(node: HTMLDivElement) {
-		sentinel = node;
 		observer?.disconnect();
 		observer = new IntersectionObserver(
 			(entries) => {

@@ -48,7 +48,9 @@
 		<div
 			class="animate-fade-in absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border border-border bg-popover py-1 shadow-lg"
 			role="menu"
+			tabindex="-1"
 			on:click|stopPropagation
+			on:keydown={(e) => e.key === 'Escape' && close()}
 		>
 			<div class="border-b border-border px-3 py-2">
 				<p class="truncate text-sm font-medium">{user?.display_name}</p>

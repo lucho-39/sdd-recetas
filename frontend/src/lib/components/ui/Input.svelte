@@ -7,7 +7,6 @@
 	export let id: string;
 	export let label: string;
 	export let error: string | undefined;
-	export let autocomplete = 'off';
 </script>
 
 <div class="space-y-1.5">

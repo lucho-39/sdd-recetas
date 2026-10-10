@@ -68,7 +68,9 @@
 		<div
 			class="animate-fade-in absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border border-border bg-popover shadow-lg"
 			role="menu"
+			tabindex="-1"
 			on:click|stopPropagation
+			on:keydown={(e) => e.key === 'Escape' && close()}
 		>
 			<div class="flex items-center justify-between border-b border-border px-3 py-2">
 				<span class="text-sm font-medium text-foreground">Notificaciones</span>

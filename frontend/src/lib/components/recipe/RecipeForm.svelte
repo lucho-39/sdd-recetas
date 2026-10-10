@@ -3,7 +3,6 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { IconTrashFilled as Trash, IconPlus } from '@tabler/icons-svelte';
-	import { auth } from '$lib/stores/auth';
 	import { categoriesStore } from '$lib/stores/categories';
 	import TagAutocomplete from '$components/search/TagAutocomplete.svelte';
 	import type { Recipe } from '$lib/types';

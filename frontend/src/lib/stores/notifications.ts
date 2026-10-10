@@ -82,7 +82,6 @@ function createNotificationsStore() {
 			userVisibleOnly: true,
 			applicationServerKey: urlBase64ToUint8Array(public_key)
 		});
-		const accessToken = token();
 		const res = await apiFetch('/api/v1/push/subscribe', {
 			method: 'POST',
 			headers: {

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import { IconX as X } from '@tabler/icons-svelte';
 	import Button from '$components/ui/Button.svelte';
 
@@ -9,8 +8,6 @@
 	export let action: { label: string; onClick: () => void } | null = null;
 	export let dismissible = true;
 	export let onDismiss: (() => void) | null = null;
-
-	const dispatch = createEventDispatcher();
 </script>
 
 <div
