@@ -76,7 +76,8 @@
 ## RB-09: Recetas públicas por defecto
 **Descripción**: `is_public = true` por defecto. Solo recetas públicas aparecen en búsqueda y listados generales.
 **Privado**: Autor puede marcar `is_public = false` → solo visible para él (mis recetas).
-**Estado**: Implementado.
+**Visibilidad por slug**: `GET /api/v1/recipes/{slug}` y `/{slug}/similar` filtran con `recipe_visible_to()`; una receta privada responde **404** a usuarios no autorizados y a no-admins.
+**Estado**: Implementado (incluye visibilidad en lectura directa por slug).
 
 ## RB-10: Soft delete de recetas
 **Descripción**: `deleted_at` TIMESTAMPTZ NULLABLE. Borrado lógico: `UPDATE recipes SET deleted_at = now() WHERE id = ?`.
@@ -193,11 +194,13 @@ enlace. El envío usa SMTP si está configurado (si no, `email_outbox`).
 
 ## RB-ING-02: Ingredientes en Recetas — Referencia a Catálogo
 **Descripción**: `recipes.ingredients` JSONB array de objetos `{ingredient_id, amount, unit, notes?}`.
-- `ingredient_id`: UUID obligatorio (validado en app).
+- `ingredient_id` / `name`: el ingrediente debe existir y estar activo en el catálogo.
 - `amount`: number > 0.
-- `unit`: string compatible con `default_unit` o en whitelist.
+- `unit`: string de la whitelist `VALID_UNITS` (los nombres del catálogo ya son unidades válidas).
 - `notes`: string opcional.
-**Estado**: Implementado (validación básica en creación de receta).
+- Sin ingredientes duplicados dentro de la misma receta.
+**Implementación**: `validate_ingredients()` en `app/api/v1/recipes.py`, aplicado en `create_recipe` y `update_recipe`.
+**Estado**: Implementado (validación completa en creación y actualización).
 
 ## RB-ING-03: Autocompletado de Ingredientes
 **Descripción**: Input de ingredientes sugiere del catálogo por coincidencia en `slug`/`name`.

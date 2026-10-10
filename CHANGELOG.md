@@ -94,6 +94,23 @@ El proyecto está en fase **MVP (0.x)**.
   y valida autenticación, unión al room y entrega del evento.
 
 ### Fixed
+- **Fase 0 (bloqueantes de seguridad y consistencia)**
+  - `GET /recipes/{slug}` y `/{slug}/similar` ahora aplican la visibilidad de RB-09: una receta
+    privada responde 404 a usuarios no autorizados (antes era legible por URL directa).
+  - Los ingredientes de una receta se **validan contra el catálogo** (RB-ING-02): ingrediente
+    inexistente/inactivo → 400, unidad fuera de `VALID_UNITS` o `amount <= 0` → 422,
+    ingredientes repetidos → 400. Aplica en creación y edición.
+  - Se eliminó el `get_current_user` duplicado de `auth.py`; ahora importa de `core.security`
+    y valida `type=access`, por lo que un **refresh token ya no sirve como access token** (401).
+  - Se eliminó el endpoint `POST /auth/bootstrap-admin` (el bootstrap idempotente corre en el
+    lifespan; recrear el admin no debe ser invocable desde fuera).
+  - **Refresh automático del access token**: `frontend/src/lib/api.ts` (`apiFetch`) y el `adminFetch`
+    del panel reintentan una vez con el refresh cookie ante un 401, y `auth.init()` reintenta con
+    el refresh antes de cerrar la sesión. Fin de las sesiones "fantasma" a los 15 minutos.
+  - CTAs y links muertos del home (`/recipes`, `/recipes/new`) y del footer (páginas inexistentes)
+    redirigidos a `/buscar` y `/recetas/nueva`.
+  - `save_count` se muestra en el detalle de la receta (RF-04.6) y se mantiene sincronizado al
+    guardar/quitar favoritos.
 - `save_count` ahora se incrementa/decrementa al guardar/quitar favoritos (antes quedaba en 0).
 - El buscador del home obtiene las **categorías desde la API** en vez de una lista hardcodeada.
 - 10 bugs reales de endpoints detectados al escribir la suite de tests.
@@ -108,6 +125,7 @@ El proyecto está en fase **MVP (0.x)**.
   casos de uso (`search`, `ingredients`, `admin`, `notifications`), testing y este CHANGELOG.
 
 ### Tests
-- Suite de endpoints con Postgres real (`recetario_test`) y `ASGITransport`: **179 tests** verdes,
+- Suite de endpoints con Postgres real (`recetario_test`) y `ASGITransport`: **186 tests** verdes,
   incluidos notificaciones (preferencias/email/Web Push), administración v2, OAuth/reset/refresh,
-  IA (gating), seed del catálogo e integración de Socket.IO.
+  IA (gating), seed del catálogo e integración de Socket.IO. La Fase 0 suma regresiones de
+  visibilidad por slug, validación de ingredientes y rechazo del refresh token como access token.

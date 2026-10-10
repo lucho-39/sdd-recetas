@@ -288,3 +288,32 @@ Encontré un nuevo problema en la aplicación y es que las recetas y los endpoin
 
 Encontré un error que cuando un usuario autenticado se desloguea y confirma que cierra la sesión, la página queda "pegada" en mi-perfil con el perfil que estaba logueado. Eso no debe pasar porque debe redirigirlo a la página principal. 
 
+
+
+revisa documentación del proyecto, todas las funcionalidades deben persistir y recuperar información real de la base de datos y ajustarse a la documentación del proyecto y si falta algo de construir, areglar o alguna sugerencia a tu criterio
+
+respondió:
+
+	Auditoría hecha. Encontré y arreglé varios gaps reales. Push: 93d41d9..d13c06a.
+Qué estaba mal (y quedó arreglado)
+1. save_count nunca persistía — se leía/ordenaba pero jamás se escribía, así que "Más guardadas" y el contador de tarjetas eran siempre 0. Ahora se incrementa/decrementa al guardar/quitar favorito. (commit 85cfd5f)
+2. Catálogo de ingredientes vacío (0 filas) — los docs piden ~300. Sembré 317 ingredientes reales (únicos, categorías/unidades válidas, idempotente por slug). (commit 85cfd5f)
+3. No se podía crear un ingrediente desde el selector (RB-ING-03). Agregué POST /api/v1/ingredients (crea pendiente de validación, dedup por slug) y el form de receta ahora vincula el alta manual al catálogo.
+4. Categorías hardcodeadas en el buscador del home → ahora salen de la API (datos reales).
+5. Baja/eliminación de cuenta marcadas "v2" en el perfil → implementadas (POST /auth/deactivate y /auth/delete-account con anonimización GDPR) y botones activos.
+Doc alineada a la realidad (d13c06a)
+Actualicé business-rules (RB-05, RB-17, RB-AUTH-02…10, RB-ING-01), ADR-000 (#3/#8/#9/#11), planning (Q20), authentication.md, functional-requirements (OAuth RF-01.3/01.4), use-cases/ingredients.md y CHANGELOG/README.
+Verificado
+pytest: 179 passed
+Catálogo en DB: 317
+Autocomplete "poll" -> pollo, pechuga, muslo… (datos reales)
+Receta con ingredient_id del catálogo -> el detalle resuelve el nombre
+Categorías del buscador -> desde /api/v1/categories
+Sugerencias (a tu criterio, no bloqueantes)
+- Ranking de ingredientes por uso (usage_count): requeriría una migración, porque create_all no altera tablas existentes.
+- Búsqueda parcial de ingredientes por nombre (hoy es por ingredient_id exacto) — v2.
+- Enriquecer las 3 recetas demo con ingredientes del catálogo (hoy tienen ingredients: []), para que el detalle/home se vean completos.
+- Rate limiting por endpoint y blacklist de tokens en Redis (hoy global en memoria).
+¿Querés que encare alguna de estas sugerencias (por ejemplo, enriquecer las recetas demo y el ranking por uso)?
+
+

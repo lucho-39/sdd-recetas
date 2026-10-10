@@ -123,7 +123,7 @@ Estado: **81 tests, 100 % pasando**.
 | Área | Archivo | Endpoints cubiertos |
 | ---- | ------- | ------------------- |
 | Salud | `tests/test_health.py` | `/health`, `/healthz`, `/api/v1/health`, `/api/v1/healthz`, `/api/v1/ready` |
-| Autenticación | `tests/test_auth.py` | register, login, refresh, logout, me, change-password, forgot-password, bootstrap-admin |
+| Autenticación | `tests/test_auth.py` | register, login, refresh, logout, me, change-password, forgot-password, bootstrap del admin (lifespan) |
 | Usuarios | `tests/test_users.py` | `GET/PATCH /api/v1/users/me` |
 | Recetas | `tests/test_recipes.py` | listar, obtener, crear, actualizar, borrar, similares |
 | Categorías | `tests/test_categories.py` | listar, obtener |

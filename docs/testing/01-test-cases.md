@@ -48,7 +48,8 @@ V (visits).
 | A-15 | `POST /auth/change-password` | Contraseña actual incorrecta | 400 | `test_change_password_rejects_wrong_current` |
 | A-16 | `POST /auth/logout` | Logout | 200 | `test_logout_returns_success` |
 | A-17 | `POST /auth/forgot-password` | Email conocido vs. inexistente | 200 idéntico (no filtra existencia) | `test_forgot_password_never_leaks_account_existence` |
-| A-18 | `POST /auth/bootstrap-admin` | Bootstrap idempotente | 201 (2×); admin `must_change_password=true`; login OK; `/me` OK con TLD reservado | `test_bootstrap_admin_creates_admin_and_is_idempotent` |
+| A-18 | `POST /auth/bootstrap-admin` | **Endpoint eliminado** (solo lifespan) | 404/405; `create_admin_user` idempotente; admin `must_change_password=true`; login OK; `/me` OK con TLD reservado | `test_bootstrap_admin_creates_admin_and_is_idempotent` |
+| A-19 | `GET /auth/me` | Refresh token usado como access token | 401 (`type=access` obligatorio, Fase 0) | `test_refresh_token_is_rejected_as_access_token` |
 
 ---
 
@@ -86,6 +87,11 @@ V (visits).
 | R-16 | `DELETE /recipes/{slug}` | Borrar la propia | 204; luego GET 404 (soft delete) | `test_delete_recipe_soft_deletes` |
 | R-17 | `DELETE /recipes/{slug}` | Borrar receta ajena | 404 | `test_delete_other_users_recipe_returns_404` |
 | R-18 | `GET /recipes/{slug}/similar` | Buscar similares | 200; incluye slug similar | `test_find_similar_recipes` |
+| R-19 | `GET /recipes/{slug}` | Receta privada por URL adivinada | 404 para anónimos y no-admins; 200 para el autor (RB-09) | `test_private_recipe_is_hidden_from_slug_guessed_urls` |
+| R-20 | `POST /recipes` | Ingrediente fuera del catálogo | 400 (RB-ING-02) | `test_create_recipe_rejects_ingredient_out_of_catalog` |
+| R-21 | `POST /recipes` | Ingrediente del catálogo por nombre | 201; se resuelve a `ingredient_id` | `test_create_recipe_accepts_catalog_ingredient` |
+| R-22 | `POST /recipes` | Unidad fuera de `VALID_UNITS` / `amount <= 0` | 422 | `test_create_recipe_rejects_unknown_unit`, `test_create_recipe_rejects_non_positive_amount` |
+| R-23 | `POST /recipes` | Ingrediente repetido en la misma receta | 400 | `test_create_recipe_rejects_duplicated_ingredient` |
 
 ---
 
