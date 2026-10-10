@@ -47,6 +47,7 @@
 		})) ?? [];
 
 	let ingQuery = '';
+	let ingError = '';
 	let ingSuggestions: { id: string; name: string; default_unit: string }[] = [];
 	let ingTimer: ReturnType<typeof setTimeout>;
 	let saving = false;
@@ -97,13 +98,16 @@
 					}
 				];
 			} else {
-				rows = [...rows, { ingredient_id: '', name, amount: '', unit: '', notes: '' }];
+				ingError = `No se pudo crear "${name}". Revisá el nombre o volvé a intentar.`;
+				return;
 			}
 		} catch {
-			rows = [...rows, { ingredient_id: '', name, amount: '', unit: '', notes: '' }];
+			ingError = `No se pudo crear "${name}". Revisá tu conexión y volvé a intentar.`;
+			return;
 		}
 		ingQuery = '';
 		ingSuggestions = [];
+		ingError = '';
 	}
 
 	function removeRow(index: number) {
@@ -167,7 +171,7 @@
 			is_public: isPublic,
 			tags: tagSlugs,
 			ingredients: rows.map((r) => ({
-				ingredient_id: r.ingredient_id || r.name.toLowerCase().replace(/\s+/g, '-'),
+				ingredient_id: r.ingredient_id,
 				name: r.name,
 				amount: r.amount === '' ? null : Number(r.amount),
 				unit: r.unit,
@@ -298,6 +302,7 @@
 					<IconPlus class="h-4 w-4" aria-hidden="true" /> Agregar
 				</button>
 			</div>
+			{#if ingError}<p class="mt-1 text-xs text-destructive">{ingError}</p>{/if}
 			{#if ingSuggestions.length > 0}
 				<ul class="absolute z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
 					{#each ingSuggestions as ing}

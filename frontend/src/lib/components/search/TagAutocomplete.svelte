@@ -12,22 +12,21 @@
 	let debounceTimer: ReturnType<typeof setTimeout>;
 
 	async function fetchSuggestions() {
-		if (query.length < 2) {
+		if (query.trim().length < 2) {
 			suggestions = [];
 			showSuggestions = false;
 			return;
 		}
 		try {
 			const response = await fetch(`/api/v1/tags?query=${encodeURIComponent(query)}&limit=10`);
-			if (response.ok) {
-				const data = await response.json();
-				suggestions = Array.isArray(data) ? data : [];
-				showSuggestions = suggestions.length > 0;
-			}
+			suggestions = response.ok ? (await response.json()) ?? [] : [];
+			if (!Array.isArray(suggestions)) suggestions = [];
+			// Se mantiene abierto aunque no haya matches: sin matches se ofrece "Crear".
+			showSuggestions = query.trim().length >= 2;
 		} catch (error) {
 			console.error('Error fetching tag suggestions:', error);
 			suggestions = [];
-			showSuggestions = false;
+			showSuggestions = query.trim().length >= 2;
 		}
 	}
 
@@ -110,7 +109,7 @@
 			aria-autocomplete="list"
 			aria-controls="tag-suggestions"
 		/>
-		{#if showSuggestions && suggestions.length > 0}
+		{#if showSuggestions && query.trim().length >= 2}
 			<ul
 				id="tag-suggestions"
 				class="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-60 overflow-y-auto"
@@ -129,11 +128,11 @@
 						<span class="text-xs text-muted-foreground">{suggestion.usage_count} usos</span>
 					</button>
 				{/each}
-				{#if query && suggestions.length === 0}
+				{#if suggestions.length === 0}
 					<button
 						type="button"
 						class="w-full px-3 py-2 text-left text-sm text-primary hover:bg-accent"
-						on:click={() => { selectTag({ slug: query.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''), name: query.trim() }); }}
+						on:click={createTag}
 					>
 						Crear "{query.trim()}"
 					</button>
