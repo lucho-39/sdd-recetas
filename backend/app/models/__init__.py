@@ -209,6 +209,7 @@ class Ingredient(Base):
     category: Mapped[str] = mapped_column(String(30), nullable=False)
     default_unit: Mapped[str] = mapped_column(String(20), nullable=False)
     aliases: Mapped[List[str]] = mapped_column(JSONB, default=list, nullable=False)
+    allowed_units: Mapped[List[str]] = mapped_column(JSONB, default=list, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     validated_by_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     validated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

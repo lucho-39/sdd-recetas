@@ -123,6 +123,28 @@ El proyecto está en fase **MVP (0.x)**.
 - **Test de integración de Socket.IO** (`tests/test_realtime_socket.py`): levanta un servidor ASGI real
   y valida autenticación, unión al room y entrega del evento.
 
+### Added
+- **RF-12.8 — whitelist de unidades por ingrediente.** Cada ingrediente del catálogo puede
+  declarar unidades alternativas compatibles (`ingredients.allowed_units`, JSONB). La
+  validación de una receta acepta sólo `default_unit` + las listadas y responde **422**
+  nombrando los ingredientes que fallan. Una lista vacía sigue siendo permisiva, así que
+  las 320 filas del seed no cambian de comportamiento.
+  - El alta (`POST /api/v1/ingredients`) valida cada valor contra `VALID_UNITS` → **400**.
+  - **El frontend todavía no filtra**: el `<select>` de unidades expone las 9 globales.
+    Hoy no molesta porque ninguna fila tiene whitelist cargada.
+- **Stack de migraciones (Alembic) arrancado.** La 0001 (`8fcd65d6eddf`) recrea el schema
+  completo de 18 tablas y se aplicó con `alembic stamp` sobre la base existente; la 0002
+  (`1ac179e903af`) agrega `allowed_units`. `alembic.ini` y `env.py` ahora leen
+  `DATABASE_URL` del entorno, así que la app y las migraciones comparten una sola fuente
+  de verdad.
+  - Antes, la app dependía sólo de `Base.metadata.create_all`, que **crea tablas pero
+    nunca altera las existentes**: no había forma de agregar una columna a una base viva.
+  - Verificado que la base real coincide exactamente con los modelos (autogenerate con
+    cero diffs) — no había derroga acumulada.
+  - **Gotcha**: Alembic omite el `server_default` al generar un `ADD COLUMN NOT NULL`, y
+    PostgreSQL lo rechaza sobre una tabla con filas (`contains null values`). La 0002 lo
+    fija a mano en `'[]'::jsonb`; migró las 320 filas existentes sin errores.
+
 ### Fixed
 - **Brecha de seguridad: cuenta destruible con una sesión robada**. `POST /auth/deactivate` y
   `POST /auth/delete-account` no pedían nada más que un access token válido, así que cualquiera

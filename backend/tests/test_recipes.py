@@ -525,6 +525,87 @@ async def test_create_recipe_accepts_catalog_ingredient(
     assert body["ingredients"][0]["name"] == "Tomate"
 
 
+async def test_create_recipe_rejects_unit_out_of_ingredient_whitelist(
+    client: AsyncClient, db_session: AsyncSession, category: Category, auth_headers: dict
+) -> None:
+    """RF-12.8: a whitelisted ingredient only accepts its listed units."""
+    from conftest import create_ingredient
+
+    ingredient = await create_ingredient(
+        db_session,
+        slug="harina-000",
+        name="Harina 000",
+        default_unit="g",
+        allowed_units=["kg"],
+    )
+    payload = _recipe_payload(
+        category,
+        ingredients=[
+            {
+                "ingredient_id": str(ingredient.id),
+                "name": "Harina 000",
+                "amount": 1,
+                "unit": "taza",
+            }
+        ],
+    )
+    response = await client.post("/api/v1/recipes", json=payload, headers=auth_headers)
+    assert response.status_code == 422
+    assert "Harina 000" in response.json()["detail"]
+
+
+async def test_create_recipe_accepts_unit_in_ingredient_whitelist(
+    client: AsyncClient, db_session: AsyncSession, category: Category, auth_headers: dict
+) -> None:
+    """RF-12.8: both the default unit and a listed alternative are accepted."""
+    from conftest import create_ingredient
+
+    ingredient = await create_ingredient(
+        db_session,
+        slug="harina-000",
+        name="Harina 000",
+        default_unit="g",
+        allowed_units=["kg"],
+    )
+    payload = _recipe_payload(
+        category,
+        ingredients=[
+            {
+                "ingredient_id": str(ingredient.id),
+                "name": "Harina 000",
+                "amount": 1,
+                "unit": "kg",
+            }
+        ],
+    )
+    response = await client.post("/api/v1/recipes", json=payload, headers=auth_headers)
+    assert response.status_code == 201
+
+
+async def test_create_recipe_keeps_units_open_when_whitelist_is_empty(
+    client: AsyncClient, db_session: AsyncSession, category: Category, auth_headers: dict
+) -> None:
+    """RF-12.8: an empty whitelist stays permissive, matching the 320 seeded rows."""
+    from conftest import create_ingredient
+
+    ingredient = await create_ingredient(
+        db_session, slug="tomate", name="Tomate", default_unit="g", allowed_units=[]
+    )
+    payload = _recipe_payload(
+        category,
+        ingredients=[
+            {
+                "ingredient_id": str(ingredient.id),
+                "name": "Tomate",
+                "amount": 2,
+                "unit": "taza",
+            }
+        ],
+    )
+    response = await client.post("/api/v1/recipes", json=payload, headers=auth_headers)
+    assert response.status_code == 201
+
+
 async def test_create_recipe_rejects_duplicated_ingredient(
     client: AsyncClient, db_session: AsyncSession, category: Category, auth_headers: dict
 ) -> None:

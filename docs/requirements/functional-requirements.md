@@ -142,11 +142,21 @@
   (`RecipeForm` + `lib/components/ui/Modal.svelte`), ver RB-ING-03.
 - **RF-12.3 implementado**: la unidad de cada fila es un `<select>` sobre las 9 unidades
   de `VALID_UNITS` en lugar de texto libre.
-- **RF-12.8 pendiente**: exige una columna de unidades alternativas por ingrediente
-  (`allowed_units`), que todavía no existe en el modelo `Ingredient`. Como
-  `backend/alembic/versions/` está vacío (0 migraciones), agregarla requiere arrancar el
-  stack de migraciones antes — queda registrado en vez de agregar una columna con
-  `create_all`, que **no altera tablas existentes**.
+- **RF-12.8 implementado (backend)**: `ingredients.allowed_units` (JSONB, default `[]`)
+  guarda las unidades alternativas compatibles. `validate_ingredients()` en
+  `app/api/v1/endpoints/recipes.py` acepta sólo `default_unit` + las listadas y responde
+  **422** con los ingredientes que fallan; una lista vacía queda **abierta**, que es el
+  comportamiento de las 320 filas del seed. El alta valida cada valor contra `VALID_UNITS`
+  (**400**). **El frontend no filtra todavía**: el `<select>` de unidades sigue exponiendo
+  las 9 globales, lo que hoy no molesta porque ninguna fila tiene whitelist — hay que
+  filtrarlo cuando un admin empiece a cargar `allowed_units`.
+- **Stack de migraciones arrancado**: `alembic/versions/` ya no está vacío. La 0001
+  (`8fcd65d6eddf`) recrea el schema completo de 18 tablas y se aplicó con `alembic stamp`
+  sobre la base existente; la 0002 (`1ac179e903af`) agrega `allowed_units`. La base real
+  coincide exactamente con los modelos (verificado con `revision --autogenerate`: cero
+  diffs), así que no había derroga acumulada. **La primera migración que agregue una
+  columna NOT NULL necesita un `server_default`** — Alembic lo omite y el `ADD COLUMN`
+  falla sobre una tabla con filas.
 ## RF-13: Notificaciones en tiempo real (in-app) **[implementado]**
 | ID | Requisito | Fortaleza | RB |
 |----|-----------|-----------|-----|

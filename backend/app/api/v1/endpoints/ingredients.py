@@ -30,6 +30,7 @@ class IngredientCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     category: str = Field("otro", max_length=30)
     default_unit: str = Field("unidad", max_length=20)
+    allowed_units: List[str] = Field(default_factory=list)
     aliases: List[str] = Field(default_factory=list)
 
 
@@ -40,6 +41,7 @@ def _serialize(ingredient: Ingredient) -> dict:
         "name": ingredient.name,
         "category": ingredient.category,
         "default_unit": ingredient.default_unit,
+        "allowed_units": ingredient.allowed_units or [],
         "aliases": ingredient.aliases or [],
         "is_active": ingredient.is_active,
         "validated_by_admin": ingredient.validated_by_admin,
@@ -90,6 +92,12 @@ async def create_ingredient(
         raise HTTPException(status_code=400, detail="Invalid category")
     if data.default_unit not in VALID_UNITS:
         raise HTTPException(status_code=400, detail="Invalid default unit")
+    invalid_units = [u for u in data.allowed_units if u not in VALID_UNITS]
+    if invalid_units:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid allowed units: {', '.join(sorted(invalid_units))}",
+        )
 
     slug = slugify(data.name)
     if not slug:
@@ -104,6 +112,7 @@ async def create_ingredient(
         name=data.name.strip(),
         category=data.category,
         default_unit=data.default_unit,
+        allowed_units=data.allowed_units or [],
         aliases=data.aliases or [],
         is_active=True,
         validated_by_admin=False,

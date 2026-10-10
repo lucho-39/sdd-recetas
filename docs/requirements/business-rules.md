@@ -247,6 +247,8 @@ pantalla.
 - `name`: etiqueta de display enviada por el cliente; el backend la conserva y la resuelve contra el catálogo al devolver el detalle.
 - `amount`: number > 0 (opcional).
 - `unit`: string de la whitelist `VALID_UNITS` (los nombres del catálogo ya son unidades válidas) (opcional).
+  Si el ingrediente del catálogo tiene `allowed_units`, la unidad debe estar además en
+  `{default_unit} ∪ allowed_units`; si no, **422** (RF-12.8). Una lista vacía no restringe nada.
 - `notes`: string opcional.
 - Sin ingredientes duplicados dentro de la misma receta.
 **Errores**: ingrediente inexistente/inactivo → **400**; unidad inválida, `amount <= 0` o duplicado → **422** (validador de Pydantic).

@@ -159,3 +159,40 @@ async def test_create_ingredient_rejects_invalid_category(
         json={"name": "Raro", "category": "inventada"},
     )
     assert response.status_code == 400
+
+
+async def test_create_ingredient_accepts_allowed_units(
+    client: AsyncClient, auth_headers: dict
+) -> None:
+    """RF-12.8: an ingredient can declare alternative compatible units."""
+    response = await client.post(
+        "/api/v1/ingredients",
+        headers=auth_headers,
+        json={
+            "name": "Harina 000",
+            "category": "grano",
+            "default_unit": "g",
+            "allowed_units": ["kg", "taza"],
+        },
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert body["default_unit"] == "g"
+    assert body["allowed_units"] == ["kg", "taza"]
+
+
+async def test_create_ingredient_rejects_invalid_allowed_unit(
+    client: AsyncClient, auth_headers: dict
+) -> None:
+    response = await client.post(
+        "/api/v1/ingredients",
+        headers=auth_headers,
+        json={
+            "name": "Harina rara",
+            "category": "grano",
+            "default_unit": "g",
+            "allowed_units": ["kg", "cucharadones"],
+        },
+    )
+    assert response.status_code == 400
+    assert "cucharadones" in response.json()["detail"]

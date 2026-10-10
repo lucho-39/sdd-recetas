@@ -228,6 +228,7 @@ async def create_ingredient(
     name: str = "Tomate",
     category: str = "vegetales",
     default_unit: str = "unidad",
+    allowed_units: list[str] | None = None,
     aliases: list[str] | None = None,
     is_active: bool = True,
 ) -> Ingredient:
@@ -236,6 +237,7 @@ async def create_ingredient(
         name=name,
         category=category,
         default_unit=default_unit,
+        allowed_units=allowed_units or [],
         aliases=aliases or [],
         is_active=is_active,
     )

@@ -102,21 +102,40 @@ async def validate_ingredients(
     ids = {i.ingredient_id for i in items if i.ingredient_id is not None}
     if ids:
         result = await db.execute(
-            select(Ingredient.id).where(
+            select(Ingredient.id, Ingredient.default_unit, Ingredient.allowed_units).where(
                 Ingredient.id.in_(ids),
                 Ingredient.is_active.is_(True),
                 Ingredient.rejected.is_(False),
             )
         )
-        valid = {row[0] for row in result.all()}
+        catalog = {row[0]: (row[1], row[2] or []) for row in result.all()}
     else:
-        valid = set()
+        catalog = {}
 
-    unknown = [i.name for i in items if i.ingredient_id is None or i.ingredient_id not in valid]
+    unknown = [i.name for i in items if i.ingredient_id is None or i.ingredient_id not in catalog]
     if unknown:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Ingredientes no disponibles o inexistentes: {', '.join(unknown)}",
+        )
+
+    # RF-12.8: an ingredient carrying a whitelist only accepts its default
+    # unit plus the listed alternatives. An empty whitelist stays open, so
+    # the 320 seeded catalog entries keep behaving as before.
+    rejected_units = [
+        f"{i.name} ({i.unit})"
+        for i in items
+        if i.unit
+        and catalog[i.ingredient_id][1]
+        and i.unit not in {catalog[i.ingredient_id][0], *catalog[i.ingredient_id][1]}
+    ]
+    if rejected_units:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "Unidad no permitida para el ingrediente: "
+                f"{', '.join(rejected_units)}"
+            ),
         )
 
     return ingredients_as_dicts(items)
