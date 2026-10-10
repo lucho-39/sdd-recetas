@@ -406,6 +406,20 @@ async def _revoke_all_refresh_tokens(db: AsyncSession, user_id) -> None:
     await db.commit()
 
 
+def _require_password(user: User, password: str) -> None:
+    """Re-authenticate before a destructive account operation.
+
+    403, not 401: the caller is authenticated, but this operation demands a
+    fresh proof of identity. A stolen session must not be enough to destroy
+    an account.
+    """
+    if not verify_password(password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Contraseña incorrecta",
+        )
+
+
 @router.post("/deactivate", summary="Deactivate my account")
 async def deactivate_account(
     data: AccountDeactivateRequest,
@@ -414,6 +428,8 @@ async def deactivate_account(
     db: AsyncSession = Depends(get_db),
 ):
     """Soft-delete the current account (optionally its recipes)."""
+    _require_password(current_user, data.password)
+
     recipes_deleted = 0
     if data.delete_recipes:
         recipes = (
@@ -445,6 +461,8 @@ async def delete_account(
     db: AsyncSession = Depends(get_db),
 ):
     """Irreversibly anonymize the account and soft-delete its recipes."""
+    _require_password(current_user, data.password)
+
     if not data.confirm:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

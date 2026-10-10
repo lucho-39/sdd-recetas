@@ -9,6 +9,7 @@
 	export let cancelLabel = 'Cancelar';
 	export let destructive = false;
 	export let loading = false;
+	export let confirmDisabled = false;
 	export let onConfirm: () => void = () => {};
 	export let onClose: () => void = () => {};
 </script>
@@ -20,7 +21,12 @@
 		<Button variant="outline" disabled={loading} on:click={onClose}>
 			{cancelLabel}
 		</Button>
-		<Button variant={destructive ? 'destructive' : 'primary'} {loading} on:click={onConfirm}>
+		<Button
+			variant={destructive ? 'destructive' : 'primary'}
+			{loading}
+			disabled={confirmDisabled}
+			on:click={onConfirm}
+		>
 			{confirmLabel}
 		</Button>
 	</svelte:fragment>

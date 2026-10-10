@@ -165,13 +165,53 @@ async def test_deactivate_my_account(client: AsyncClient, db_session: AsyncSessi
     headers = {"Authorization": f"Bearer {create_access_token(subject=str(user.id))}"}
 
     response = await client.post(
-        "/api/v1/auth/deactivate", headers=headers, json={"delete_recipes": False}
+        "/api/v1/auth/deactivate",
+        headers=headers,
+        json={"delete_recipes": False, "password": TEST_PASSWORD},
     )
     assert response.status_code == 200
     assert response.json()["deactivated"] is True
 
     await db_session.refresh(user)
     assert user.is_active is False
+
+
+async def test_deactivate_requires_password(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """A valid session alone must not be enough to deactivate."""
+    from app.core.security import create_access_token
+
+    user = await create_user(db_session, email="deact-nopass@example.com")
+    headers = {"Authorization": f"Bearer {create_access_token(subject=str(user.id))}"}
+
+    response = await client.post(
+        "/api/v1/auth/deactivate", headers=headers, json={"delete_recipes": False}
+    )
+    assert response.status_code == 422
+
+    await db_session.refresh(user)
+    assert user.is_active is True
+
+
+async def test_deactivate_rejects_wrong_password(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    from app.core.security import create_access_token
+
+    user = await create_user(db_session, email="deact-bad@example.com")
+    headers = {"Authorization": f"Bearer {create_access_token(subject=str(user.id))}"}
+
+    response = await client.post(
+        "/api/v1/auth/deactivate",
+        headers=headers,
+        json={"delete_recipes": True, "password": "not-the-password"},
+    )
+    assert response.status_code == 403
+    assert "Contraseña" in response.json()["detail"]
+
+    await db_session.refresh(user)
+    assert user.is_active is True
 
 
 async def test_delete_account_requires_confirmation(
@@ -183,9 +223,31 @@ async def test_delete_account_requires_confirmation(
     headers = {"Authorization": f"Bearer {create_access_token(subject=str(user.id))}"}
 
     response = await client.post(
-        "/api/v1/auth/delete-account", headers=headers, json={"confirm": False}
+        "/api/v1/auth/delete-account",
+        headers=headers,
+        json={"confirm": False, "password": TEST_PASSWORD},
     )
     assert response.status_code == 400
+
+
+async def test_delete_account_rejects_wrong_password(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    from app.core.security import create_access_token
+
+    user = await create_user(db_session, email="del-bad@example.com")
+    headers = {"Authorization": f"Bearer {create_access_token(subject=str(user.id))}"}
+
+    response = await client.post(
+        "/api/v1/auth/delete-account",
+        headers=headers,
+        json={"confirm": True, "password": "not-the-password"},
+    )
+    assert response.status_code == 403
+
+    await db_session.refresh(user)
+    assert user.is_active is True
+    assert user.email == "del-bad@example.com"
 
 
 async def test_delete_account_anonymizes(
@@ -197,7 +259,9 @@ async def test_delete_account_anonymizes(
     headers = {"Authorization": f"Bearer {create_access_token(subject=str(user.id))}"}
 
     response = await client.post(
-        "/api/v1/auth/delete-account", headers=headers, json={"confirm": True}
+        "/api/v1/auth/delete-account",
+        headers=headers,
+        json={"confirm": True, "password": TEST_PASSWORD},
     )
     assert response.status_code == 200
 

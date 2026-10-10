@@ -97,12 +97,21 @@ class NotificationPreferenceUpdate(BaseModel):
 
 
 class AccountDeactivateRequest(BaseModel):
-    """Baja lógica de la propia cuenta."""
+    """Baja lógica de la propia cuenta.
 
+    `password` es obligatorio: es una operación destructiva y no basta con
+    presentar una sesión válida (re-autenticación).
+    """
+
+    password: str
     delete_recipes: bool = False
 
 
 class AccountDeleteRequest(BaseModel):
-    """Eliminación definitiva (GDPR) de la propia cuenta."""
+    """Eliminación definitiva (GDPR) de la propia cuenta.
 
+    Igual que la baja, exige re-autenticación con la contraseña actual.
+    """
+
+    password: str
     confirm: bool = False

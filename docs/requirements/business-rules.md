@@ -192,7 +192,9 @@ enlace. El envío usa SMTP si está configurado (si no, `email_outbox`).
   **`author_id` no cambia**.
 - Se revocan los refresh tokens y se elimina la cookie.
 - La baja no hace nada si la cuenta ya está inactiva: `get_current_active_user` responde 400.
-**Sin implementar (brecha de seguridad)**: re-autenticación con la contraseña actual antes de bajar la cuenta.
+- **Re-autenticación obligatoria**: el body debe traer `password`. Sin el campo responde 422;
+  con una contraseña incorrecta, **403 "Contraseña incorrecta"**. Una sesión robada no alcanza
+  para destruir la cuenta.
 **Estado**: Implementado.
 
 ## RB-AUTH-09: Reactivación de usuario
@@ -215,13 +217,15 @@ existe).
   "Usuario eliminado" gracias a la anonimización del perfil.
 - Favoritos, visitas, calificaciones y tags **no se tocan**: apuntan a una fila ya anónima.
 - Confirmación explícita: `{"confirm": true}`; sin ella responde 400 "Confirmation required".
+- **Re-autenticación obligatoria**: el body debe traer `password`; sin el campo responde 422 y
+  con una contraseña incorrecta, **403**.
 - Vía admin equivalente: `POST /api/admin/users/{id}/gdpr-erase` (además registra auditoría y
   acepta `delete_recipes`).
 **Descartado**: transferir `author_id` a un usuario "system" y nullar las claves foráneas de
 favoritos/visitas/calificaciones — anonimizar in place ya logra el objetivo visible, y nullarlas
-destruye datos sin ganancia de privacidad.
-**Sin implementar (brecha de seguridad)**: re-autenticación con contraseña + frase exacta
-`"ELIMINAR MI CUENTA"`.
+destruye datos sin ganancia de privacidad. También la frase exacta `"ELIMINAR MI CUENTA"`: la
+contraseña prueba identidad de forma inequívoca y una frase la puede saber cualquiera que lea la
+pantalla.
 **Estado**: Implementado.
 
 ## RB-AUTH-11: Último login tracking

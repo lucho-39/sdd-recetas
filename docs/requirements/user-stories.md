@@ -54,9 +54,10 @@
 - **AC5**: No puede iniciar sesión: `POST /auth/login` responde **403 "Account is deactivated"**.
 - **AC6**: Se revocan todos los refresh tokens y se elimina la cookie de refresh; la sesión
   queda invalidada.
+- **AC7**: **Re-autenticación**: la baja exige la contraseña actual en el body (`password`).
+  Sin el campo responde **422**; con una contraseña incorrecta, **403 "Contraseña incorrecta"**.
+  Una sesión robada no alcanza para destruir la cuenta.
 - **Ref**: RB-AUTH-08
-- **Sin implementar (brecha de seguridad)**: re-autenticación con la contraseña actual antes de
-  confirmar la baja. Hoy basta con tener una sesión válida. Ver `authentication.md`.
 
 ### US-07: Reactivar cuenta
 **Como** usuario que se desactivó, **quiero** reactivar mi cuenta **para** recuperar mis recetas y datos.
@@ -71,8 +72,9 @@ no hay nada que restaurar: `display_name`, avatar y recetas quedan tal cual esta
 
 ### US-08: Eliminar cuenta definitivamente (GDPR)
 **Como** usuario, **quiero** borrar mi cuenta irrevocablemente **para** ejercer mi derecho al olvido.
-- **AC1**: Confirmación expresa mediante `{"confirm": true}`; sin ella la API responde **400
-  "Confirmation required"**.
+- **AC1**: Confirmación expresa mediante `{"confirm": true}` **más re-autenticación** con la
+  contraseña actual. Sin `confirm` responde **400 "Confirmation required"**; sin `password`,
+  **422**; con una contraseña incorrecta, **403 "Contraseña incorrecta"**.
 - **AC2**: Anonimización irreversible sobre la propia fila: `email → deleted+<id>@recetario.local`,
   `display_name → "Usuario eliminado"`, `avatar_url → NULL`, `password_hash` → valor aleatorio
   (las credenciales dejan de servir), `is_active=false`, `is_verified=false`, `deleted_at` seteado.
@@ -85,8 +87,10 @@ no hay nada que restaurar: `display_name`, avatar y recetas quedan tal cual esta
 - **AC5**: Se revocan los refresh tokens y se elimina la cookie; **no hay vuelta atrás** (no
   existe endpoint de recuperación).
 - **Ref**: RB-AUTH-10
-- **Sin implementar**: re-autenticación con `password` + frase exacta `"ELIMINAR MI CUENTA"`,
-  y transferencia de `author_id` a un usuario "system". Ver `authentication.md`.
+- **Descartado**: la frase exacta `"ELIMINAR MI CUENTA"` que pedía la versión anterior del spec.
+  La contraseña prueba identidad de forma inequívoca; una frase la puede saber cualquiera que
+  lea la pantalla. La transferencia de `author_id` a un usuario "system" también quedó descartada
+  (ver RB-AUTH-10).
 
 ---
 

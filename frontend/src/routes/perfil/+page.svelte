@@ -11,7 +11,7 @@
 	import { auth } from '$lib/stores/auth';
 	import { apiFetch } from '$lib/api';
 	import { notifications } from '$lib/stores/notifications';
-	import { confirmDialog } from '$lib/stores/confirm';
+	import { confirmDialog, confirmPasswordDialog } from '$lib/stores/confirm';
 	import AuthorAvatar from '$components/common/AuthorAvatar.svelte';
 	import RecipeGrid from '$components/recipe/RecipeGrid.svelte';
 	import type { NotificationPreferences } from '$lib/types';
@@ -170,13 +170,14 @@
 	let accountError = '';
 
 	async function deactivateAccount() {
-		const confirmed = await confirmDialog({
+		const { confirmed, password } = await confirmPasswordDialog({
 			title: '¿Dar de baja tu cuenta?',
-			description: 'Tu cuenta queda inactiva y podés reactivarla más adelante.',
+			description:
+				'Para confirmar, escribí tu contraseña. Tu cuenta queda inactiva y podés reactivarla más adelante.',
 			confirmLabel: 'Dar de baja',
 			destructive: true
 		});
-		if (!confirmed) return;
+		if (!confirmed || !password) return;
 
 		const deleteRecipes = await confirmDialog({
 			title: '¿Eliminar también tus recetas?',
@@ -193,7 +194,7 @@
 			const res = await apiFetch('/api/v1/auth/deactivate', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ delete_recipes: deleteRecipes })
+				body: JSON.stringify({ delete_recipes: deleteRecipes, password })
 			});
 			if (!res.ok) {
 				const body = await res.json().catch(() => ({}));
@@ -208,12 +209,14 @@
 	}
 
 	async function deleteAccount() {
-		const step1 = await confirmDialog({
+		const step1 = await confirmPasswordDialog({
 			title: 'Esto anonimiza tu cuenta de forma irreversible. ¿Continuar?',
+			description: 'Escribí tu contraseña para confirmar.',
 			confirmLabel: 'Continuar',
 			destructive: true
 		});
-		if (!step1) return;
+		if (!step1.confirmed || !step1.password) return;
+		const password = step1.password;
 
 		const step2 = await confirmDialog({
 			title: 'Última confirmación: ¿eliminar tu cuenta definitivamente?',
@@ -229,7 +232,7 @@
 			const res = await apiFetch('/api/v1/auth/delete-account', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ confirm: true })
+				body: JSON.stringify({ confirm: true, password })
 			});
 			if (!res.ok) {
 				const body = await res.json().catch(() => ({}));

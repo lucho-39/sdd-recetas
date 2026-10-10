@@ -8,7 +8,12 @@ export type ConfirmRequest = {
 	destructive?: boolean;
 };
 
-export type ConfirmState = ConfirmRequest & { resolve: (confirmed: boolean) => void };
+export type ConfirmResult = { confirmed: boolean; password: string | null };
+
+export type ConfirmState = ConfirmRequest & {
+	requirePassword: boolean;
+	resolve: (result: ConfirmResult) => void;
+};
 
 export const confirmState = writable<ConfirmState | null>(null);
 
@@ -19,6 +24,20 @@ export const confirmState = writable<ConfirmState | null>(null);
  */
 export function confirmDialog(request: ConfirmRequest): Promise<boolean> {
 	return new Promise((resolve) => {
-		confirmState.set({ ...request, resolve });
+		confirmState.set({
+			...request,
+			requirePassword: false,
+			resolve: ({ confirmed }) => resolve(confirmed)
+		});
+	});
+}
+
+/**
+ * Same dialog, but demands a fresh password before confirming. Destructive
+ * account operations use it: a valid session alone must not be enough.
+ */
+export function confirmPasswordDialog(request: ConfirmRequest): Promise<ConfirmResult> {
+	return new Promise((resolve) => {
+		confirmState.set({ ...request, requirePassword: true, resolve });
 	});
 }

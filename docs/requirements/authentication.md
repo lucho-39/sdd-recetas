@@ -97,26 +97,25 @@ Campos clave:
 **Request**:
 ```json
 {
-  "delete_recipes": false   // true = soft delete de las recetas del autor
+  "password": "password_actual",   // obligatorio — re-autenticación
+  "delete_recipes": false          // true = soft delete de las recetas del autor
 }
 ```
-**Comportamiento**: fija `is_active=false` y `deactivated_at`, revoca todos los refresh tokens y
-elimina la cookie. **No anonimiza nada** (`display_name`, avatar y email quedan intactos, porque
-la baja es reversible) y **no transfiere la autoría** de las recetas: si `delete_recipes=true`
-cada receta recibe `deleted_at` + `is_public=false` y sigue apuntando al autor original.
+**Comportamiento**: verifica la contraseña actual y recién entonces fija `is_active=false` y
+`deactivated_at`, revoca todos los refresh tokens y elimina la cookie. **No anonimiza nada**
+(`display_name`, avatar y email quedan intactos, porque la baja es reversible) y **no transfiere
+la autoría** de las recetas: si `delete_recipes=true` cada receta recibe `deleted_at` +
+`is_public=false` y sigue apuntando al autor original.
 
 **Happy Path (200)**:
 ```json
 { "deactivated": true, "recipes_deleted": 0 }
 ```
-**Bad Path (400/401/422)**:
+**Bad Path (400/401/403/422)**:
+- 403: "Contraseña incorrecta" — la operación es destructiva, una sesión robada no alcanza
 - 400: "Inactive user" — la baja se intenta con una cuenta ya desactivada
 - 401: token de acceso ausente o inválido
-- 422: cuerpo inválido
-
-**Sin implementar (brecha de seguridad)**: la doc original pedía `password` como confirmación de
-identidad antes de bajar la cuenta. Hoy basta con una sesión válida, así que una sesión robada
-puede destruir la cuenta. Queda pendiente; ver `user-stories.md` US-06.
+- 422: cuerpo inválido (`password` ausente o tipos malformados)
 
 ### POST `/auth/reactivate` — Reactivación
 **No existe como endpoint self-service.** Sólo hay reactivación **por admin**:
@@ -128,29 +127,30 @@ restaurar — `display_name`, avatar y recetas quedan tal cual estaban.
 ### POST `/auth/delete-account` — Eliminación GDPR
 **Request**:
 ```json
-{ "confirm": true }
+{ "password": "password_actual", "confirm": true }
 ```
-**Comportamiento**: anonimiza la propia fila de forma irreversible —
-`email → deleted+<id>@recetario.local`, `display_name → "Usuario eliminado"`, `avatar_url → NULL`,
-`password_hash` → valor aleatorio (las credenciales dejan de servir), `is_active=false`,
-`is_verified=false`, `deleted_at` seteado. Sus recetas pasan a soft delete y **conservan
-`author_id`**: al mostrarlas, el join resuelve "Usuario eliminado" gracias a la anonimización.
-Favoritos, visitas, calificaciones y tags **no se modifican** (apuntan a una fila ya anónima).
-Revoca los refresh tokens y elimina la cookie.
+**Comportamiento**: verifica la contraseña actual y, si `confirm` es `true`, anonimiza la propia
+fila de forma irreversible — `email → deleted+<id>@recetario.local`,
+`display_name → "Usuario eliminado"`, `avatar_url → NULL`, `password_hash` → valor aleatorio (las
+credenciales dejan de servir), `is_active=false`, `is_verified=false`, `deleted_at` seteado. Sus
+recetas pasan a soft delete y **conservan `author_id`**: al mostrarlas, el join resuelve
+"Usuario eliminado" gracias a la anonimización. Favoritos, visitas, calificaciones y tags **no se
+modifican** (apuntan a una fila ya anónima). Revoca los refresh tokens y elimina la cookie.
 
 **Happy Path (200)**:
 ```json
 { "deleted": true, "recipes_deleted": 0 }
 ```
-**Bad Path (400/401/422)**:
+**Bad Path (400/401/403/422)**:
+- 403: "Contraseña incorrecta"
 - 400: "Confirmation required" — `confirm` en `false`
 - 400: "Inactive user"
 - 401: token de acceso ausente o inválido
-- 422: cuerpo inválido
+- 422: cuerpo inválido (`password` ausente o tipos malformados)
 
-**Sin implementar (brecha de seguridad)**: la doc original pedía `password` más la frase exacta
-`"ELIMINAR MI CUENTA"` (403 si no coincidía). Hoy basta con `{"confirm": true}`. Queda pendiente;
-ver `user-stories.md` US-08.
+**Descartado**: la frase exacta `"ELIMINAR MI CUENTA"` que pedía la versión anterior de este
+documento. La contraseña prueba identidad de forma inequívoca; una frase la puede saber
+cualquiera que lea la pantalla.
 
 > **Nota sobre el diseño**: la versión anterior de este documento describía un usuario **"system"**
 > al que se transfería `author_id`, y el nullado de `favorites`/`visits`/`ratings`. Eso se descartó:

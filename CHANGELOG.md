@@ -124,6 +124,23 @@ El proyecto está en fase **MVP (0.x)**.
   y valida autenticación, unión al room y entrega del evento.
 
 ### Fixed
+- **Brecha de seguridad: cuenta destruible con una sesión robada**. `POST /auth/deactivate` y
+  `POST /auth/delete-account` no pedían nada más que un access token válido, así que cualquiera
+  con una sesión secuestrada podía borrar una cuenta de forma irreversible. Ambos exigen ahora la
+  contraseña actual (`password`, obligatorio) y responden **403 "Contraseña incorrecta"** si no
+  coincide; sin el campo, **422**.
+  - 403 y no 401: el caller **sí** está autenticado, lo que falla es la revalidación. Responder
+    401 mandaría el mensaje equivocado y podría hacer que un cliente dispare un re-login.
+  - `/perfil`: el diálogo de baja y el de eliminación piden la contraseña antes de confirmar.
+    `confirmDialog()` sigue devolviendo un boolean para no tocar sus 7 call sites; se agregó
+    `confirmPasswordDialog()` a la par, porque cambiar la firma a objeto haría que
+    `if (!confirmed)` pasara siempre (un objeto es truthy) — fallo silencioso en siete lugares.
+  - La frase exacta `"ELIMINAR MI CUENTA"` que pedía la doc original quedó **descartada**: la
+    contraseña prueba identidad de forma inequívoca, y una frase la puede saber cualquiera que
+    lea la pantalla.
+  - Tests: los tres existentes mandan `password`; se suman `test_deactivate_requires_password`
+    (422, la cuenta queda activa), `test_deactivate_rejects_wrong_password` (403) y
+    `test_delete_account_rejects_wrong_password` (403, el email no se anonimiza).
 - **Fase 2 (calidad de UI: typecheck y lint reales, datos normalizados)**
   - **`flor-de-bondiola` no se podía volver a guardar**: el seed dejaba la unidad como
     `kilos`/`gramos`, fuera de la whitelist `VALID_UNITS`, así que el `PATCH` devolvía **422**.
