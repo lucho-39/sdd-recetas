@@ -149,9 +149,10 @@
   comportamiento de las 320 filas del seed. El alta valida cada valor contra `VALID_UNITS`
   (**400**). El formulario de receta limita el `<select>` de unidades de cada fila a
   `default_unit` + las alternativas (`unitsFor()` en `RecipeForm.svelte`).
-  - **Alta de whitelist**: sólo `POST /api/v1/ingredients` la acepta al crear. **No hay
-    endpoint para editarla después** — hoy se setea por SQL. Hace falta un
-    `PATCH /api/admin/ingredients/{id}` si se quiere administrar desde la UI.
+  - **Edición de la whitelist**: se hace con
+    `POST /api/admin/ingredients/{id}/normalize` mandando `allowed_units` (y
+    `mark_validated: false` si no querés que la llamada además valide el ingrediente).
+    Los valores se chequean contra `VALID_UNITS` → **400**.
   - **Límitación en edición**: al abrir una receta existente la fila no trae datos del
     catálogo (`recipes.ingredients` guarda sólo `{ingredient_id, name, amount, unit,
     notes}`, ver RB-ING-02), así que `allowed_units` queda vacío y el select ofrece las 9

@@ -11,12 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.security import get_current_active_user, get_current_user_optional
+from app.core.units import VALID_CATEGORIES, VALID_UNITS
 from app.models import Ingredient
 
 router = APIRouter()
-
-VALID_CATEGORIES = {"proteina", "verdura", "fruta", "lacteo", "grano", "condimento", "grasa", "otro"}
-VALID_UNITS = {"g", "kg", "ml", "l", "unidad", "cucharada", "cucharadita", "taza", "pizca"}
 
 
 def slugify(text: str) -> str:

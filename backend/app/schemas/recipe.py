@@ -6,20 +6,11 @@ from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.core.units import VALID_UNITS
 from app.schemas.auth import UserResponse
 
-# Units allowed in a recipe's ingredient list (RB-ING-02 / RB-11).
-VALID_UNITS = {
-    "g",
-    "kg",
-    "ml",
-    "l",
-    "unidad",
-    "cucharada",
-    "cucharadita",
-    "taza",
-    "pizca",
-}
+# Units allowed in a recipe's ingredient list (RB-ING-02 / RB-11) live in
+# app.core.units so the admin and public ingredient routes share one set.
 
 
 class RecipeIngredient(BaseModel):

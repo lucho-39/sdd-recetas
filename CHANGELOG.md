@@ -133,9 +133,16 @@ El proyecto está en fase **MVP (0.x)**.
   - El formulario de receta limita el `<select>` de unidades de cada fila a
     `default_unit` + las alternativas; con la whitelist de `harina` cargada
     (`g` + `kg`, `taza`) el selector baja de 9 opciones a 3.
-  - Dos huecos quedaron registrados en la doc: no hay endpoint para **editar** la
-    whitelist después de crear el ingrediente (hoy se setea por SQL), y al editar una
-    receta existente la fila no trae datos del catálogo, así que el filtrado aplica
+  - La whitelist es editable después de crear el ingrediente:
+    `POST /api/admin/ingredients/{id}/normalize` acepta `allowed_units` (con
+    `mark_validated: false` para no validar de paso) y chequea cada valor
+    contra `VALID_UNITS` → 400.
+  - `VALID_UNITS`/`VALID_CATEGORIES` vivían duplicadas en `api/v1/endpoints/ingredients.py`
+    y `schemas/recipe.py`; pasaron a `app/core/units.py` para que las rutas de admin y las
+    públicas validen contra el mismo set.
+  - Queda registrado que al editar una receta existente la fila no trae datos del
+    catálogo (`recipes.ingredients` guarda sólo `{ingredient_id, name, amount, unit,
+    notes}`, ver RB-ING-02), así que `allowed_units` queda vacío y el filtrado aplica
     recién al agregar el ingrediente desde el autocompletado.
 - **Stack de migraciones (Alembic) arrancado.** La 0001 (`8fcd65d6eddf`) recrea el schema
   completo de 18 tablas y se aplicó con `alembic stamp` sobre la base existente; la 0002

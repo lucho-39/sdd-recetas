@@ -202,6 +202,38 @@ async def test_admin_ingredient_normalize(
     assert body["validated_by_admin"] is True
 
 
+async def test_admin_ingredient_normalize_sets_allowed_units(
+    client: AsyncClient, admin_headers: dict, db_session: AsyncSession
+) -> None:
+    """RF-12.8: the whitelist is editable through the admin normalize route."""
+    ingredient = await create_ingredient(
+        db_session, slug="harina", name="Harina", default_unit="g"
+    )
+    response = await client.post(
+        f"/api/admin/ingredients/{ingredient.id}/normalize",
+        headers=admin_headers,
+        json={"allowed_units": ["kg", "taza"], "mark_validated": False},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["default_unit"] == "g"
+    assert body["allowed_units"] == ["kg", "taza"]
+    assert body["validated_by_admin"] is False
+
+
+async def test_admin_ingredient_normalize_rejects_invalid_allowed_unit(
+    client: AsyncClient, admin_headers: dict, db_session: AsyncSession
+) -> None:
+    ingredient = await create_ingredient(db_session, slug="harina", name="Harina")
+    response = await client.post(
+        f"/api/admin/ingredients/{ingredient.id}/normalize",
+        headers=admin_headers,
+        json={"allowed_units": ["cucharadones"]},
+    )
+    assert response.status_code == 400
+    assert "cucharadones" in response.json()["detail"]
+
+
 async def test_admin_recipes_series(
     client: AsyncClient, admin_headers: dict, recipe: Recipe
 ) -> None:

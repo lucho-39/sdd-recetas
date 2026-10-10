@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.audit import record_audit
 from app.core.database import get_db
 from app.core.security import require_admin
+from app.core.units import VALID_UNITS
 from app.models import Ingredient, Recipe, User
 from app.schemas.admin import (
     IngredientMergeRequest,
@@ -28,6 +29,7 @@ def _serialize(ing: Ingredient) -> dict:
         "name": ing.name,
         "category": ing.category,
         "default_unit": ing.default_unit,
+        "allowed_units": ing.allowed_units or [],
         "aliases": ing.aliases or [],
         "is_active": ing.is_active,
         "validated_by_admin": ing.validated_by_admin,
@@ -242,6 +244,16 @@ async def normalize_ingredient(
     ingredient = await db.get(Ingredient, ingredient_id)
     if not ingredient:
         raise HTTPException(status_code=404, detail="Ingredient not found")
+
+    # RF-12.8: the whitelist feeds validate_ingredients(), so a typo here
+    # would silently lock every recipe out of that unit.
+    if data.allowed_units is not None:
+        invalid = [u for u in data.allowed_units if u not in VALID_UNITS]
+        if invalid:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid allowed units: {', '.join(sorted(invalid))}",
+            )
 
     update_data = data.model_dump(exclude_unset=True, exclude={"mark_validated"})
     for field, value in update_data.items():
