@@ -25,8 +25,11 @@ El proyecto está en fase **MVP (0.x)**.
 - CRUD completo: crear/editar/borrar (soft delete) y **restaurar**; detalle por slug con
   contador de visitas; generación de slug con desambiguación.
 - **Ingredientes**: catálogo con **seed de 317 ingredientes** (`ingredients_seed.py`), autocomplete
-  sobre datos reales y **alta desde el selector** (`POST /api/v1/ingredients`, pendiente de validación);
-  nombres resueltos en el detalle, cantidad/unidad/notas.
+  sobre datos reales y **alta desde el selector vía modal** (RF-12.5): nombre, categoría, unidad
+  por defecto y aliases, con validación de `VALID_CATEGORIES`/`VALID_UNITS` en el backend y alta
+  pendiente de revisión de admin. Cada fila de la receta expone la unidad como **`<select>` sobre
+  las 9 unidades de RF-12.3** en lugar de texto libre. Nombres resueltos en el detalle,
+  cantidad/unidad/notas.
 - **Tags**: asociación por slug al crear/editar, con `usage_count` sincronizado.
 - **Favoritos y colecciones**: guardar/quitar, mover, renombrar y borrar colecciones.
 - **Calificaciones y reseñas**: 1–5 estrellas, reseña textual, promedio y **distribución**,
@@ -102,7 +105,18 @@ El proyecto está en fase **MVP (0.x)**.
   y valida autenticación, unión al room y entrega del evento.
 
 ### Fixed
-- **Fase 2 (calidad de UI: typecheck real)**
+- **Fase 2 (calidad de UI: typecheck y lint reales, datos normalizados)**
+  - **`flor-de-bondiola` no se podía volver a guardar**: el seed dejaba la unidad como
+    `kilos`/`gramos`, fuera de la whitelist `VALID_UNITS`, así que el `PATCH` devolvía **422**.
+    Se normalizaron a `kg`/`g`.
+  - **El mismo seed guardaba `ingredient_id` como slug** (`bondiola-de-cerdo`) en vez de UUID, y el
+    `PATCH` fallaba con **422 `uuid_parsing`**. Se dieron de alta los tres ingredientes que el
+    catálogo no tenía (`bondiola-de-cerdo`, `ajos`, `roon`) y se resolvieron los ids. Ya no queda
+    ningún `ingredient_id` no-UUID en la base.
+  - **El CTA "Limpiar filtros" del estado vacío de `/buscar` no limpiaba**: apuntaba a
+    `href="/buscar"`, pero la página sólo lee la URL en `onMount`, que no se re-ejecuta al
+    navegar al mismo path. `EmptyState` ahora acepta una acción como callback y `/buscar` le pasa
+    `clearAll`.
   - `frontend/tsconfig.json` ahora extiende `./.svelte-kit/tsconfig.json` (antes lo redefinía
     completo con `paths` mal escritos sin `/*`), así que `pnpm run check` **por fin funciona**.
     Pasó de 135 errores —la mayoría falsos positivos por resolución de módulos rota— a **0**.
@@ -172,6 +186,12 @@ El proyecto está en fase **MVP (0.x)**.
 - 404 de `/register` y de las rutas del menú (`/mis-recetas`, `/mis-favoritos`).
 
 ### Docs
+- `user-stories.md`: **US-03 (OAuth), US-08 (baja/eliminación), US-37 (IA) y US-38 (modo cocina)**
+  figuraban como *Won't / [v2]* pero ya estaban implementadas y cubiertas por la suite; se movieron
+  a Must para que la priorización describa el producto real (total 38 Must + 1 Should, ninguna
+  diferida). `functional-requirements.md` y `business-rules.md` documentan RF-12.5/RF-12.3 como
+  implementados y RF-12.8 como pendiente de arrancar el stack de migraciones (0 versiones en
+  `backend/alembic/versions/`).
 - `docs/decisions/ADR-000-source-of-truth.md` (la documentación como fuente de verdad).
 - Requisitos (RF/RB), visión, dominio, UI (páginas, componentes, design system),
   casos de uso (`search`, `ingredients`, `admin`, `notifications`), testing y este CHANGELOG.

@@ -137,6 +137,16 @@
 | RF-12.7 | Búsqueda por ingrediente: catálogo (exacto) + nombre parcial (ILIKE) | MUST | RB-ING-04 |
 | RF-12.8 | Whitelist unidades compatibles por ingrediente (default_unit + alternativas) | SHOULD | RB-ING-02 |
 
+**Estado de RF-12 (Fase 2)**
+- **RF-12.5 implementado**: alta desde el selector vía modal con categoría y unidad
+  (`RecipeForm` + `lib/components/ui/Modal.svelte`), ver RB-ING-03.
+- **RF-12.3 implementado**: la unidad de cada fila es un `<select>` sobre las 9 unidades
+  de `VALID_UNITS` en lugar de texto libre.
+- **RF-12.8 pendiente**: exige una columna de unidades alternativas por ingrediente
+  (`allowed_units`), que todavía no existe en el modelo `Ingredient`. Como
+  `backend/alembic/versions/` está vacío (0 migraciones), agregarla requiere arrancar el
+  stack de migraciones antes — queda registrado en vez de agregar una columna con
+  `create_all`, que **no altera tablas existentes**.
 ## RF-13: Notificaciones en tiempo real (in-app) **[implementado]**
 | ID | Requisito | Fortaleza | RB |
 |----|-----------|-----------|-----|

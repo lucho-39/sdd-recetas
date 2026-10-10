@@ -215,14 +215,26 @@ enlace. El envío usa SMTP si está configurado (si no, `email_outbox`).
 - `notes`: string opcional.
 - Sin ingredientes duplicados dentro de la misma receta.
 **Errores**: ingrediente inexistente/inactivo → **400**; unidad inválida, `amount <= 0` o duplicado → **422** (validador de Pydantic).
-**Implementación**: `validate_ingredients()` en `app/api/v1/endpoints/recipes.py`, aplicado en `create_recipe` y `update_recipe`.
+**Implementación**: `validate_ingredients()` en `app/api/v1/endpoints/recipes.py`, aplicado en `create_recipe` y `update_recipe`; `unit_must_be_known` en `app/schemas/recipe.py`.
 **Estado**: Implementado (validación completa en creación y actualización).
+**Estado de los datos (Fase 2)**: el formulario usaba un input libre para la unidad y el seed dejó
+`kilos`/`gramos`, que la whitelist rechaza — `flor-de-bondiola` no se podía volver a guardar (422).
+Se normalizó a `kg`/`g`. El mismo seed guardaba `ingredient_id` como **slug** en vez de UUID, lo que
+rompía el `PATCH` (422 `uuid_parsing`); se crearon los tres ingredientes que faltaban en el catálogo
+(`bondiola-de-cerdo`, `ajos`, `roon`) y se resolvieron los ids. El selector ahora expone la unidad
+como `<select>` limitado a `VALID_UNITS`, con la lista conserverada como opción si aparece un valor
+legado para no perderlo en silencio.
 
 ## RB-ING-03: Autocompletado de Ingredientes
 **Descripción**: Input de ingredientes sugiere del catálogo por coincidencia en `slug`/`name`.
 **Implementación**: `GET /api/v1/ingredients?query=<texto>` → `WHERE is_active = true AND (name ILIKE '%q%' OR slug ILIKE '%q%' OR aliases::text ILIKE '%q%') ORDER BY name`.
+**Alta desde el selector (RF-12.5)**: si el nombre no está en el catálogo, el botón *Agregar* abre
+un modal con nombre, **categoría** (los 8 valores de RF-12.2), **unidad por defecto** (los 9 de
+RF-12.3) y aliases, y recién entonces llama a `POST /api/v1/ingredients`. El backend valida
+`category` y `default_unit` contra `VALID_CATEGORIES`/`VALID_UNITS` (400 si no coinciden) y el
+ingrediente nace con `validated_by_admin=false`, a la espera de revisión.
 **Nota**: no existe columna `usage_count` en `ingredients` (la spec la mencionaba por error).
-**Estado**: Implementado.
+**Estado**: Implementado (autocompletado + alta con modal).
 
 ## RB-ING-04: Búsqueda por Ingrediente **[v2 parcial]**
 **Descripción**: Filtro por ingrediente con coincidencia exacta por `ingredient_id`.

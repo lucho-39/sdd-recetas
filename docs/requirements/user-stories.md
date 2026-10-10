@@ -347,13 +347,20 @@
 
 | Must (MVP) | Should (MVP si tiempo) | Won't / [v2] |
 |------------|------------------------|--------------|
-| US-01, 02, 04, 05, 06, 07 | US-30 (mover entre colecciones) | US-03 (OAuth) |
-| US-09, 10, 11, 12, 13 | — | US-08 (GDPR delete) |
-| US-14, 15, 16, 17, 18 | — | US-37 (IA gen) |
-| US-19, 20, 21, 22, 23, 24, 25 | — | US-38 (modo cocina) |
+| US-01, 02, 03, 04, 05, 06, 07, 08 | US-30 (mover entre colecciones) | — |
+| US-09, 10, 11, 12, 13 | — | — |
+| US-14, 15, 16, 17, 18, 37 | — | — |
+| US-19, 20, 21, 22, 23, 24, 25, 38 | — | — |
 | US-26, 27, 28, 29 | — | — |
 | US-31, 32, 33 | — | — |
 | US-34, 35, 36 | — | — |
 | US-39 (admin) | — | — |
 
-**Total MVP**: 34 stories Must + 1 Should = 35; 4 stories diferidas a v2 (US-03, US-08, US-37, US-38).
+**Total MVP**: 38 stories Must + 1 Should = 39; ninguna diferida a v2.
+
+> **Corrección (Fase 2)**: US-03 (OAuth), US-08 (baja/eliminación de cuenta), US-37 (generación
+> por IA) y US-38 (modo cocina) figuraban como *Won't / [v2]* pero ya estaban implementadas y
+> cubiertas por la suite (`tests/test_v2_features.py`, `routes/auth/callback`,
+> `routes/recetas/generar`, `routes/cooking/[slug]`). Se movieron a Must para que la priorización
+> describa el producto real: ADR-000 dice que la documentación es la fuente de verdad, y una
+> planificación vencida no puede mandar sobre código entregado.
