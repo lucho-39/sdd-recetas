@@ -243,6 +243,7 @@
 				loadingMore={$loadingMore}
 				hasMore={$hasMore}
 				emptyVariant="search"
+				emptyAction={clearAll}
 				onLoadMore={() => recipesStore.fetchMore()}
 			/>
 		</main>

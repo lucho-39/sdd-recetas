@@ -10,6 +10,7 @@
 	export let hasMore = true;
 	export let emptyVariant: 'search' | 'favorites' | 'recipes' = 'recipes';
 	export let onLoadMore: () => void = () => {};
+	export let emptyAction: (() => void) | null = null;
 
 	let observer: IntersectionObserver | null = null;
 
@@ -43,7 +44,7 @@
 		{/each}
 	</div>
 {:else if recipes.length === 0}
-	<EmptyState variant={emptyVariant} />
+	<EmptyState variant={emptyVariant} action={emptyAction} />
 {:else}
 	<div
 		class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"

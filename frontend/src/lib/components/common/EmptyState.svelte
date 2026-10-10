@@ -12,6 +12,8 @@
 	export let description: string = '';
 	export let actionLabel: string = '';
 	export let actionHref: string = '';
+	/** Si existe, se renderiza un <button> en vez de un <a>. */
+	export let action: (() => void) | null = null;
 
 	function getConfig() {
 		switch (variant) {
@@ -72,10 +74,16 @@
 	</div>
 	<h3 class="text-xl font-playfair font-medium text-foreground mb-2">{finalTitle}</h3>
 	<p class="text-muted-foreground mb-6 max-w-md">{finalDescription}</p>
-	{#if finalActionLabel && finalActionHref}
-		<a href={finalActionHref} class="btn btn-primary">
-			{finalActionLabel}
-		</a>
+	{#if finalActionLabel}
+		{#if action}
+			<button type="button" class="btn btn-primary" on:click={action}>
+				{finalActionLabel}
+			</button>
+		{:else if finalActionHref}
+			<a href={finalActionHref} class="btn btn-primary">
+				{finalActionLabel}
+			</a>
+		{/if}
 	{/if}
 </div>
 
