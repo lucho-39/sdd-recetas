@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { apiFetch } from '$lib/api';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { IconEyeFilled as Public, IconEyeOff as Private, IconTrashFilled as Trash, IconEdit as Edit, IconRestore as Restore } from '@tabler/icons-svelte';

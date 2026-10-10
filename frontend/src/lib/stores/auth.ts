@@ -1,4 +1,5 @@
 import { writable, derived } from 'svelte/store';
+import { apiFetch } from '$lib/api';
 import type { User, Token } from '$lib/types';
 
 interface AuthState {
