@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 
-	export let variant: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' = 'default';
+	export let variant: 'default' | 'primary' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' = 'default';
 	export let size: 'default' | 'sm' | 'lg' | 'icon' = 'default';
 	export let disabled = false;
 	export let loading = false;
@@ -11,6 +11,17 @@
 	export let fullWidth = false;
 
 	const dispatch = createEventDispatcher();
+
+	$: classes = [
+		'btn',
+		variant === 'default' ? '' : `btn-${variant}`,
+		size === 'sm' ? 'btn-sm' : size === 'lg' ? 'btn-lg' : '',
+		fullWidth ? 'w-full' : '',
+		disabled ? 'opacity-50 pointer-events-none' : '',
+		className
+	]
+		.filter(Boolean)
+		.join(' ');
 
 	function handleClick(event: MouseEvent) {
 		if (disabled || loading) {
@@ -24,22 +35,10 @@
 {#if href}
 	<a
 		href={href}
-		class:btn
-		class:btn-primary={variant === 'primary'}
-		class:btn-secondary={variant === 'secondary'}
-		class:btn-destructive={variant === 'destructive'}
-		class:btn-outline={variant === 'outline'}
-		class:btn-ghost={variant === 'ghost'}
-		class:btn-link={variant === 'link'}
-		class:btn-sm={size === 'sm'}
-		class:btn-lg={size === 'lg'}
-		class:w-full={fullWidth}
-		class:opacity-50={disabled}
-		class:pointer-events-none={disabled}
+		class={classes}
 		aria-disabled={disabled}
 		aria-busy={loading}
 		on:click={handleClick}
-		class={className}
 	>
 		{#if loading}
 			<svg class="mr-2 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -52,21 +51,11 @@
 {:else}
 	<button
 		type={type}
-		class:btn
-		class:btn-primary={variant === 'primary'}
-		class:btn-secondary={variant === 'secondary'}
-		class:btn-destructive={variant === 'destructive'}
-		class:btn-outline={variant === 'outline'}
-		class:btn-ghost={variant === 'ghost'}
-		class:btn-link={variant === 'link'}
-		class:btn-sm={size === 'sm'}
-		class:btn-lg={size === 'lg'}
-		class:w-full={fullWidth}
+		class={classes}
 		disabled={disabled || loading}
 		aria-disabled={disabled || loading}
 		aria-busy={loading}
 		on:click={handleClick}
-		class={className}
 	>
 		{#if loading}
 			<svg class="mr-2 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

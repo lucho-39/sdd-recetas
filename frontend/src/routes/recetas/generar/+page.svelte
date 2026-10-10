@@ -23,6 +23,13 @@
 		ready = true;
 	});
 
+	function numberOrNull(value: unknown): number | null {
+		const parsed = Number(value);
+		return value === null || value === undefined || value === '' || Number.isNaN(parsed)
+			? null
+			: parsed;
+	}
+
 	function toRecipe(data: Record<string, unknown>) {
 		const list = (data.ingredients as Record<string, unknown>[]) ?? [];
 		const tags = (data.tags as unknown[]) ?? [];
@@ -32,21 +39,21 @@
 			category_id: '',
 			instructions: (data.instructions as string) ?? '',
 			difficulty: (data.difficulty as string) ?? '',
-			prep_time_minutes: data.prep_time_minutes ?? null,
-			cook_time_minutes: data.cook_time_minutes ?? null,
-			servings: data.servings ?? null,
+			prep_time_minutes: numberOrNull(data.prep_time_minutes),
+			cook_time_minutes: numberOrNull(data.cook_time_minutes),
+			servings: numberOrNull(data.servings),
 			is_public: true,
 			image_url: null,
 			ingredients: list.map((item) => ({
 				ingredient_id: '',
 				name: (item.name as string) ?? '',
-				amount: item.amount ?? '',
+				amount: numberOrNull(item.amount) ?? 0,
 				unit: (item.unit as string) ?? '',
 				notes: ''
 			})),
 			tags: tags.map((tag) => {
 				const name = String(tag);
-				return { id: '', slug: name.toLowerCase().replace(/\s+/g, '-'), name };
+				return { id: '', slug: name.toLowerCase().replace(/\s+/g, '-'), name, usage_count: 0 };
 			})
 		};
 	}

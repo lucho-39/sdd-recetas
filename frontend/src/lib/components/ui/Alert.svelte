@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import { IconX as X } from '@tabler/icons-svelte';
-	import { Button } from '$components/ui/Button.svelte';
+	import Button from '$components/ui/Button.svelte';
 
 	export let variant: 'default' | 'destructive' | 'warning' | 'success' = 'default';
 	export let title: string = '';
@@ -25,7 +25,7 @@
 >
 	<div class="flex items-start gap-3">
 		{#if variant === 'destructive'}
-			<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.283 2.5-2.882l-1.5-6.5c-.2-.6-.75-1.118-1.35-1.118H6.5c-.6 0-1.05-.453-1.1-.995l-.5-1.5c-.1-.6-.25-1.1.15-1.5.4-.4.8-.65 1.15-.75h12.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg>
+			<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.283 2.5-2.882l-1.5-6.5c-.2-.6-.75-1.118-1.35-1.118H6.5c-.6 0-1.05-.453-1.1-.995l-.5-1.5c-.1-.6-.25-1.1.15-1.5.4-.4.8-.65 1.15-.75h12.5" /></svg>
 		{:else if variant === 'warning'}
 			<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.283 2.5-2.882l-1.5-6.5c-.2-.6-.75-1.118-1.35-1.118H6.5c-.6 0-1.05-.453-1.1-.995l-.5-1.5c-.1-.6-.25-1.1.15-1.5.4-.4.8-.65 1.15-.75h12.5" /></svg>
 		{:else if variant === 'success'}
@@ -51,4 +51,5 @@
 			<X class="w-4 h-4" />
 		</button>
 	{/if}
+</div>
 </div>

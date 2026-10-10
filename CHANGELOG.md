@@ -86,6 +86,8 @@ El proyecto está en fase **MVP (0.x)**.
   (`./.data/postgres`, `./.data/uploads`).
 - Backend servido como `app.main:socket_app` (HTTP + Socket.IO en el mismo puerto).
 - Frontends en modo **build + preview** (sin HMR en contenedor).
+- **`pnpm run check` (svelte-check) habilitado** en el frontend: el typecheck era inexistente
+  en la práctica y fue lo que destapó los bugs de la Fase 0 y de la Fase 2.
 
 ### CI
 - `.github/workflows/ci.yml`: job de backend (Postgres + `uv sync` + `pytest`, incluida la suite) y
@@ -94,6 +96,22 @@ El proyecto está en fase **MVP (0.x)**.
   y valida autenticación, unión al room y entrega del evento.
 
 ### Fixed
+- **Fase 2 (calidad de UI: typecheck real)**
+  - `frontend/tsconfig.json` ahora extiende `./.svelte-kit/tsconfig.json` (antes lo redefinía
+    completo con `paths` mal escritos sin `/*`), así que `pnpm run check` **por fin funciona**.
+    Pasó de 135 errores —la mayoría falsos positivos por resolución de módulos rota— a **0**.
+  - `Button` aceptaba `variant="primary"` en la plantilla pero no en la unión de tipos, y
+    `class:btn` apuntaba a una variable inexistente: el componente no renderizaba clases base.
+  - `RecipeGrid` usaba `bind:this` sobre una **action** (`setSentinel`), que es `use:setSentinel`.
+  - `Alert.svelte` tenía un `<div>` raíz sin cerrar y un import nombrado de un default export;
+    `Toast.svelte` aplicaba con `@apply` clases que no son utilidades de Tailwind
+    (`animate-in` es custom de `app.css`, `slide-in-from-top-2` viene de `tailwindcss-animate`,
+    que no está instalado), así que su animación nunca corrió. Ambos componentes están
+    **sin importar en ninguna parte** — el build nunca los compiló, que es por qué no rompían.
+  - `apiFetch` se usaba sin import en 6 archivos (ver arriba, commit separado).
+  - `replace: true` → `replaceState` en `/buscar`; tipos de `CategoryFilter` y de
+    `RecipeForm.initial` (`Partial<Recipe>`); `toRecipe()` de `/recetas/generar` casteaba
+    números sin validar y no completaba `Tag.usage_count`.
 - **Fase 1 (reglas de negocio mal implementadas o mal documentadas)**
   - **Visitas anti-F5 (RB-04)**: `GET /recipes/{slug}` incrementaba `visit_count` en
     **cada** lectura, así que un F5 inflaba el contador. El conteo vive ahora solo en

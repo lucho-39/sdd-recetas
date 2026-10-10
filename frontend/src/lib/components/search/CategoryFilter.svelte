@@ -3,7 +3,7 @@
 
 	export let selected: string | undefined;
 	export let onChange: (slug: string | undefined) => void;
-	export let categories: { slug: string; name: string; icon?: string; color: string }[] = [];
+	export let categories: { slug: string; name: string; icon?: string | null; color: string }[] = [];
 
 	$: if (categories.length === 0) {
 		categories = $categoriesStore.categories;

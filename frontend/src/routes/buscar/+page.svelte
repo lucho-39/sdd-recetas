@@ -96,7 +96,7 @@
 		if (browser) {
 			const qs = buildParams().toString();
 			goto(`/buscar${qs ? `?${qs}` : ''}`, {
-				replace: true,
+				replaceState: true,
 				noScroll: true,
 				keepFocus: true
 			});

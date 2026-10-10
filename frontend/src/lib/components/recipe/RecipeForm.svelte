@@ -8,7 +8,7 @@
 	import TagAutocomplete from '$components/search/TagAutocomplete.svelte';
 	import type { Recipe } from '$lib/types';
 
-	export let initial: Recipe | null = null;
+	export let initial: Partial<Recipe> | null = null;
 	export let slug: string | null = null;
 
 	const DIFFICULTIES = [

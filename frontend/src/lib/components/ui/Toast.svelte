@@ -15,11 +15,7 @@
 </script>
 
 <div
-	class="toast"
-	class:toast-default={variant === 'default'}
-	class:toast-destructive={variant === 'destructive'}
-	class:toast-success={variant === 'success'}
-	class={className}
+	class={['toast', `toast-${variant}`, 'animate-in', className].filter(Boolean).join(' ')}
 	role="alert"
 	aria-live="polite"
 >
@@ -42,7 +38,7 @@
 
 <style>
 	.toast {
-		@apply flex items-start gap-3 p-4 rounded-lg border shadow-lg min-w-[300px] max-w-md animate-in slide-in-from-top-2 duration-300;
+		@apply flex items-start gap-3 p-4 rounded-lg border shadow-lg min-w-[300px] max-w-md;
 	}
 
 	.toast-default {

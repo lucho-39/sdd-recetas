@@ -50,7 +50,7 @@
 	</div>
 
 	{#if hasMore}
-		<div class="mt-8 flex justify-center" bind:this={setSentinel}>
+		<div class="mt-8 flex justify-center" use:setSentinel>
 			{#if loadingMore}
 				<span class="inline-flex items-center gap-2 text-sm text-muted-foreground">
 					<span class="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-hidden="true"></span>
