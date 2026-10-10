@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { get } from 'svelte/store';
-	import { adminFetch } from '$lib/api';
+		import { adminFetch } from '$lib/api';
 	import { auth } from '$lib/stores/auth';
 
 	let settings: Record<string, unknown> = {};
@@ -27,20 +26,11 @@
 		error = '';
 		success = '';
 		try {
-			const { accessToken } = get(auth);
-			const res = await fetch('/api/admin/config', {
+			const res = await adminFetch<{ settings: Record<string, unknown> }>('/config', {
 				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${accessToken}`
-				},
 				body: JSON.stringify({ settings })
 			});
-			if (!res.ok) {
-				const body = await res.json().catch(() => ({}));
-				throw new Error(body.detail ?? `API ${res.status}`);
-			}
-			settings = (await res.json()).settings;
+			settings = res.settings;
 			success = 'Configuración guardada.';
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'No se pudo guardar';

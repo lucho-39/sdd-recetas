@@ -32,9 +32,26 @@ function createAuthStore() {
 			if (typeof window === 'undefined') return;
 			const token = localStorage.getItem(TOKEN_KEY);
 			if (token) {
-				const user = await fetchMe(token).catch(() => null);
+				let effective = token;
+				let user = await fetchMe(token).catch(() => null);
+
+				if (!user) {
+					// Access token expired (15 min); try the refresh cookie once.
+					const { refreshAccessToken } = await import('$lib/api');
+					const fresh = await refreshAccessToken();
+					if (fresh) {
+						effective = fresh;
+						user = await fetchMe(fresh).catch(() => null);
+					}
+				}
+
 				if (user && user.role === 'admin') {
-					update((state) => ({ ...state, user, accessToken: token, isAuthenticated: true }));
+					update((state) => ({
+						...state,
+						user,
+						accessToken: effective,
+						isAuthenticated: true
+					}));
 				} else {
 					localStorage.removeItem(TOKEN_KEY);
 				}
@@ -76,7 +93,10 @@ function createAuthStore() {
 			}
 			localStorage.removeItem(TOKEN_KEY);
 			set({ user: null, accessToken: null, isAuthenticated: false, loading: false });
-		}
+		},
+		/** Swap in a freshly minted access token after a silent refresh. */
+		setTokens: (accessToken: string | null) =>
+			update((state) => ({ ...state, accessToken, isAuthenticated: !!accessToken }))
 	};
 }
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { adminFetch } from '$lib/api';
 	import { onMount } from 'svelte';
 	import {
 		IconUsers as Users,
@@ -18,22 +19,14 @@
 	let error = '';
 	let loading = true;
 
-	async function fetchAdmin<T>(path: string): Promise<T> {
-		const res = await fetch(`/api/admin${path}`, {
-			headers: { Authorization: `Bearer ${$auth.accessToken}` }
-		});
-		if (!res.ok) throw new Error(`API ${res.status}`);
-		return (await res.json()) as T;
-	}
-
 	onMount(async () => {
 		try {
 			const [dashboard, monthSeries, weekSeries] = await Promise.all([
-				fetchAdmin<Record<string, number>>('/metrics/dashboard'),
-				fetchAdmin<{ series: { label: string; count: number }[] }>(
+				adminFetch<Record<string, number>>('/metrics/dashboard'),
+				adminFetch<{ series: { label: string; count: number }[] }>(
 					'/metrics/recipes-series?interval=month&periods=12'
 				),
-				fetchAdmin<{ series: { label: string; count: number }[] }>(
+				adminFetch<{ series: { label: string; count: number }[] }>(
 					'/metrics/recipes-series?interval=week&periods=8'
 				)
 			]);
