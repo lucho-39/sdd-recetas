@@ -583,3 +583,37 @@ async def test_ingredient_filter_is_or_between_ingredients(
     single_titles = {r["title"] for r in single.json()["recipes"]}
     assert "Salsa de tomate" in single_titles
     assert "Pollo al horno" not in single_titles
+
+
+async def test_slug_is_ascii_safe(client: AsyncClient, category: Category, auth_headers: dict) -> None:
+    """RB-02: accented titles produce accent-free slugs, so URLs stay copy-pasteable."""
+    payload = _recipe_payload(category, title="Jalapeño relleno")
+    response = await client.post("/api/v1/recipes", json=payload, headers=auth_headers)
+    assert response.status_code == 201
+    assert response.json()["slug"] == "jalapeno-relleno"
+
+    detail = await client.get("/api/v1/recipes/jalapeno-relleno")
+    assert detail.status_code == 200
+
+
+async def test_update_recipe_rejects_inactive_category(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    recipe: Recipe,
+    auth_headers: dict,
+) -> None:
+    """RB-01: PATCH must validate the category the same way create does."""
+    from app.models import Category as CategoryModel
+
+    inactive = CategoryModel(slug="retiradas", name="Retiradas", is_active=False)
+    db_session.add(inactive)
+    await db_session.commit()
+    await db_session.refresh(inactive)
+
+    response = await client.patch(
+        f"/api/v1/recipes/{recipe.slug}",
+        json={"category_id": str(inactive.id)},
+        headers=auth_headers,
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Invalid category"

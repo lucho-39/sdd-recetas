@@ -3,6 +3,7 @@ Recipe endpoints
 """
 import copy
 import re
+import unicodedata
 from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -28,11 +29,13 @@ router = APIRouter()
 
 
 def slugify(text: str) -> str:
-    """Generate a URL-friendly slug from text."""
+    """RB-02: generate a URL-friendly slug, ASCII-safe (no accents)."""
     text = text.lower().strip()
-    text = re.sub(r'[^\w\s-]', '', text, flags=re.UNICODE)
-    text = re.sub(r'[\s_-]+', '-', text, flags=re.UNICODE)
-    text = re.sub(r'^-+|-+$', '', text)
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    text = re.sub(r"[^\w\s-]", "", text, flags=re.UNICODE)
+    text = re.sub(r"[\s_-]+", "-", text, flags=re.UNICODE)
+    text = re.sub(r"^-+|-+$", "", text)
     return text
 
 
@@ -425,6 +428,16 @@ async def update_recipe(
         update_data["ingredients"] = await validate_ingredients(
             db, recipe_data.ingredients
         )
+
+    if "category_id" in update_data:
+        category_result = await db.execute(
+            select(Category).where(
+                Category.id == update_data["category_id"],
+                Category.is_active == True,
+            )
+        )
+        if category_result.scalar_one_or_none() is None:
+            raise HTTPException(status_code=400, detail="Invalid category")
 
     # Handle title change -> slug regeneration
     similar_recipes: List[SimilarRecipe] = []
