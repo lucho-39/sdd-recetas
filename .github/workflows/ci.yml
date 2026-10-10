@@ -53,8 +53,8 @@ jobs:
       - name: Run tests
         run: uv run pytest -q
 
-  frontend-build:
-    name: Frontend build
+  frontend-checks:
+    name: Frontend checks
     runs-on: ubuntu-latest
 
     defaults:
@@ -78,6 +78,15 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # Type errors and a11y/lint regressions do not fail the build — Vite
+      # treats unresolved identifiers as globals — so the gates have to run
+      # on their own or they silently rot.
+      - name: Type check
+        run: pnpm run check
+
+      - name: Lint
+        run: pnpm run lint
 
       - name: Build
         run: pnpm run build
