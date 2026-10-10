@@ -16,12 +16,14 @@
 	import AuthorAvatar from '$components/common/AuthorAvatar.svelte';
 	import ReviewList from '$components/recipe/ReviewList.svelte';
 	import { auth } from '$lib/stores/auth';
+	import { apiFetch } from '$lib/api';
 
 	export let data;
 	const recipe = data.recipe;
 
 	let isFavorited = false;
 	let favBusy = false;
+	let saveCount = recipe.save_count ?? 0;
 	let avgRating = recipe.avg_rating ?? 0;
 	let ratingCount = recipe.rating_count ?? 0;
 	let rateBusy = false;
@@ -67,12 +69,15 @@
 	async function toggleFavorite() {
 		if (!(await ensureAuth())) return;
 		favBusy = true;
-		const method = isFavorited ? 'DELETE' : 'POST';
-		const res = await fetch(`/api/v1/favorites/${recipe.id}`, {
-			method,
-			headers: { Authorization: `Bearer ${$auth.accessToken}` }
+		const adding = !isFavorited;
+		const res = await apiFetch(`/api/v1/favorites/${recipe.id}`, {
+			method: adding ? 'POST' : 'DELETE'
 		});
-		if (res.ok) isFavorited = !isFavorited;
+		if (res.ok) {
+			isFavorited = adding;
+			// Keep the RF-04.6 counter in sync with the server-side save_count.
+			saveCount = Math.max(0, saveCount + (adding ? 1 : -1));
+		}
 		favBusy = false;
 	}
 
@@ -91,10 +96,8 @@
 		ratingMsg = '';
 		const params = new URLSearchParams({ score: String(myScore) });
 		if (reviewText.trim()) params.set('review_text', reviewText.trim());
-		const res = await fetch(`/api/v1/ratings/${recipe.id}?${params.toString()}`, {
-			method: 'POST',
-			headers: { Authorization: `Bearer ${$auth.accessToken}` }
-		});
+		const res = await apiFetch(`/api/v1/ratings/${recipe.id}?${params.toString()}`, {
+			method: 'POST' });
 		if (res.ok) {
 			const body = await res.json();
 			avgRating = body.avg_rating;
@@ -113,10 +116,8 @@
 		if (!(await ensureAuth())) return;
 		rateBusy = true;
 		ratingMsg = '';
-		const res = await fetch(`/api/v1/ratings/${recipe.id}`, {
-			method: 'DELETE',
-			headers: { Authorization: `Bearer ${$auth.accessToken}` }
-		});
+		const res = await apiFetch(`/api/v1/ratings/${recipe.id}`, {
+			method: 'DELETE' });
 		if (res.ok) {
 			const body = await res.json();
 			avgRating = body.avg_rating;
@@ -144,10 +145,9 @@
 		loadDistribution();
 		if (!$auth.isAuthenticated && !$auth.loading) await auth.init();
 		if ($auth.isAuthenticated) {
-			const authHeader = { Authorization: `Bearer ${$auth.accessToken}` };
 			const [favRes, mineRes] = await Promise.all([
-				fetch('/api/v1/favorites', { headers: authHeader }),
-				fetch(`/api/v1/ratings/${recipe.id}/mine`, { headers: authHeader })
+				apiFetch('/api/v1/favorites'),
+				apiFetch(`/api/v1/ratings/${recipe.id}/mine`)
 			]);
 			if (favRes.ok) {
 				const favs = await favRes.json();
@@ -238,6 +238,10 @@
 			{#if recipe.difficulty}
 				<span class="inline-flex items-center gap-1"><IconFlame class="h-4 w-4" aria-hidden="true" />{recipe.difficulty}</span>
 			{/if}
+			<span class="inline-flex items-center gap-1" title="Veces guardada en favoritos">
+				<Heart class="h-4 w-4" aria-hidden="true" />
+				{saveCount}
+			</span>
 			<span class="inline-flex items-center gap-1"><Eye class="h-4 w-4" aria-hidden="true" />{recipe.visit_count}</span>
 			<RatingStars value={avgRating} count={ratingCount} size="sm" showCount />
 		</div>

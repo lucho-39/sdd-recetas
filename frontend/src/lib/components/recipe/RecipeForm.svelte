@@ -77,12 +77,10 @@
 		const name = ingQuery.trim();
 		if (!name) return;
 		try {
-			const res = await fetch('/api/v1/ingredients', {
+			const res = await apiFetch('/api/v1/ingredients', {
 				method: 'POST',
 				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${$auth.accessToken}`
-				},
+					'Content-Type': 'application/json'},
 				body: JSON.stringify({ name })
 			});
 			if (res.ok) {
@@ -121,9 +119,8 @@
 		try {
 			const form = new FormData();
 			form.append('file', file);
-			const res = await fetch('/api/v1/uploads', {
+			const res = await apiFetch('/api/v1/uploads', {
 				method: 'POST',
-				headers: { Authorization: `Bearer ${$auth.accessToken}` },
 				body: form
 			});
 			if (res.ok) {
@@ -178,12 +175,10 @@
 		};
 
 		saving = true;
-		const res = await fetch(slug ? `/api/v1/recipes/${slug}` : '/api/v1/recipes', {
+		const res = await apiFetch(slug ? `/api/v1/recipes/${slug}` : '/api/v1/recipes', {
 			method: slug ? 'PATCH' : 'POST',
 			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${$auth.accessToken}`
-			},
+				'Content-Type': 'application/json'},
 			body: JSON.stringify(payload)
 		});
 		saving = false;

@@ -36,9 +36,8 @@
 		loading = true;
 		error = '';
 		try {
-			const res = await fetch('/api/v1/users/me/recipes?limit=100&include_deleted=true', {
-				headers: { Authorization: `Bearer ${$auth.accessToken}` }
-			});
+			const res = await apiFetch('/api/v1/users/me/recipes?limit=100&include_deleted=true', {
+				});
 			if (!res.ok) throw new Error(`API ${res.status}`);
 			items = (await res.json()).recipes ?? [];
 		} catch (err) {
@@ -49,9 +48,9 @@
 	}
 
 	async function toggleVisibility(r: RecipeItem) {
-		await fetch(`/api/v1/recipes/${r.slug}`, {
+		await apiFetch(`/api/v1/recipes/${r.slug}`, {
 			method: 'PATCH',
-			headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${$auth.accessToken}` },
+			headers: { 'Content-Type': 'application/json'},
 			body: JSON.stringify({ is_public: !r.is_public })
 		});
 		await load();
@@ -59,18 +58,14 @@
 
 	async function remove(r: RecipeItem) {
 		if (!confirm(`¿Eliminar la receta "${r.title}"?`)) return;
-		await fetch(`/api/v1/recipes/${r.slug}`, {
-			method: 'DELETE',
-			headers: { Authorization: `Bearer ${$auth.accessToken}` }
-		});
+		await apiFetch(`/api/v1/recipes/${r.slug}`, {
+			method: 'DELETE' });
 		await load();
 	}
 
 	async function restore(r: RecipeItem) {
-		await fetch(`/api/v1/recipes/${r.slug}/restore`, {
-			method: 'POST',
-			headers: { Authorization: `Bearer ${$auth.accessToken}` }
-		});
+		await apiFetch(`/api/v1/recipes/${r.slug}/restore`, {
+			method: 'POST' });
 		await load();
 	}
 

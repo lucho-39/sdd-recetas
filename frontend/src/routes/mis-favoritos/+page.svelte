@@ -33,12 +33,10 @@
 		error = '';
 		try {
 			const [favRes, colRes] = await Promise.all([
-				fetch('/api/v1/favorites', {
-					headers: { Authorization: `Bearer ${$auth.accessToken}` }
-				}),
-				fetch('/api/v1/favorites/collections', {
-					headers: { Authorization: `Bearer ${$auth.accessToken}` }
-				})
+				apiFetch('/api/v1/favorites', {
+					}),
+				apiFetch('/api/v1/favorites/collections', {
+					})
 			]);
 			if (!favRes.ok) throw new Error(`API ${favRes.status}`);
 			favorites = (await favRes.json()).filter((f: Favorite) => f.recipe);
@@ -52,20 +50,16 @@
 
 	async function remove(fav: Favorite) {
 		if (!confirm(`¿Quitar "${fav.recipe?.title}" de favoritos?`)) return;
-		await fetch(`/api/v1/favorites/${fav.recipe_id}`, {
-			method: 'DELETE',
-			headers: { Authorization: `Bearer ${$auth.accessToken}` }
-		});
+		await apiFetch(`/api/v1/favorites/${fav.recipe_id}`, {
+			method: 'DELETE' });
 		await load();
 	}
 
 	async function patchFavorite(recipeId: string, collectionName: string | null) {
-		await fetch(`/api/v1/favorites/${recipeId}`, {
+		await apiFetch(`/api/v1/favorites/${recipeId}`, {
 			method: 'PATCH',
 			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${$auth.accessToken}`
-			},
+				'Content-Type': 'application/json'},
 			body: JSON.stringify({ collection_name: collectionName })
 		});
 		await load();
@@ -85,12 +79,10 @@
 		if (selected === null) return;
 		const name = prompt('Nuevo nombre de la colección:', selected);
 		if (!name || name === selected) return;
-		const res = await fetch(`/api/v1/favorites/collections/${encodeURIComponent(selected)}`, {
+		const res = await apiFetch(`/api/v1/favorites/collections/${encodeURIComponent(selected)}`, {
 			method: 'PATCH',
 			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${$auth.accessToken}`
-			},
+				'Content-Type': 'application/json'},
 			body: JSON.stringify({ new_name: name.trim() })
 		});
 		if (res.ok) selected = name.trim();
@@ -100,10 +92,8 @@
 	async function deleteCollection() {
 		if (selected === null) return;
 		if (!confirm(`¿Borrar la colección "${selected}"? Las recetas vuelven a la lista general.`)) return;
-		await fetch(`/api/v1/favorites/collections/${encodeURIComponent(selected)}`, {
-			method: 'DELETE',
-			headers: { Authorization: `Bearer ${$auth.accessToken}` }
-		});
+		await apiFetch(`/api/v1/favorites/collections/${encodeURIComponent(selected)}`, {
+			method: 'DELETE' });
 		selected = null;
 		await load();
 	}

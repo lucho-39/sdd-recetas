@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { IconUserFilled as User, IconDeviceFloppy as Save, IconLockFilled as Lock, IconAlertTriangleFilled as AlertTriangle, IconTrashFilled as Trash, IconCircleCheckFilled as Check } from '@tabler/icons-svelte';
 	import { auth } from '$lib/stores/auth';
+	import { apiFetch } from '$lib/api';
 	import { notifications } from '$lib/stores/notifications';
 	import AuthorAvatar from '$components/common/AuthorAvatar.svelte';
 	import RecipeGrid from '$components/recipe/RecipeGrid.svelte';
@@ -40,14 +41,10 @@
 			? new Intl.DateTimeFormat('es-AR', { year: 'numeric', month: 'long' }).format(new Date(created))
 			: '—';
 
-	function authHeaders(): HeadersInit {
-		return { Authorization: `Bearer ${$auth.accessToken}` };
-	}
-
 	async function loadMyRecipes() {
 		loadingRecipes = true;
 		try {
-			const res = await fetch('/api/v1/users/me/recipes?limit=50', { headers: authHeaders() });
+			const res = await apiFetch('/api/v1/users/me/recipes?limit=50');
 			if (res.ok) myRecipes = (await res.json()).recipes ?? [];
 		} finally {
 			loadingRecipes = false;
@@ -59,9 +56,9 @@
 		profileMessage = '';
 		profileError = '';
 		try {
-			const res = await fetch('/api/v1/users/me', {
+			const res = await apiFetch('/api/v1/users/me', {
 				method: 'PATCH',
-				headers: { 'Content-Type': 'application/json', ...authHeaders() },
+				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ display_name: displayName, avatar_url: avatarUrl || null })
 			});
 			if (!res.ok) throw new Error('No se pudo guardar el perfil');
@@ -80,9 +77,9 @@
 		passwordMessage = '';
 		passwordError = '';
 		try {
-			const res = await fetch('/api/v1/auth/change-password', {
+			const res = await apiFetch('/api/v1/auth/change-password', {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json', ...authHeaders() },
+				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ current_password: currentPassword, new_password: newPassword })
 			});
 			if (!res.ok) {
@@ -149,7 +146,7 @@
 		prefsMessage = '';
 		prefsError = '';
 		try {
-			const res = await fetch('/api/v1/push/test', { method: 'POST', headers: authHeaders() });
+			const res = await apiFetch('/api/v1/push/test', { method: 'POST' });
 			const body = await res.json();
 			prefsMessage = body.sent
 				? `Push de prueba enviado (${body.sent}).`
@@ -170,9 +167,9 @@
 		accountMessage = '';
 		accountError = '';
 		try {
-			const res = await fetch('/api/v1/auth/deactivate', {
+			const res = await apiFetch('/api/v1/auth/deactivate', {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json', ...authHeaders() },
+				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ delete_recipes: deleteRecipes })
 			});
 			if (!res.ok) {
@@ -194,9 +191,9 @@
 		accountMessage = '';
 		accountError = '';
 		try {
-			const res = await fetch('/api/v1/auth/delete-account', {
+			const res = await apiFetch('/api/v1/auth/delete-account', {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json', ...authHeaders() },
+				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ confirm: true })
 			});
 			if (!res.ok) {

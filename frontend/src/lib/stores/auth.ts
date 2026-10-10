@@ -23,17 +23,29 @@ function createAuthStore() {
       if (typeof window !== 'undefined') {
         const token = localStorage.getItem('access_token');
         if (token) {
+          let effective = token;
           try {
-            const response = await fetch('/api/v1/auth/me', {
-              headers: { Authorization: `Bearer ${token}` },
-            });
+            let response = await apiFetch('/api/v1/auth/me', {
+              });
+
+            if (response.status === 401) {
+              // Access token expired (15 min); the refresh cookie may still be valid.
+              const { refreshAccessToken } = await import('$lib/api');
+              const fresh = await refreshAccessToken();
+              if (fresh) {
+                effective = fresh;
+                response = await apiFetch('/api/v1/auth/me', {
+                  });
+              }
+            }
+
             if (response.ok) {
               const user = await response.json();
-              update(state => ({ ...state, user, accessToken: token, isAuthenticated: true }));
+              update(state => ({ ...state, user, accessToken: effective, isAuthenticated: true }));
             } else {
               localStorage.removeItem('access_token');
             }
-          } catch (error) {
+          } catch {
             localStorage.removeItem('access_token');
           }
         }
@@ -56,9 +68,8 @@ function createAuthStore() {
       localStorage.setItem('access_token', data.access_token);
       // refresh_token is in HttpOnly cookie
 
-      const userResponse = await fetch('/api/v1/auth/me', {
-        headers: { Authorization: `Bearer ${data.access_token}` },
-      });
+      const userResponse = await apiFetch('/api/v1/auth/me', {
+        });
       const user = await userResponse.json();
 
       update(state => ({

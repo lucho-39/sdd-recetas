@@ -55,12 +55,10 @@
 		draft = null;
 		loading = true;
 		try {
-			const response = await fetch('/api/v1/ai/generate', {
+			const response = await apiFetch('/api/v1/ai/generate', {
 				method: 'POST',
 				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${$auth.accessToken}`
-				},
+					'Content-Type': 'application/json'},
 				body: JSON.stringify({
 					ingredients,
 					preferences: preferences || null,

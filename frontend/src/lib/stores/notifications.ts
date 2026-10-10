@@ -82,12 +82,10 @@ function createNotificationsStore() {
 			applicationServerKey: urlBase64ToUint8Array(public_key)
 		});
 		const accessToken = token();
-		const res = await fetch('/api/v1/push/subscribe', {
+		const res = await apiFetch('/api/v1/push/subscribe', {
 			method: 'POST',
 			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${accessToken}`
-			},
+				'Content-Type': 'application/json'},
 			body: JSON.stringify(subscription.toJSON())
 		});
 		pushSubscribed = res.ok;
@@ -101,12 +99,10 @@ function createNotificationsStore() {
 		if (subscription) {
 			const accessToken = token();
 			if (accessToken) {
-				await fetch('/api/v1/push/subscribe', {
+				await apiFetch('/api/v1/push/subscribe', {
 					method: 'DELETE',
 					headers: {
-						'Content-Type': 'application/json',
-						Authorization: `Bearer ${accessToken}`
-					},
+						'Content-Type': 'application/json'},
 					body: JSON.stringify({ endpoint: subscription.endpoint })
 				}).catch(() => {});
 			}
@@ -158,9 +154,8 @@ function createNotificationsStore() {
 		if (!accessToken) return;
 		update((s) => ({ ...s, loading: true }));
 		try {
-			const res = await fetch('/api/v1/notifications?limit=20', {
-				headers: { Authorization: `Bearer ${accessToken}` }
-			});
+			const res = await apiFetch('/api/v1/notifications?limit=20', {
+				});
 			if (res.ok) {
 				const body = await res.json();
 				update((s) => ({
@@ -181,9 +176,8 @@ function createNotificationsStore() {
 		const accessToken = token();
 		if (!accessToken) return get({ subscribe }).preferences;
 		try {
-			const res = await fetch('/api/v1/users/me/notification-preferences', {
-				headers: { Authorization: `Bearer ${accessToken}` }
-			});
+			const res = await apiFetch('/api/v1/users/me/notification-preferences', {
+				});
 			if (res.ok) {
 				const preferences = (await res.json()) as NotificationPreferences;
 				update((s) => ({ ...s, preferences }));
@@ -200,12 +194,10 @@ function createNotificationsStore() {
 	): Promise<NotificationPreferences> {
 		const accessToken = token();
 		if (!accessToken) return get({ subscribe }).preferences;
-		const res = await fetch('/api/v1/users/me/notification-preferences', {
+		const res = await apiFetch('/api/v1/users/me/notification-preferences', {
 			method: 'PUT',
 			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${accessToken}`
-			},
+				'Content-Type': 'application/json'},
 			body: JSON.stringify(partial)
 		});
 		if (!res.ok) throw new Error(`API ${res.status}`);
@@ -225,20 +217,16 @@ function createNotificationsStore() {
 				unreadCount: target && !target.is_read ? Math.max(0, s.unreadCount - 1) : s.unreadCount
 			};
 		});
-		await fetch(`/api/v1/notifications/${id}/read`, {
-			method: 'POST',
-			headers: { Authorization: `Bearer ${accessToken}` }
-		}).catch(() => {});
+		await apiFetch(`/api/v1/notifications/${id}/read`, {
+			method: 'POST' }).catch(() => {});
 	}
 
 	async function markAllRead() {
 		const accessToken = token();
 		if (!accessToken) return;
 		update((s) => ({ ...s, items: s.items.map((n) => ({ ...n, is_read: true })), unreadCount: 0 }));
-		await fetch('/api/v1/notifications/read-all', {
-			method: 'POST',
-			headers: { Authorization: `Bearer ${accessToken}` }
-		}).catch(() => {});
+		await apiFetch('/api/v1/notifications/read-all', {
+			method: 'POST' }).catch(() => {});
 	}
 
 	async function remove(id: string) {
@@ -252,20 +240,16 @@ function createNotificationsStore() {
 				unreadCount: target && !target.is_read ? Math.max(0, s.unreadCount - 1) : s.unreadCount
 			};
 		});
-		await fetch(`/api/v1/notifications/${id}`, {
-			method: 'DELETE',
-			headers: { Authorization: `Bearer ${accessToken}` }
-		}).catch(() => {});
+		await apiFetch(`/api/v1/notifications/${id}`, {
+			method: 'DELETE' }).catch(() => {});
 	}
 
 	async function removeAll() {
 		const accessToken = token();
 		if (!accessToken) return;
 		update((s) => ({ ...s, items: [], unreadCount: 0 }));
-		await fetch('/api/v1/notifications', {
-			method: 'DELETE',
-			headers: { Authorization: `Bearer ${accessToken}` }
-		}).catch(() => {});
+		await apiFetch('/api/v1/notifications', {
+			method: 'DELETE' }).catch(() => {});
 	}
 
 	function start() {

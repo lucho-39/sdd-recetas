@@ -21,13 +21,13 @@
 			</p>
 			<div class="flex flex-col sm:flex-row items-center justify-center gap-4">
 				<a
-					href="/recipes"
+					href="/buscar"
 					class="btn btn-primary btn-lg w-full sm:w-auto"
 				>
 					Explorar recetas
 				</a>
 				<a
-					href="/recipes/new"
+					href="/recetas/nueva"
 					class="btn btn-outline btn-lg w-full sm:w-auto"
 				>
 					Crear receta
