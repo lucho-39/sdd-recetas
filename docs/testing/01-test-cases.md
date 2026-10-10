@@ -91,7 +91,7 @@ V (visits).
 | R-20 | `POST /recipes` | Ingrediente fuera del catálogo | 400 (RB-ING-02) | `test_create_recipe_rejects_ingredient_out_of_catalog` |
 | R-21 | `POST /recipes` | Ingrediente del catálogo por nombre | 201; se resuelve a `ingredient_id` | `test_create_recipe_accepts_catalog_ingredient` |
 | R-22 | `POST /recipes` | Unidad fuera de `VALID_UNITS` / `amount <= 0` | 422 | `test_create_recipe_rejects_unknown_unit`, `test_create_recipe_rejects_non_positive_amount` |
-| R-23 | `POST /recipes` | Ingrediente repetido en la misma receta | 400 | `test_create_recipe_rejects_duplicated_ingredient` |
+| R-23 | `POST /recipes` | Ingrediente repetido en la misma receta | 422 (validador de Pydantic) | `test_create_recipe_rejects_duplicated_ingredient` |
 
 ---
 

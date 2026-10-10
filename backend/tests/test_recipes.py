@@ -535,3 +535,51 @@ async def test_create_recipe_rejects_duplicated_ingredient(
     payload = _recipe_payload(category, ingredients=[entry, dict(entry)])
     response = await client.post("/api/v1/recipes", json=payload, headers=auth_headers)
     assert response.status_code == 422
+
+
+async def test_ingredient_filter_is_or_between_ingredients(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    category: Category,
+    auth_headers: dict,
+) -> None:
+    """RB-03 / RB-16: several selected ingredients are ORed, not ANDed."""
+    from conftest import create_ingredient
+
+    tomate = await create_ingredient(db_session, slug="tomate", name="Tomate")
+    pollo = await create_ingredient(db_session, slug="pollo", name="Pollo")
+
+    async def make(title: str, ingredient) -> str:
+        payload = _recipe_payload(
+            category,
+            title=title,
+            ingredients=[
+                {
+                    "ingredient_id": str(ingredient.id),
+                    "name": ingredient.name,
+                    "amount": 1,
+                    "unit": "unidad",
+                }
+            ],
+        )
+        response = await client.post("/api/v1/recipes", json=payload, headers=auth_headers)
+        assert response.status_code == 201
+        return response.json()["slug"]
+
+    await make("Salsa de tomate", tomate)
+    await make("Pollo al horno", pollo)
+
+    both = await client.get(
+        "/api/v1/recipes",
+        params=[("ingredients", str(tomate.id)), ("ingredients", str(pollo.id))],
+    )
+    assert both.status_code == 200
+    titles = {r["title"] for r in both.json()["recipes"]}
+    assert "Salsa de tomate" in titles
+    assert "Pollo al horno" in titles
+
+    single = await client.get("/api/v1/recipes", params={"ingredients": str(tomate.id)})
+    assert single.status_code == 200
+    single_titles = {r["title"] for r in single.json()["recipes"]}
+    assert "Salsa de tomate" in single_titles
+    assert "Pollo al horno" not in single_titles

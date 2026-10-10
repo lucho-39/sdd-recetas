@@ -175,3 +175,46 @@ async def test_favorite_updates_save_count(
     await client.delete(f"/api/v1/favorites/{recipe.id}", headers=admin_headers)
     await db_session.refresh(recipe)
     assert recipe.save_count == 0
+
+
+async def test_add_favorite_to_second_collection_returns_400(
+    client: AsyncClient, recipe: Recipe, auth_headers: dict, db_session
+) -> None:
+    """RB-05: the PK is (user_id, recipe_id), so a recipe has one collection.
+
+    Adding it again under a different collection used to reach the INSERT and
+    blow up as a 500 IntegrityError instead of a clean 400.
+    """
+    first = await client.post(
+        f"/api/v1/favorites/{recipe.id}?collection=verano", headers=auth_headers
+    )
+    assert first.status_code == 201
+
+    second = await client.post(
+        f"/api/v1/favorites/{recipe.id}?collection=invierno", headers=auth_headers
+    )
+    assert second.status_code == 400
+    assert "in collection 'verano'" in second.json()["detail"]
+
+    again = await client.post(
+        f"/api/v1/favorites/{recipe.id}?collection=verano", headers=auth_headers
+    )
+    assert again.status_code == 400
+    assert again.json()["detail"] == "Already in collection 'verano'"
+
+    await db_session.refresh(recipe)
+    assert recipe.save_count == 1
+
+
+async def test_add_favorite_twice_in_default_collection_returns_400(
+    client: AsyncClient, recipe: Recipe, auth_headers: dict, db_session
+) -> None:
+    first = await client.post(f"/api/v1/favorites/{recipe.id}", headers=auth_headers)
+    assert first.status_code == 201
+
+    again = await client.post(f"/api/v1/favorites/{recipe.id}", headers=auth_headers)
+    assert again.status_code == 400
+    assert again.json()["detail"] == "Already in favorites"
+
+    await db_session.refresh(recipe)
+    assert recipe.save_count == 1

@@ -98,8 +98,8 @@ El proyecto está en fase **MVP (0.x)**.
   - `GET /recipes/{slug}` y `/{slug}/similar` ahora aplican la visibilidad de RB-09: una receta
     privada responde 404 a usuarios no autorizados (antes era legible por URL directa).
   - Los ingredientes de una receta se **validan contra el catálogo** (RB-ING-02): ingrediente
-    inexistente/inactivo → 400, unidad fuera de `VALID_UNITS` o `amount <= 0` → 422,
-    ingredientes repetidos → 400. Aplica en creación y edición.
+    inexistente/inactivo → 400, unidad fuera de `VALID_UNITS` o `amount <= 0` o ingrediente
+    repetido → 422. Aplica en creación y edición.
   - Se eliminó el `get_current_user` duplicado de `auth.py`; ahora importa de `core.security`
     y valida `type=access`, por lo que un **refresh token ya no sirve como access token** (401).
   - Se eliminó el endpoint `POST /auth/bootstrap-admin` (el bootstrap idempotente corre en el

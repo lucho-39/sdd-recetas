@@ -248,8 +248,16 @@ async def list_recipes(
             filters.append(Recipe.tags.any(Tag.slug == tag))
 
     if ingredients:
-        for ingredient in ingredients:
-            filters.append(Recipe.ingredients.contains([{"ingredient_id": str(ingredient)}]))
+        # RB-03 / RB-16: multiple selected ingredients are ORed together (a recipe
+        # matching any of them is a hit), while category/tags/text stay ANDed.
+        filters.append(
+            or_(
+                *[
+                    Recipe.ingredients.contains([{"ingredient_id": str(ingredient)}])
+                    for ingredient in ingredients
+                ]
+            )
+        )
 
     if difficulty:
         filters.append(Recipe.difficulty == difficulty)
@@ -325,9 +333,8 @@ async def get_recipe(
     if not recipe or not recipe_visible_to(recipe, current_user):
         raise HTTPException(status_code=404, detail="Recipe not found")
 
-    # Increment visit count
-    recipe.visit_count += 1
-    await db.commit()
+    # RB-04: visits are recorded by POST /visits/{recipe_id}, which deduplicates
+    # per visitor per day. This read endpoint must not inflate the counter.
 
     response = RecipeResponse.model_validate(recipe)
     response.ingredients = await resolve_ingredient_names(db, response.ingredients)

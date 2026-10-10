@@ -57,24 +57,35 @@ async def add_favorite(
     db = Depends(get_db),
     current_user = Depends(get_current_active_user),
 ):
-    """Add recipe to favorites."""
-    # Check if recipe exists
+    """Add recipe to favorites.
+
+    RB-05: the favorites PK is ``(user_id, recipe_id)``, so a recipe lives in
+    exactly one collection per user. Moving between collections is a PATCH.
+    """
     from app.models import Recipe
     recipe = await db.get(Recipe, recipe_id)
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
 
-    # Check if already in favorites
+    # The uniqueness is on (user_id, recipe_id) only — checking the collection
+    # here would let a second insert through and blow up on the PK with a 500.
     from app.models import Favorite
     existing = await db.execute(
         select(Favorite).where(
             Favorite.user_id == current_user.id,
             Favorite.recipe_id == recipe_id,
-            Favorite.collection_name == collection
         )
     )
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Already in favorites")
+    already = existing.scalar_one_or_none()
+    if already:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Already in favorites"
+                if already.collection_name is None
+                else f"Already in collection '{already.collection_name}'"
+            ),
+        )
 
     favorite = Favorite(
         user_id=current_user.id,
