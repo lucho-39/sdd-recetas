@@ -141,7 +141,14 @@
 		}
 	}
 
+	function recordVisit() {
+		// Fire-and-forget: the backend dedupes per visitor per day (RB-04), so an
+		// F5 on this page does not inflate the counter.
+		fetch(`/api/v1/visits/${recipe.id}`, { method: 'POST' }).catch(() => {});
+	}
+
 	onMount(async () => {
+		recordVisit();
 		loadDistribution();
 		if (!$auth.isAuthenticated && !$auth.loading) await auth.init();
 		if ($auth.isAuthenticated) {
