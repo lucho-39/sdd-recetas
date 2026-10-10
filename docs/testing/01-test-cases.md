@@ -62,6 +62,10 @@ V (visits).
 | U-3 | `PATCH /users/me` | Actualizar `display_name` | 200; valor actualizado | `test_patch_me_updates_display_name` |
 | U-4 | `PATCH /users/me` | Actualizar `avatar_url` | 200; persiste (GET posterior) | `test_patch_me_updates_avatar_and_persists` |
 | U-5 | `PATCH /users/me` | Sin credenciales | 401 | `test_patch_me_requires_authentication` |
+| U-6 | `GET /users/{handle}` | Handle = `slugify(display_name)` | 200; mismo `id` que por UUID (RB-17) | `test_public_profile_resolves_by_display_name_slug` |
+| U-7 | `GET /users/{handle}` | Handle con acentos y espacios | 200; "Lucía Gómez" → `lucia-gomez` | `test_public_profile_slug_strips_accents_and_spaces` |
+| U-8 | `GET /users/{handle}/recipes` | Recetas públicas por handle | 200; `total >= 1` | `test_user_recipes_resolves_by_display_name_slug` |
+| U-9 | `GET /users/{id}` | Perfil por UUID (regresión) | 200; sin datos sensibles | `test_public_profile_by_uuid_still_works` |
 
 ---
 
@@ -92,6 +96,9 @@ V (visits).
 | R-21 | `POST /recipes` | Ingrediente del catálogo por nombre | 201; se resuelve a `ingredient_id` | `test_create_recipe_accepts_catalog_ingredient` |
 | R-22 | `POST /recipes` | Unidad fuera de `VALID_UNITS` / `amount <= 0` | 422 | `test_create_recipe_rejects_unknown_unit`, `test_create_recipe_rejects_non_positive_amount` |
 | R-23 | `POST /recipes` | Ingrediente repetido en la misma receta | 422 (validador de Pydantic) | `test_create_recipe_rejects_duplicated_ingredient` |
+| R-24 | `GET /recipes?ingredients=` | Varios ingredientes seleccionados | **OR**: devuelve recetas que tengan cualquiera (RB-03/RB-16) | `test_ingredient_filter_is_or_between_ingredients` |
+| R-25 | `POST /recipes` | Título con acentos | Slug ASCII (`Jalapeño relleno` → `jalapeno-relleno`, RB-02b) | `test_slug_is_ascii_safe` |
+| R-26 | `PATCH /recipes/{slug}` | Categoría inactiva | 400 `Invalid category`, igual que en create (RB-01) | `test_update_recipe_rejects_inactive_category` |
 
 ---
 
@@ -145,6 +152,8 @@ V (visits).
 | F-6 | `DELETE /favorites/{recipe_id}` | No estaba | 404 | `test_remove_missing_favorite_returns_404` |
 | F-7 | `GET /favorites/collections` | Colecciones | Incluye default (`null`) y la nombrada | `test_list_collections_includes_default` |
 | F-8 | `GET /favorites` | Sin credenciales | 401 | `test_favorites_require_authentication` |
+| F-9 | `POST /favorites/{id}?collection=` | Segunda colección (PK es `(user_id, recipe_id)`) | 400 nombrando la colección actual (RB-05) | `test_add_favorite_to_second_collection_returns_400` |
+| F-10 | `POST /favorites/{id}` | Repetir en la colección default | 400 `Already in favorites`; `save_count` no sube | `test_add_favorite_twice_in_default_collection_returns_400` |
 
 ---
 
@@ -169,6 +178,8 @@ V (visits).
 | V-1 | `POST /visits/{recipe_id}` | Registrar visita | 201; `visit_count` incrementa | `test_record_visit_increments_counter` |
 | V-2 | `POST /visits/{recipe_id}` | Visita repetida (mismo día) | `visit_count` no se duplica (RB-04) | `test_repeated_visit_same_day_does_not_double_count` |
 | V-3 | `POST /visits/{recipe_id}` | Receta inexistente | 404 | `test_record_visit_unknown_recipe_returns_404` |
+| V-4 | `GET /recipes/{slug}` | F5 / relectura | `visit_count` **no** cambia (RB-04) | `test_get_recipe_by_slug_does_not_increment_visit_count` |
+| V-5 | `POST /visits/{id}` | Logueado, repetido el mismo día | 201 "already recorded"; una sola fila con `user_id` | `test_authenticated_visit_is_deduplicated_per_user` |
 
 ---
 
@@ -178,25 +189,28 @@ Referencia: `docs/requirements/business-rules.md`.
 
 | Regla | Cubierta por | Estado |
 | ----- | ------------ | ------ |
-| RB-01 (categoría única) | R-8, R-11 | Cubierta |
-| RB-02 (tags múltiples) | R-2, R-6 (tags en respuesta) | Parcial |
-| RB-03 (búsqueda unificada) | R-4, R-5 | Parcial (texto/categoría; falta trigram) |
-| RB-04 (visita única anti-F5) | V-2 | Cubierta |
-| RB-05 (contador de guardados) | F-1, F-5 | Pendiente: `save_count` depende de triggers de DB no presentes en el esquema de test |
+| RB-01 (categoría única) | R-8, R-11, R-26 | Cubierta (create **y** update) |
+| RB-02 (tags múltiples) | R-2, R-6, R-25 | Cubierta |
+| RB-02b (slug sin acentos) | R-25 | Cubierta |
+| RB-03 (búsqueda unificada) | R-4, R-5, R-24 | Cubierta (falta trigram **[v2]**) |
+| RB-04 (visita única anti-F5) | V-2, V-4, V-5 | Cubierta (logueado por `user_id`, anónimo por fingerprint) |
+| RB-05 (contador de guardados) | F-1, F-5, F-9, F-10 | Cubierta en la capa de aplicación (sin triggers) |
 | RB-06 (calificación 1-5) | RT-1, RT-2, RT-5, RT-6 | Cubierta |
 | RB-07 (autocompletado de tags) | T-3, T-4 | Cubierta |
-| RB-08 (imagen nullable) | — | No aplica (MVP) |
-| RB-09 (recetas públicas por defecto) | R-2, R-3 | Cubierta |
+| RB-08 (imagen + upload) | I-7, I-8 (uploads en `test_uploads.py`) | Cubierta |
+| RB-09 (recetas públicas por defecto) | R-2, R-3, R-19 | Cubierta |
 | RB-10 (soft delete) | R-16 | Cubierta |
-| RB-11 (ingredientes JSONB) | I-7, I-8, R-8 | Parcial |
-| RB-12 (dificultad tres niveles) | — | Pendiente |
-| RB-13 (tiempos enteros) | — | Pendiente |
-| RB-14 (porciones positivas) | — | Pendiente |
+| RB-11 (ingredientes JSONB) | R-20, R-21, R-22, R-23 | Cubierta |
+| RB-12 (dificultad tres niveles) | — | Validada por schema (`pattern`), sin test dedicado |
+| RB-13 (tiempos enteros) | — | Validada por schema (`ge=0`), sin test dedicado |
+| RB-14 (porciones positivas) | — | Validada por schema (`ge=1`), sin test dedicado |
 | RB-15 (slug único) | R-8, R-9, R-14 | Cubierta con desambiguación numérica (ver nota) |
-| RB-16 (búsqueda por ingrediente parcial) | — | Pendiente |
+| RB-16 (búsqueda por ingrediente) | R-24 | Cubierta (OR; falta coincidencia parcial por nombre **[v2]**) |
+| RB-17 (compartir + perfil público) | U-6, U-7, U-8, U-9 | Cubierta (sin seguimiento, por diseño) |
 | RB-AUTH-05 (JWT + rotación) | A-5, A-12, A-13, A-16 | Cubierta (HS256; ver nota) |
 | RB-AUTH-06 (verificación de email) | A-1, A-8 | Cubierta |
 | RB-AUTH-07 (recuperación de contraseña) | A-17 | Parcial (stub) |
+| RB-ING-02 (ingredientes vs catálogo) | R-20, R-21, R-22, R-23 | Cubierta |
 | RB-ING-03 (autocompletado de ingredientes) | I-3, I-4 | Cubierta |
 
 ### Notas de discrepancia con la especificación
@@ -208,6 +222,6 @@ Referencia: `docs/requirements/business-rules.md`.
 - **RB-AUTH-05** especifica JWT RS256; la implementación y los tests usan
   HS256 con secreto simétrico. `podman-compose.yml` fue corregido porque forzaba
   RS256 con un secreto que no es una clave RSA (rompía la firma de tokens).
-- **RB-05** asume triggers de base de datos para `save_count`; el esquema creado
-  por los modelos no define esos triggers, por lo que el contador no se
-  actualiza en los tests.
+- **RB-05** asumía triggers de base de datos para `save_count`; el contador se
+  recalcula en la capa de aplicación (`favorites.py`) y está cubierto por
+  F-9/F-10.

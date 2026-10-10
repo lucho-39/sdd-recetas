@@ -94,6 +94,34 @@ El proyecto está en fase **MVP (0.x)**.
   y valida autenticación, unión al room y entrega del evento.
 
 ### Fixed
+- **Fase 1 (reglas de negocio mal implementadas o mal documentadas)**
+  - **Visitas anti-F5 (RB-04)**: `GET /recipes/{slug}` incrementaba `visit_count` en
+    **cada** lectura, así que un F5 inflaba el contador. El conteo vive ahora solo en
+    `POST /visits/{recipe_id}`, que deduplica por día calendario — por `user_id` si el
+    visitante está logueado, por `visitor_fingerprint` si es anónimo. El detalle de la
+    receta registra la visita una vez al montar.
+  - **Filtro de ingredientes (RB-03/RB-16)**: con varios ingredientes seleccionados el
+    filtro era **AND**, así que cualquier combinación realista devolvía 0 resultados.
+    Ahora es **OR** entre ingredientes, como exigen las reglas; categoría, tags y texto
+    siguen combinándose con AND.
+  - **Favoritos (RB-05)**: la PK es `(user_id, recipe_id)`, pero el chequeo de duplicado
+    también comparaba `collection_name`. Guardar una receta en una segunda colección
+    pasaba el chequeo y reventaba en el INSERT como **500**. Ahora es un **400** que
+    indica en qué colección ya está.
+  - **Categoría en edición (RB-01)**: `PATCH /recipes/{slug}` aceptaba cualquier
+    `category_id` sin verificar que exista y esté activa; ahora valida igual que el create.
+  - **Slugs con acentos (RB-02b)**: `slugify()` conservaba acentos (`jalapeño` →
+    `jalapeño`), produciendo URLs difíciles de copiar. Ahora normaliza a ASCII
+    (`jalapeno`). Los slugs existentes no se migran.
+  - **Compartir (RB-17)**: existía solo "Compartir" (Web Share API) sin alternativa de
+    copiado y sin `utm_source`. Ahora hay botón **"Copiar link"** con feedback, y ambas
+    vías generan `/receta/<slug>?utm_source=share`.
+  - **Handle público (RB-17)**: faltaba `/u/<display_name_slug>`. El endpoint de perfil
+    público resuelve UUID **o** `slugify(display_name)` ("Lucía Gómez" → `lucia-gomez`),
+    y existe la ruta `/u/[slug]` reutilizando el mismo componente que `/usuario/[id]`.
+  - Docs re-alineadas: RB-01, RB-02, RB-03, RB-04, RB-05, RB-08 (el upload de imágenes
+    ya existía con whitelist de content-type y límite de 5MB), RB-11 (`amount`/`unit`
+    son opcionales y `name` es requerido), RB-16, RB-17 e RB-ING-02 (ruta corregida).
 - **Fase 0 (bloqueantes de seguridad y consistencia)**
   - `GET /recipes/{slug}` y `/{slug}/similar` ahora aplican la visibilidad de RB-09: una receta
     privada responde 404 a usuarios no autorizados (antes era legible por URL directa).
@@ -125,7 +153,9 @@ El proyecto está en fase **MVP (0.x)**.
   casos de uso (`search`, `ingredients`, `admin`, `notifications`), testing y este CHANGELOG.
 
 ### Tests
-- Suite de endpoints con Postgres real (`recetario_test`) y `ASGITransport`: **186 tests** verdes,
+- Suite de endpoints con Postgres real (`recetario_test`) y `ASGITransport`: **197 tests** verdes,
   incluidos notificaciones (preferencias/email/Web Push), administración v2, OAuth/reset/refresh,
   IA (gating), seed del catálogo e integración de Socket.IO. La Fase 0 suma regresiones de
-  visibilidad por slug, validación de ingredientes y rechazo del refresh token como access token.
+  visibilidad por slug, validación de ingredientes y rechazo del refresh token como access token;
+  la Fase 1 cubre la deduplicación de visitas, el filtro OR de ingredientes, el 400 de
+  favoritos duplicados, el handle público `/u/<slug>` y los slugs sin acentos.

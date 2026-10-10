@@ -8,14 +8,20 @@
 ## RB-01: Categoría única por receta
 **Descripción**: Una receta pertenece a exactamente una categoría de la lista cerrada.
 **Validación**: `category_id` NOT NULL FK → `categories.id`; `categories.is_active = true`.
-**Error**: "La receta debe tener una categoría válida y activa".
+**Error**: `400 "Invalid category"` cuando la categoría no existe o `is_active = false`.
+**Aplica a**: `POST /recipes` **y** `PATCH /recipes/{slug}` (si el patch trae `category_id`).
 **Estado**: Implementado.
 
 ## RB-02: Etiquetas múltiples por receta
 **Descripción**: Una receta puede tener 0..N tags. Los tags son abiertos (user-generated) con autocompletado.
-**Validación**: Tabla `recipe_tags` N:M; `tag.slug` normalizado (lowercase, sin acentos, guiones).
-**Comportamiento**: Al crear tag nuevo, `usage_count = 1`; al asociar existente, `usage_count++`.
-**Estado**: Parcial. La tabla N:M y el modelo existen; los endpoints de alta/edición de recetas aún no asocian tags.
+**Validación**: Tabla `recipe_tags` N:M; `tag.slug` normalizado (lowercase, sin acentos, guiones) vía el mismo `slugify` que los slugs de receta.
+**Comportamiento**: Al crear tag nuevo, `usage_count = 1`; al asociar existente, `usage_count++`; al desasociar, `usage_count--`.
+**Estado**: Implementado — `create_recipe` y `update_recipe` llaman a `sync_recipe_tags`.
+
+## RB-02b: Slugs de receta ASCII
+**Descripción**: El slug de una receta se genera del título con `slugify()`: lowercase, **sin acentos** (NFKD + remoción de marcas combinantes), espacios/guiones colapsados a `-`, sin caracteres de puntuación.
+**Motivo**: un slug con acentos no es copiable/pegable de forma confiable en URLs.
+**Estado**: Implementado. Los slugs existentes no se migran; solo afecta altas y ediciones posteriores.
 
 ## RB-03: Búsqueda unificada (AND entre dimensiones, OR dentro de cada una)
 **Descripción**: La búsqueda combina filtros de forma lógica:
@@ -24,7 +30,7 @@
 - **Texto libre**: título O descripción vía `ILIKE` → OR
 - **Ingredientes**: coincidencia exacta por `ingredient_id` dentro del JSONB → OR
 **Ejemplo**: `category=postre AND tag=vegano AND tag=sin-tacc AND (title ILIKE '%brownie%' OR description ILIKE '%brownie%') AND ingredients @> [{"ingredient_id": "..."}]`
-**Estado**: Implementado con `ILIKE` + JSONB `contains`. La similitud trigram y la coincidencia parcial por nombre quedan **[v2]**.
+**Estado**: Implementado con `ILIKE` + JSONB `contains`, con `or_()` explícito entre los ingredientes seleccionados. La similitud trigram y la coincidencia parcial por nombre quedan **[v2]**.
 
 ## RB-04: Visita única anti-F5 (anónimos + logueados)
 **Descripción**: Contar una visita por receta por visitante por día calendario.
@@ -37,15 +43,16 @@
 - Si es nueva → se inserta y se incrementa `recipes.visit_count` en la capa de aplicación
 - F5/refresh mismo día → no incrementa
 - Día siguiente → nueva visita permitida
-**Estado**: Implementado con fingerprint SHA256(IP+UA). Cookie persistente y salt diario quedan **[v2]**.
+**Estado**: Implementado con fingerprint SHA256(IP+UA), y `user_id` para usuarios logueados. El conteo vive **solo** en `POST /visits/{recipe_id}`; `GET /recipes/{slug}` es una lectura pura y no incrementa el contador. Cookie persistente y salt diario quedan **[v2]**.
 
 ## RB-05: Contador de guardados (favoritos/colecciones)
-**Descripción**: `recipes.save_count` debe reflejar cuántas veces la receta está guardada en cualquier colección de cualquier usuario.
+**Descripción**: `recipes.save_count` debe reflejar cuántas veces la receta está guardada.
 **Reglas**:
 - INSERT en `favorites` → `save_count++`
 - DELETE de `favorites` → `save_count--`
-- Una misma receta puede estar en múltiples colecciones del mismo usuario → cada par (user, recipe, collection) cuenta como 1
-**Estado**: **Implementado** (capa de aplicación, sin triggers): alta de favorito `save_count++`, baja `save_count--`.
+- La PK de `favorites` es `(user_id, recipe_id)`: **una receta vive en una única colección por usuario**. Cambiar de colección es un `PATCH`, no un segundo `POST`.
+- Guardar de nuevo la misma receta (en la misma u otra colección) responde **400** indicando la colección actual.
+**Estado**: Implementado (capa de aplicación, sin triggers).
 
 ## RB-06: Calificación 1-5 + reseña opcional
 **Descripción**: Usuario logueado califica 1-5 estrellas + texto opcional. Una calificación por usuario por receta.
@@ -68,10 +75,11 @@
 **Implementación**: `GET /api/v1/tags?query=<texto>` → `WHERE (slug ILIKE '%q%' OR name ILIKE '%q%') AND usage_count > 0 ORDER BY usage_count DESC`.
 **Estado**: Implementado con coincidencia `ILIKE` (no prefix estricto). Trigram queda **[v2]**.
 
-## RB-08: Imagen representativa única (nullable MVP)
-**Descripción**: Campo `recipes.image_url` VARCHAR(500) NULLABLE. En MVP siempre NULL. Preparado para upload futuro (S3, Cloudinary, local).
-**Validación futura**: URL válida, content-type image/*, tamaño máx 5MB, dimensiones recomendadas 16:9.
-**Estado**: Campo implementado; sin upload.
+## RB-08: Imagen representativa única
+**Descripción**: Campo `recipes.image_url` VARCHAR(500) NULLABLE. La receta puede guardarse sin imagen.
+**Origen**: URL externa provista por la autor, **o** upload propio.
+**Validación en upload**: `POST /api/v1/uploads` acepta solo content-type de imagen y un máximo de **5MB**; las imágenes se sirven desde `/uploads` (bind mount `./.data/uploads`).
+**Estado**: Implementado (campo + endpoint de upload con whitelist de content-type y límite de tamaño).
 
 ## RB-09: Recetas públicas por defecto
 **Descripción**: `is_public = true` por defecto. Solo recetas públicas aparecen en búsqueda y listados generales.
@@ -93,8 +101,13 @@
   {"ingredient_id": "uuid-del-ingrediente", "amount": 2, "unit": "unidad", "notes": null}
 ]
 ```
-**Validación aplicación**: Array (puede estar vacío en el MVP); cada item tiene `ingredient_id` (UUID, req), `amount` (number, req), `unit` (string, req), `notes` (string, opcional).
-**Estado**: El modelo/schema usa `ingredient_id`. El seed de ejemplo de `data-model.md` con `name` es **obsoleto** (ver ADR-000).
+**Validación aplicación**: Array (puede estar vacío). Cada item:
+- `name` (**requerido**): etiqueta de display; se resuelve contra el catálogo en el detalle.
+- `ingredient_id`: UUID; debe apuntar a un ingrediente activo del catálogo (RB-ING-02).
+- `amount`: number > 0, **opcional**.
+- `unit`: string de la whitelist `VALID_UNITS`, **opcional**.
+- `notes`: string opcional.
+**Estado**: Implementado — `RecipeIngredient` en `app/schemas/recipe.py` + `validate_ingredients()` en `app/api/v1/endpoints/recipes.py`.
 
 ## RB-12: Dificultad en tres niveles
 **Descripción**: `difficulty` en `('easy', 'medium', 'hard')`. Usado para filtrado y badge UI.
@@ -120,14 +133,15 @@
 **Lógica**:
 - Selección múltiple → OR entre ingredientes seleccionados.
 - Combina con categoría, tags y texto (AND global).
-**Estado**: Implementado como equals por `ingredient_id`. La coincidencia parcial por nombre (`ILIKE`/trigram) queda **[v2]**.
+**Estado**: Implementado como equals por `ingredient_id` con **OR** entre los seleccionados (`or_()` en `list_recipes`). La coincidencia parcial por nombre (`ILIKE`/trigram) queda **[v2]**.
 
 ## RB-17: Alcance Social — Compartir SÍ, Seguimiento NO
 **Descripción**:
-- **Compartir**: Web Share API nativo + botón "Copiar link" → genera URL `/receta/<slug>` con `utm_source=share`.
+- **Compartir**: Web Share API nativa (`Compartir`) y botón **`Copiar link`** con feedback "Copiado". Ambos generan la URL `/receta/<slug>?utm_source=share`.
 - **Seguimiento (followers/following)**: **NO en MVP**. Sin grafo social, sin feed de actividad.
-- **Perfil público**: Accesible en `/usuario/<user_id>` o `/u/<display_name_slug>` → muestra **solo recetas públicas del autor** (grid + paginación). No muestra favoritos, colecciones, ratings dados, ni métricas privadas.
-**Estado**: **Implementado** — perfil público (`/usuario/:id`) sin datos sensibles y compartir (Web Share API + copiar link). Sin seguimiento/feed (RB-17).
+- **Perfil público**: Accesible en `/usuario/<user_id>` **o** `/u/<display_name_slug>` → muestra **solo recetas públicas del autor** (grid + paginación). No muestra favoritos, colecciones, ratings dados, ni métricas privadas.
+**Handle público**: el backend resuelve `identifier` como UUID o como `slugify(display_name)` (ej. "Lucía Gómez" → `lucia-gomez`). No hay columna de slug en `users`: se resuelve en la capa de aplicación, adecuado para la escala del MVP.
+**Estado**: **Implementado** — compartir + copiar link + `utm_source=share`, perfil público por UUID y por handle. Sin seguimiento/feed (RB-17).
 
 ---
 
@@ -193,13 +207,15 @@ enlace. El envío usa SMTP si está configurado (si no, `email_outbox`).
 **Objetivo de seed**: 300 ingredientes. **Estado**: **Implementado** — seed idempotente con **317** ingredientes (`backend/app/core/ingredients_seed.py`), sin slugs duplicados, marcados `validated_by_admin=true`. No hay columna `usage_count` en ingredientes: el autocomplete ordena por nombre (ranking por uso queda **[v2]**).
 
 ## RB-ING-02: Ingredientes en Recetas — Referencia a Catálogo
-**Descripción**: `recipes.ingredients` JSONB array de objetos `{ingredient_id, amount, unit, notes?}`.
-- `ingredient_id` / `name`: el ingrediente debe existir y estar activo en el catálogo.
-- `amount`: number > 0.
-- `unit`: string de la whitelist `VALID_UNITS` (los nombres del catálogo ya son unidades válidas).
+**Descripción**: `recipes.ingredients` JSONB array de objetos `{ingredient_id, name, amount?, unit?, notes?}`.
+- `ingredient_id`: debe existir y estar activo en el catálogo (`is_active` y no rechazado). Es lo único que se valida contra la BD.
+- `name`: etiqueta de display enviada por el cliente; el backend la conserva y la resuelve contra el catálogo al devolver el detalle.
+- `amount`: number > 0 (opcional).
+- `unit`: string de la whitelist `VALID_UNITS` (los nombres del catálogo ya son unidades válidas) (opcional).
 - `notes`: string opcional.
 - Sin ingredientes duplicados dentro de la misma receta.
-**Implementación**: `validate_ingredients()` en `app/api/v1/recipes.py`, aplicado en `create_recipe` y `update_recipe`.
+**Errores**: ingrediente inexistente/inactivo → **400**; unidad inválida, `amount <= 0` o duplicado → **422** (validador de Pydantic).
+**Implementación**: `validate_ingredients()` en `app/api/v1/endpoints/recipes.py`, aplicado en `create_recipe` y `update_recipe`.
 **Estado**: Implementado (validación completa en creación y actualización).
 
 ## RB-ING-03: Autocompletado de Ingredientes
