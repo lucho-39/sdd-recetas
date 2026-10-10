@@ -3,205 +3,221 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* Warm palette — valores en canales RGB para soportar modificadores de opacidad */
-    --background: 250 249 246;
-    --foreground: 45 43 40;
-    --muted: 240 237 232;
-    --muted-foreground: 107 103 98;
-    --border: 232 228 223;
-    --ring: 61 64 52;
-    --primary: 61 64 52;
-    --primary-hover: 74 78 64;
-    --primary-foreground: 250 249 246;
-    --destructive: 184 74 58;
-    --destructive-hover: 160 58 42;
-    --destructive-foreground: 250 249 246;
-    --success: 90 125 74;
-    --warning: 196 122 42;
-    --rating: 251 191 36;
-    --surface: 245 243 240;
-    --card: 255 255 255;
-    --card-foreground: 45 43 40;
-    --accent: 240 237 232;
-    --accent-foreground: 45 43 40;
-    --title-color: 61 64 52;
-  }
+	:root {
+		/* Warm palette — valores en canales RGB para soportar modificadores de opacidad */
+		--background: 250 249 246;
+		--foreground: 45 43 40;
+		--muted: 240 237 232;
+		--muted-foreground: 107 103 98;
+		--border: 232 228 223;
+		--ring: 61 64 52;
+		--primary: 61 64 52;
+		--primary-hover: 74 78 64;
+		--primary-foreground: 250 249 246;
+		--destructive: 184 74 58;
+		--destructive-hover: 160 58 42;
+		--destructive-foreground: 250 249 246;
+		--success: 90 125 74;
+		--warning: 196 122 42;
+		--rating: 251 191 36;
+		--surface: 245 243 240;
+		--card: 255 255 255;
+		--card-foreground: 45 43 40;
+		--accent: 240 237 232;
+		--accent-foreground: 45 43 40;
+		--title-color: 61 64 52;
+	}
 
-  .dark {
-    --background: 28 26 24;
-    --foreground: 232 229 225;
-    --muted: 42 39 36;
-    --muted-foreground: 168 164 160;
-    --border: 61 57 53;
-    --ring: 143 140 132;
-    --primary: 200 196 188;
-    --primary-hover: 216 212 208;
-    --primary-foreground: 28 26 24;
-    --destructive: 212 122 106;
-    --destructive-hover: 232 138 122;
-    --destructive-foreground: 28 26 24;
-    --success: 122 184 106;
-    --warning: 212 168 74;
-    --rating: 251 191 36;
-    --surface: 36 33 31;
-    --card: 36 33 31;
-    --card-foreground: 232 229 225;
-    --accent: 42 39 36;
-    --accent-foreground: 232 229 225;
-    --title-color: 200 196 188;
-  }
+	.dark {
+		--background: 28 26 24;
+		--foreground: 232 229 225;
+		--muted: 42 39 36;
+		--muted-foreground: 168 164 160;
+		--border: 61 57 53;
+		--ring: 143 140 132;
+		--primary: 200 196 188;
+		--primary-hover: 216 212 208;
+		--primary-foreground: 28 26 24;
+		--destructive: 212 122 106;
+		--destructive-hover: 232 138 122;
+		--destructive-foreground: 28 26 24;
+		--success: 122 184 106;
+		--warning: 212 168 74;
+		--rating: 251 191 36;
+		--surface: 36 33 31;
+		--card: 36 33 31;
+		--card-foreground: 232 229 225;
+		--accent: 42 39 36;
+		--accent-foreground: 232 229 225;
+		--title-color: 200 196 188;
+	}
 
-  * {
-    @apply border-border;
-  }
+	* {
+		@apply border-border;
+	}
 
-  body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-  }
+	body {
+		@apply bg-background text-foreground font-sans antialiased;
+		font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+	}
 
-  html {
-    font-size: 16px;
-    scroll-behavior: smooth;
-  }
+	html {
+		font-size: 16px;
+		scroll-behavior: smooth;
+	}
 
-  :focus-visible {
-    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
-  }
+	:focus-visible {
+		@apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
+	}
 
-  ::selection {
-    @apply bg-primary/20 text-primary;
-  }
+	::selection {
+		@apply bg-primary/20 text-primary;
+	}
 }
 
 @layer components {
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50;
-  }
+	.btn {
+		@apply inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50;
+	}
 
-  .btn-primary {
-    @apply btn bg-primary text-primary-foreground hover:bg-primary-hover h-10 px-4 py-2;
-  }
+	.btn-primary {
+		@apply btn bg-primary text-primary-foreground hover:bg-primary-hover h-10 px-4 py-2;
+	}
 
-  .btn-secondary {
-    @apply btn bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2;
-  }
+	.btn-secondary {
+		@apply btn bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2;
+	}
 
-  .btn-destructive {
-    @apply btn bg-destructive text-destructive-foreground hover:bg-destructive-hover h-10 px-4 py-2;
-  }
+	.btn-destructive {
+		@apply btn bg-destructive text-destructive-foreground hover:bg-destructive-hover h-10 px-4 py-2;
+	}
 
-  .btn-outline {
-    @apply btn border border-border bg-transparent hover:bg-accent h-10 px-4 py-2;
-  }
+	.btn-outline {
+		@apply btn border border-border bg-transparent hover:bg-accent h-10 px-4 py-2;
+	}
 
-  .btn-ghost {
-    @apply btn hover:bg-accent h-10 px-4 py-2;
-  }
+	.btn-ghost {
+		@apply btn hover:bg-accent h-10 px-4 py-2;
+	}
 
-  .btn-sm {
-    @apply h-8 px-3 text-sm;
-  }
+	.btn-sm {
+		@apply h-8 px-3 text-sm;
+	}
 
-  .btn-lg {
-    @apply h-12 px-6 text-lg;
-  }
+	.btn-lg {
+		@apply h-12 px-6 text-lg;
+	}
 
-  .input {
-    @apply w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
-  }
+	.input {
+		@apply w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+	}
 
-  .label {
-    @apply text-sm font-medium text-foreground mb-1.5 block;
-  }
+	.label {
+		@apply text-sm font-medium text-foreground mb-1.5 block;
+	}
 
-  .card {
-    @apply bg-card text-card-foreground rounded-lg border border-border shadow-sm transition-shadow hover:shadow-lg;
-  }
+	.card {
+		@apply bg-card text-card-foreground rounded-lg border border-border shadow-sm transition-shadow hover:shadow-lg;
+	}
 
-  .badge {
-    @apply inline-flex items-center gap-1 font-medium rounded-full px-2.5 py-0.5 text-sm;
-  }
+	.badge {
+		@apply inline-flex items-center gap-1 font-medium rounded-full px-2.5 py-0.5 text-sm;
+	}
 
-  .badge-category {
-    @apply inline-flex items-center gap-1 font-medium rounded-full px-2.5 py-0.5 text-sm;
-  }
+	.badge-category {
+		@apply inline-flex items-center gap-1 font-medium rounded-full px-2.5 py-0.5 text-sm;
+	}
 
-  .input-base {
-    @apply w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50;
-  }
+	.input-base {
+		@apply w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50;
+	}
 
-  .link {
-    @apply text-primary hover:text-primary-hover underline-offset-2 hover:underline transition-colors;
-  }
+	.link {
+		@apply text-primary hover:text-primary-hover underline-offset-2 hover:underline transition-colors;
+	}
 
-  .container {
-    @apply mx-auto px-4 md:px-6 lg:px-8 max-w-7xl;
-  }
+	.container {
+		@apply mx-auto px-4 md:px-6 lg:px-8 max-w-7xl;
+	}
 
-  .section {
-    @apply py-10 md:py-14 lg:py-20;
-  }
+	.section {
+		@apply py-10 md:py-14 lg:py-20;
+	}
 
-  .text-balance {
-    text-wrap: balance;
-  }
+	.text-balance {
+		text-wrap: balance;
+	}
 
-  .font-playfair {
-    font-family: 'Playfair Display', Georgia, serif;
-  }
+	.font-playfair {
+		font-family: 'Playfair Display', Georgia, serif;
+	}
 }
 
 @layer utilities {
-  .animate-fade-in {
-    animation: fadeIn 200ms ease-out;
-  }
+	.animate-fade-in {
+		animation: fadeIn 200ms ease-out;
+	}
 
-  .animate-slide-up {
-    animation: slideUp 300ms ease-out;
-  }
+	.animate-slide-up {
+		animation: slideUp 300ms ease-out;
+	}
 
-  .animate-shimmer {
-    animation: shimmer 1.8s infinite linear;
-    background: linear-gradient(
-      90deg,
-      rgb(var(--muted)) 25%,
-      rgb(var(--muted-foreground) / 0.08) 50%,
-      rgb(var(--muted)) 75%
-    );
-    background-size: 200% 100%;
-  }
+	.animate-shimmer {
+		animation: shimmer 1.8s infinite linear;
+		background: linear-gradient(
+			90deg,
+			rgb(var(--muted)) 25%,
+			rgb(var(--muted-foreground) / 0.08) 50%,
+			rgb(var(--muted)) 75%
+		);
+		background-size: 200% 100%;
+	}
 
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
 
-  @keyframes slideUp {
-    from { transform: translateY(10px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-  }
+	@keyframes slideUp {
+		from {
+			transform: translateY(10px);
+			opacity: 0;
+		}
+		to {
+			transform: translateY(0);
+			opacity: 1;
+		}
+	}
 
-  @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-  }
+	@keyframes shimmer {
+		0% {
+			background-position: -200% 0;
+		}
+		100% {
+			background-position: 200% 0;
+		}
+	}
 
-  .text-balance {
-    text-wrap: balance;
-  }
+	.text-balance {
+		text-wrap: balance;
+	}
 
-  .animate-in {
-    animation: fadeIn 200ms ease-out, slideUp 300ms ease-out;
-  }
+	.animate-in {
+		animation:
+			fadeIn 200ms ease-out,
+			slideUp 300ms ease-out;
+	}
 
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
+	.scrollbar-hide {
+		-ms-overflow-style: none;
+		scrollbar-width: none;
+	}
 
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
+	.scrollbar-hide::-webkit-scrollbar {
+		display: none;
+	}
 }

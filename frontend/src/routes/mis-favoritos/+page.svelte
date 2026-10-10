@@ -26,7 +26,8 @@
 	$: namedCollections = collections.filter(
 		(c): c is { name: string; count: number } => c.name !== null
 	);
-	$: visible = selected === null ? favorites : favorites.filter((f) => f.collection_name === selected);
+	$: visible =
+		selected === null ? favorites : favorites.filter((f) => f.collection_name === selected);
 	$: totalCount = collections.find((c) => c.name === null)?.count ?? favorites.length;
 
 	async function load() {
@@ -34,10 +35,8 @@
 		error = '';
 		try {
 			const [favRes, colRes] = await Promise.all([
-				apiFetch('/api/v1/favorites', {
-					}),
-				apiFetch('/api/v1/favorites/collections', {
-					})
+				apiFetch('/api/v1/favorites', {}),
+				apiFetch('/api/v1/favorites/collections', {})
 			]);
 			if (!favRes.ok) throw new Error(`API ${favRes.status}`);
 			favorites = (await favRes.json()).filter((f: Favorite) => f.recipe);
@@ -52,7 +51,8 @@
 	async function remove(fav: Favorite) {
 		if (!confirm(`¿Quitar "${fav.recipe?.title}" de favoritos?`)) return;
 		await apiFetch(`/api/v1/favorites/${fav.recipe_id}`, {
-			method: 'DELETE' });
+			method: 'DELETE'
+		});
 		await load();
 	}
 
@@ -60,7 +60,8 @@
 		await apiFetch(`/api/v1/favorites/${recipeId}`, {
 			method: 'PATCH',
 			headers: {
-				'Content-Type': 'application/json'},
+				'Content-Type': 'application/json'
+			},
 			body: JSON.stringify({ collection_name: collectionName })
 		});
 		await load();
@@ -83,7 +84,8 @@
 		const res = await apiFetch(`/api/v1/favorites/collections/${encodeURIComponent(selected)}`, {
 			method: 'PATCH',
 			headers: {
-				'Content-Type': 'application/json'},
+				'Content-Type': 'application/json'
+			},
 			body: JSON.stringify({ new_name: name.trim() })
 		});
 		if (res.ok) selected = name.trim();
@@ -92,9 +94,11 @@
 
 	async function deleteCollection() {
 		if (selected === null) return;
-		if (!confirm(`¿Borrar la colección "${selected}"? Las recetas vuelven a la lista general.`)) return;
+		if (!confirm(`¿Borrar la colección "${selected}"? Las recetas vuelven a la lista general.`))
+			return;
 		await apiFetch(`/api/v1/favorites/collections/${encodeURIComponent(selected)}`, {
-			method: 'DELETE' });
+			method: 'DELETE'
+		});
 		selected = null;
 		await load();
 	}
@@ -126,10 +130,15 @@
 					<li>
 						<button
 							type="button"
-							class="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm {selected === null ? 'bg-primary/10 font-medium text-primary' : 'text-foreground hover:bg-muted'}"
+							class="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm {selected ===
+							null
+								? 'bg-primary/10 font-medium text-primary'
+								: 'text-foreground hover:bg-muted'}"
 							on:click={() => (selected = null)}
 						>
-							<span class="inline-flex items-center gap-2"><Folder class="h-4 w-4" aria-hidden="true" /> Todas</span>
+							<span class="inline-flex items-center gap-2"
+								><Folder class="h-4 w-4" aria-hidden="true" /> Todas</span
+							>
 							<span class="text-xs text-muted-foreground">{totalCount}</span>
 						</button>
 					</li>
@@ -137,7 +146,10 @@
 						<li>
 							<button
 								type="button"
-								class="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm {selected === col.name ? 'bg-primary/10 font-medium text-primary' : 'text-foreground hover:bg-muted'}"
+								class="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm {selected ===
+								col.name
+									? 'bg-primary/10 font-medium text-primary'
+									: 'text-foreground hover:bg-muted'}"
 								on:click={() => (selected = col.name)}
 							>
 								<span class="truncate">{col.name}</span>
@@ -152,7 +164,11 @@
 						<button type="button" class="btn btn-ghost btn-sm" on:click={renameCollection}>
 							<Edit class="h-4 w-4" aria-hidden="true" /> Renombrar
 						</button>
-						<button type="button" class="btn btn-ghost btn-sm text-destructive" on:click={deleteCollection}>
+						<button
+							type="button"
+							class="btn btn-ghost btn-sm text-destructive"
+							on:click={deleteCollection}
+						>
 							Borrar
 						</button>
 					</div>

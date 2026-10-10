@@ -17,7 +17,9 @@
 			type="button"
 			role="radio"
 			aria-checked={!selected}
-			class="badge px-3 py-1.5 transition-all {!selected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}"
+			class="badge px-3 py-1.5 transition-all {!selected
+				? 'bg-primary text-primary-foreground'
+				: 'bg-muted text-muted-foreground hover:bg-muted/80'}"
 			on:click={() => onChange(undefined)}
 		>
 			Todas
@@ -27,7 +29,9 @@
 				type="button"
 				role="radio"
 				aria-checked={selected === cat.slug}
-				class="badge flex items-center gap-1 px-3 py-1.5 transition-all {selected === cat.slug ? 'text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}"
+				class="badge flex items-center gap-1 px-3 py-1.5 transition-all {selected === cat.slug
+					? 'text-white'
+					: 'bg-muted text-muted-foreground hover:bg-muted/80'}"
 				style={selected === cat.slug ? `background-color: ${cat.color};` : ''}
 				on:click={() => onChange(cat.slug)}
 			>

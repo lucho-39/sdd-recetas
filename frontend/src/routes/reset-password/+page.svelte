@@ -57,7 +57,9 @@
 	<div class="w-full max-w-md">
 		<div class="mb-8 text-center">
 			<Lock class="mx-auto h-10 w-10 text-primary" aria-hidden="true" />
-			<h1 class="mt-3 font-playfair text-3xl font-medium text-foreground">Restablecer contraseña</h1>
+			<h1 class="mt-3 font-playfair text-3xl font-medium text-foreground">
+				Restablecer contraseña
+			</h1>
 		</div>
 
 		<div class="card p-6">
@@ -66,18 +68,37 @@
 			{:else}
 				<form class="space-y-4" on:submit|preventDefault={handleSubmit}>
 					{#if error}
-						<div class="flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
+						<div
+							class="flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
+							role="alert"
+						>
 							<Alert class="h-5 w-5 shrink-0" aria-hidden="true" />
 							<p>{error}</p>
 						</div>
 					{/if}
 					<div>
 						<label for="password" class="label">Nueva contraseña</label>
-						<input id="password" type="password" bind:value={password} class="input-base" autocomplete="new-password" required disabled={loading} />
+						<input
+							id="password"
+							type="password"
+							bind:value={password}
+							class="input-base"
+							autocomplete="new-password"
+							required
+							disabled={loading}
+						/>
 					</div>
 					<div>
 						<label for="confirm" class="label">Repetir contraseña</label>
-						<input id="confirm" type="password" bind:value={confirmPassword} class="input-base" autocomplete="new-password" required disabled={loading} />
+						<input
+							id="confirm"
+							type="password"
+							bind:value={confirmPassword}
+							class="input-base"
+							autocomplete="new-password"
+							required
+							disabled={loading}
+						/>
 					</div>
 					<button type="submit" class="btn btn-primary w-full" disabled={loading}>
 						{loading ? 'Guardando…' : 'Restablecer'}

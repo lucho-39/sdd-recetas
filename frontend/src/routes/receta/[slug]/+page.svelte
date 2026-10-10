@@ -120,7 +120,8 @@
 		const params = new URLSearchParams({ score: String(myScore) });
 		if (reviewText.trim()) params.set('review_text', reviewText.trim());
 		const res = await apiFetch(`/api/v1/ratings/${recipe.id}?${params.toString()}`, {
-			method: 'POST' });
+			method: 'POST'
+		});
 		if (res.ok) {
 			const body = await res.json();
 			avgRating = body.avg_rating;
@@ -140,7 +141,8 @@
 		rateBusy = true;
 		ratingMsg = '';
 		const res = await apiFetch(`/api/v1/ratings/${recipe.id}`, {
-			method: 'DELETE' });
+			method: 'DELETE'
+		});
 		if (res.ok) {
 			const body = await res.json();
 			avgRating = body.avg_rating;
@@ -204,7 +206,9 @@
 		<a href="/" class="hover:text-foreground">Inicio</a>
 		{#if recipe.category}
 			<span aria-hidden="true"> / </span>
-			<a href="/buscar?category={recipe.category.slug}" class="hover:text-foreground">{recipe.category.name}</a>
+			<a href="/buscar?category={recipe.category.slug}" class="hover:text-foreground"
+				>{recipe.category.name}</a
+			>
 		{/if}
 		<span aria-hidden="true"> / </span>
 		<span class="text-foreground">{recipe.title}</span>
@@ -216,7 +220,11 @@
 			{#if recipe.image_url}
 				<img src={recipe.image_url} alt={recipe.title} class="h-full w-full object-cover" />
 			{:else}
-				<div class="flex h-full w-full items-center justify-center text-6xl" style="background-color: {recipe.category?.color ?? '#F0EDE8'}22;" aria-hidden="true">
+				<div
+					class="flex h-full w-full items-center justify-center text-6xl"
+					style="background-color: {recipe.category?.color ?? '#F0EDE8'}22;"
+					aria-hidden="true"
+				>
 					{recipe.category?.icon ?? '🍽️'}
 				</div>
 			{/if}
@@ -239,7 +247,10 @@
 					aria-pressed={isFavorited}
 					title={isFavorited ? 'Quitar de favoritos' : 'Guardar en favoritos'}
 				>
-					{#if isFavorited}<HeartFilled class="h-4 w-4 text-primary" aria-hidden="true" />{:else}<Heart class="h-4 w-4" aria-hidden="true" />{/if}
+					{#if isFavorited}<HeartFilled
+							class="h-4 w-4 text-primary"
+							aria-hidden="true"
+						/>{:else}<Heart class="h-4 w-4" aria-hidden="true" />{/if}
 					{isFavorited ? 'Guardada' : 'Guardar'}
 				</button>
 				<button type="button" class="btn btn-outline btn-sm" on:click={share}>
@@ -269,32 +280,56 @@
 
 		<!-- Meta -->
 		<div class="mb-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
-			<a href={`/usuario/${recipe.author?.id}`} class="inline-flex items-center gap-2 font-medium text-foreground hover:text-primary">
-				<AuthorAvatar author={{ id: recipe.author?.id, display_name: recipe.author?.display_name ?? 'Autor', avatar_url: recipe.author?.avatar_url }} size="xs" />
+			<a
+				href={`/usuario/${recipe.author?.id}`}
+				class="inline-flex items-center gap-2 font-medium text-foreground hover:text-primary"
+			>
+				<AuthorAvatar
+					author={{
+						id: recipe.author?.id,
+						display_name: recipe.author?.display_name ?? 'Autor',
+						avatar_url: recipe.author?.avatar_url
+					}}
+					size="xs"
+				/>
 				{recipe.author?.display_name ?? 'Autor'}
 			</a>
-			<span class="inline-flex items-center gap-1"><Clock class="h-4 w-4" aria-hidden="true" />{formatMinutes(recipe.prep_time_minutes)}</span>
+			<span class="inline-flex items-center gap-1"
+				><Clock class="h-4 w-4" aria-hidden="true" />{formatMinutes(recipe.prep_time_minutes)}</span
+			>
 			{#if recipe.servings}
-				<span class="inline-flex items-center gap-1"><Users class="h-4 w-4" aria-hidden="true" />{recipe.servings} porciones</span>
+				<span class="inline-flex items-center gap-1"
+					><Users class="h-4 w-4" aria-hidden="true" />{recipe.servings} porciones</span
+				>
 			{/if}
 			{#if recipe.difficulty}
-				<span class="inline-flex items-center gap-1"><IconFlame class="h-4 w-4" aria-hidden="true" />{recipe.difficulty}</span>
+				<span class="inline-flex items-center gap-1"
+					><IconFlame class="h-4 w-4" aria-hidden="true" />{recipe.difficulty}</span
+				>
 			{/if}
 			<span class="inline-flex items-center gap-1" title="Veces guardada en favoritos">
 				<Heart class="h-4 w-4" aria-hidden="true" />
 				{saveCount}
 			</span>
-			<span class="inline-flex items-center gap-1"><Eye class="h-4 w-4" aria-hidden="true" />{recipe.visit_count}</span>
+			<span class="inline-flex items-center gap-1"
+				><Eye class="h-4 w-4" aria-hidden="true" />{recipe.visit_count}</span
+			>
 			<RatingStars value={avgRating} count={ratingCount} size="sm" showCount />
 		</div>
 
 		<!-- Rating -->
 		<section class="mb-6 rounded-lg border border-border p-4" aria-labelledby="rating-heading">
-			<h2 id="rating-heading" class="mb-3 text-sm font-medium text-foreground">Calificá esta receta</h2>
+			<h2 id="rating-heading" class="mb-3 text-sm font-medium text-foreground">
+				Calificá esta receta
+			</h2>
 
 			<div class="grid gap-4 sm:grid-cols-2">
 				<div>
-					<div class="flex items-center gap-1" role="radiogroup" aria-label="Puntaje de 1 a 5 estrellas">
+					<div
+						class="flex items-center gap-1"
+						role="radiogroup"
+						aria-label="Puntaje de 1 a 5 estrellas"
+					>
 						{#each [1, 2, 3, 4, 5] as score}
 							<button
 								type="button"
@@ -305,7 +340,14 @@
 								disabled={rateBusy}
 								aria-label={`${score} estrella${score === 1 ? '' : 's'}`}
 							>
-								<svg class="h-7 w-7" viewBox="0 0 24 24" fill={score <= (myScore || Math.round(avgRating)) ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+								<svg
+									class="h-7 w-7"
+									viewBox="0 0 24 24"
+									fill={score <= (myScore || Math.round(avgRating)) ? 'currentColor' : 'none'}
+									stroke="currentColor"
+									stroke-width="1.5"
+									aria-hidden="true"
+								>
 									<path d={starPath} />
 								</svg>
 							</button>
@@ -314,7 +356,9 @@
 							{avgRating.toFixed(1)} / 5 ({ratingCount} reseña{ratingCount === 1 ? '' : 's'})
 						</span>
 					</div>
-					{#if ratingMsg}<p class="mt-2 text-sm text-muted-foreground" aria-live="polite">{ratingMsg}</p>{/if}
+					{#if ratingMsg}<p class="mt-2 text-sm text-muted-foreground" aria-live="polite">
+							{ratingMsg}
+						</p>{/if}
 				</div>
 
 				<div class="space-y-1" aria-label="Distribución de calificaciones">
@@ -323,7 +367,10 @@
 							<span class="w-3 text-right">{score}</span>
 							<span aria-hidden="true">★</span>
 							<span class="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-								<span class="block h-full rounded-full bg-rating" style="width: {((dist[String(score)] ?? 0) / distMax) * 100}%"></span>
+								<span
+									class="block h-full rounded-full bg-rating"
+									style="width: {((dist[String(score)] ?? 0) / distMax) * 100}%"
+								></span>
 							</span>
 							<span class="w-6 text-right">{dist[String(score)] ?? 0}</span>
 						</div>
@@ -333,14 +380,32 @@
 			</div>
 
 			<div class="mt-4">
-				<label for="review-text" class="mb-1 block text-sm font-medium text-foreground">Tu reseña (opcional)</label>
-				<textarea id="review-text" bind:value={reviewText} rows="2" class="input-base" placeholder="Contá tu experiencia con esta receta…"></textarea>
+				<label for="review-text" class="mb-1 block text-sm font-medium text-foreground"
+					>Tu reseña (opcional)</label
+				>
+				<textarea
+					id="review-text"
+					bind:value={reviewText}
+					rows="2"
+					class="input-base"
+					placeholder="Contá tu experiencia con esta receta…"
+				></textarea>
 				<div class="mt-2 flex flex-wrap gap-2">
-					<button type="button" class="btn btn-primary btn-sm" on:click={submitRating} disabled={rateBusy || myScore === 0}>
+					<button
+						type="button"
+						class="btn btn-primary btn-sm"
+						on:click={submitRating}
+						disabled={rateBusy || myScore === 0}
+					>
 						{rateBusy ? 'Enviando…' : 'Publicar reseña'}
 					</button>
 					{#if hasMyRating}
-						<button type="button" class="btn btn-ghost btn-sm text-destructive" on:click={deleteRating} disabled={rateBusy}>
+						<button
+							type="button"
+							class="btn btn-ghost btn-sm text-destructive"
+							on:click={deleteRating}
+							disabled={rateBusy}
+						>
 							Eliminar mi calificación
 						</button>
 					{/if}
@@ -351,7 +416,10 @@
 		{#if recipe.tags && recipe.tags.length > 0}
 			<div class="mb-6 flex flex-wrap gap-2" aria-label="Etiquetas">
 				{#each recipe.tags as tag}
-					<a href="/buscar?tag={tag.slug}" class="badge bg-muted text-muted-foreground hover:bg-accent">#{tag.name}</a>
+					<a
+						href="/buscar?tag={tag.slug}"
+						class="badge bg-muted text-muted-foreground hover:bg-accent">#{tag.name}</a
+					>
 				{/each}
 			</div>
 		{/if}
@@ -359,7 +427,9 @@
 		<div class="grid gap-8 md:grid-cols-2">
 			<!-- Ingredients -->
 			<section aria-labelledby="ingredients-heading">
-				<h2 id="ingredients-heading" class="mb-3 text-xl font-medium text-foreground">Ingredientes</h2>
+				<h2 id="ingredients-heading" class="mb-3 text-xl font-medium text-foreground">
+					Ingredientes
+				</h2>
 				{#if recipe.ingredients && recipe.ingredients.length > 0}
 					<ul class="space-y-2">
 						{#each recipe.ingredients as ing}
@@ -374,17 +444,24 @@
 						{/each}
 					</ul>
 				{:else}
-					<p class="text-sm text-muted-foreground">Esta receta todavía no tiene ingredientes cargados.</p>
+					<p class="text-sm text-muted-foreground">
+						Esta receta todavía no tiene ingredientes cargados.
+					</p>
 				{/if}
 			</section>
 
 			<!-- Instructions -->
 			<section aria-labelledby="instructions-heading">
-				<h2 id="instructions-heading" class="mb-3 text-xl font-medium text-foreground">Preparación</h2>
+				<h2 id="instructions-heading" class="mb-3 text-xl font-medium text-foreground">
+					Preparación
+				</h2>
 				<div class="space-y-3 text-sm leading-relaxed text-foreground">
 					{#each recipe.instructions.split('\n').filter((p: string) => p.trim()) as paragraph, i}
 						<div class="flex gap-3">
-							<span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">{i + 1}</span>
+							<span
+								class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary"
+								>{i + 1}</span
+							>
 							<p>{paragraph}</p>
 						</div>
 					{/each}

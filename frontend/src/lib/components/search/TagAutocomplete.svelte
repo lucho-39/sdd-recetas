@@ -1,5 +1,4 @@
 <script lang="ts">
-
 	export let selected: string[] = [];
 	export let onChange: (tags: string[]) => void;
 	export let placeholder = 'Buscar etiquetas...';
@@ -17,7 +16,7 @@
 		}
 		try {
 			const response = await fetch(`/api/v1/tags?query=${encodeURIComponent(query)}&limit=10`);
-			suggestions = response.ok ? (await response.json()) ?? [] : [];
+			suggestions = response.ok ? ((await response.json()) ?? []) : [];
 			if (!Array.isArray(suggestions)) suggestions = [];
 			// Se mantiene abierto aunque no haya matches: sin matches se ofrece "Crear".
 			showSuggestions = query.trim().length >= 2;
@@ -46,7 +45,11 @@
 
 	function createTag() {
 		if (!query.trim()) return;
-		const slug = query.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+		const slug = query
+			.trim()
+			.toLowerCase()
+			.replace(/\s+/g, '-')
+			.replace(/[^a-z0-9-]/g, '');
 		if (!selected.includes(slug)) {
 			selected = [...selected, slug];
 			onChange(selected);
@@ -76,10 +79,20 @@
 				<button
 					type="button"
 					class="ml-1 p-0.5 hover:bg-muted-foreground/20 rounded"
-					on:click={() => { selected = selected.filter(s => s !== tagSlug); onChange(selected); }}
+					on:click={() => {
+						selected = selected.filter((s) => s !== tagSlug);
+						onChange(selected);
+					}}
 					aria-label="Quitar etiqueta {tagSlug}"
 				>
-					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+						><path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						/></svg
+					>
 				</button>
 			</span>
 		{/each}
@@ -89,12 +102,12 @@
 		<input
 			type="text"
 			bind:value={query}
-			placeholder={placeholder}
+			{placeholder}
 			class="input-base pr-8"
 			on:input={handleInput}
 			on:keydown={handleKeydown}
-			on:focus={() => showSuggestions = true}
-			on:blur={() => setTimeout(() => showSuggestions = false, 200)}
+			on:focus={() => (showSuggestions = true)}
+			on:blur={() => setTimeout(() => (showSuggestions = false), 200)}
 			aria-autocomplete="list"
 			aria-controls="tag-suggestions"
 		/>

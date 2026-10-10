@@ -25,7 +25,11 @@
 <div class="container py-8">
 	<header class="mb-8 flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
 		<AuthorAvatar
-			author={{ id: profile.id, display_name: profile.display_name, avatar_url: profile.avatar_url }}
+			author={{
+				id: profile.id,
+				display_name: profile.display_name,
+				avatar_url: profile.avatar_url
+			}}
 			size="lg"
 		/>
 		<div>

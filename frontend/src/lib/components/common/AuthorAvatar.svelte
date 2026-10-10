@@ -36,7 +36,9 @@
 <svelte:element
 	this={href ? 'a' : 'span'}
 	{href}
-	class="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full {sizes[size]}"
+	class="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full {sizes[
+		size
+	]}"
 	style={author?.avatar_url ? '' : `background-color: ${getColor(name)};`}
 	aria-label={href ? `Ver perfil de ${name}` : undefined}
 	title={name}

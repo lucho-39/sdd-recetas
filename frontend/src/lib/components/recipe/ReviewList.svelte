@@ -54,14 +54,20 @@
 	{#if loading}
 		<p class="text-sm text-muted-foreground">Cargando reseñas…</p>
 	{:else if reviews.length === 0}
-		<p class="text-sm text-muted-foreground">Todavía no hay reseñas. ¡Sé el primero en calificar!</p>
+		<p class="text-sm text-muted-foreground">
+			Todavía no hay reseñas. ¡Sé el primero en calificar!
+		</p>
 	{:else}
 		<ul class="space-y-4">
 			{#each reviews as review (review.id)}
 				<li class="rounded-lg border border-border p-4">
 					<div class="mb-2 flex items-center gap-3">
 						<AuthorAvatar
-							author={{ id: review.id, display_name: review.user.display_name, avatar_url: review.user.avatar_url }}
+							author={{
+								id: review.id,
+								display_name: review.user.display_name,
+								avatar_url: review.user.avatar_url
+							}}
 							size="sm"
 						/>
 						<div class="min-w-0 flex-1">
@@ -79,7 +85,12 @@
 
 		{#if hasMore}
 			<div class="mt-4 flex justify-center">
-				<button type="button" class="btn btn-outline btn-sm" on:click={() => fetchPage(page + 1, true)} disabled={loadingMore}>
+				<button
+					type="button"
+					class="btn btn-outline btn-sm"
+					on:click={() => fetchPage(page + 1, true)}
+					disabled={loadingMore}
+				>
 					{loadingMore ? 'Cargando…' : 'Cargar más reseñas'}
 				</button>
 			</div>

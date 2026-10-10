@@ -27,11 +27,7 @@
 			<p class="toast-message">{message}</p>
 		{/if}
 	</div>
-	<button
-		class="toast-close"
-		on:click={dismiss}
-		aria-label="Dismiss"
-	>
+	<button class="toast-close" on:click={dismiss} aria-label="Dismiss">
 		<X class="h-4 w-4" />
 	</button>
 </div>

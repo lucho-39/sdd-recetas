@@ -53,7 +53,7 @@
 			: fontScale === 'lg'
 				? 'text-3xl md:text-4xl'
 				: 'text-2xl md:text-3xl';
-	$: if (browser && safeSteps && (index >= safeSteps.length)) index = safeSteps.length - 1;
+	$: if (browser && safeSteps && index >= safeSteps.length) index = safeSteps.length - 1;
 
 	function announce(message: string) {
 		announced = message;
@@ -397,12 +397,22 @@
 >
 	<!-- Header -->
 	<header class="flex items-center justify-between gap-2 border-b border-border px-3 py-3 md:px-6">
-		<button type="button" class="btn btn-ghost btn-sm" on:click={handleExit} aria-label="Salir del modo cocinando">
+		<button
+			type="button"
+			class="btn btn-ghost btn-sm"
+			on:click={handleExit}
+			aria-label="Salir del modo cocinando"
+		>
 			<X class="h-5 w-5" aria-hidden="true" /> Salir
 		</button>
 		<div class="flex items-center gap-1">
 			{#if canInstall}
-				<button type="button" class="btn btn-ghost btn-sm" on:click={installApp} aria-label="Instalar aplicación">
+				<button
+					type="button"
+					class="btn btn-ghost btn-sm"
+					on:click={installApp}
+					aria-label="Instalar aplicación"
+				>
 					Instalar
 				</button>
 			{/if}
@@ -412,7 +422,10 @@
 				on:click={toggleFullscreen}
 				aria-label={fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
 			>
-				{#if fullscreen}<Minimize class="h-5 w-5" aria-hidden="true" />{:else}<Maximize class="h-5 w-5" aria-hidden="true" />{/if}
+				{#if fullscreen}<Minimize class="h-5 w-5" aria-hidden="true" />{:else}<Maximize
+						class="h-5 w-5"
+						aria-hidden="true"
+					/>{/if}
 			</button>
 			<button
 				type="button"
@@ -430,7 +443,10 @@
 				aria-pressed={voiceOn}
 				aria-label={voiceOn ? 'Desactivar voz' : 'Activar voz'}
 			>
-				{#if voiceOn}<Volume class="h-5 w-5" aria-hidden="true" />{:else}<Mute class="h-5 w-5" aria-hidden="true" />{/if}
+				{#if voiceOn}<Volume class="h-5 w-5" aria-hidden="true" />{:else}<Mute
+						class="h-5 w-5"
+						aria-hidden="true"
+					/>{/if}
 				Voz
 			</button>
 		</div>
@@ -438,25 +454,34 @@
 
 	<!-- Settings panel -->
 	{#if settingsOpen}
-		<div class="border-b border-border bg-muted/40 px-3 py-3 md:px-6" aria-label="Ajustes del modo cocinando">
+		<div
+			class="border-b border-border bg-muted/40 px-3 py-3 md:px-6"
+			aria-label="Ajustes del modo cocinando"
+		>
 			<div class="flex flex-wrap items-center gap-4 text-sm">
 				<span class="font-medium">Tamaño de texto:</span>
 				{#each [{ v: 'base', l: 'Normal' }, { v: 'lg', l: 'Grande' }, { v: 'xl', l: 'Muy grande' }] as opt}
 					<button
 						type="button"
-						class="badge {fontScale === opt.v ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}"
+						class="badge {fontScale === opt.v
+							? 'bg-primary text-primary-foreground'
+							: 'bg-muted text-muted-foreground'}"
 						on:click={() => saveFont(opt.v as typeof fontScale)}
 					>
 						{opt.l}
 					</button>
 				{/each}
-				{#if !voiceSupported}<span class="text-muted-foreground">Reconocimiento de voz no disponible en este navegador.</span>{/if}
+				{#if !voiceSupported}<span class="text-muted-foreground"
+						>Reconocimiento de voz no disponible en este navegador.</span
+					>{/if}
 			</div>
 		</div>
 	{/if}
 
 	<!-- Step -->
-	<main class="flex flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-8 text-center">
+	<main
+		class="flex flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-8 text-center"
+	>
 		<p class="mb-4 text-sm font-medium uppercase tracking-wide text-muted-foreground">
 			Paso {index + 1} de {safeSteps.length}
 		</p>
@@ -491,7 +516,11 @@
 			>
 				<ChevronLeft class="h-6 w-6" aria-hidden="true" /> Anterior
 			</button>
-			<button type="button" class="btn btn-ghost btn-sm whitespace-nowrap" on:click={() => speak(currentStep)}>
+			<button
+				type="button"
+				class="btn btn-ghost btn-sm whitespace-nowrap"
+				on:click={() => speak(currentStep)}
+			>
 				Repetir
 			</button>
 			<button
@@ -505,12 +534,18 @@
 		</div>
 
 		<div class="mx-auto mt-4 flex max-w-3xl flex-wrap items-center justify-center gap-2">
-			<span class="inline-flex items-center gap-2 rounded-lg bg-muted px-4 py-2 font-mono text-2xl tabular-nums">
+			<span
+				class="inline-flex items-center gap-2 rounded-lg bg-muted px-4 py-2 font-mono text-2xl tabular-nums"
+			>
 				<Clock class="h-5 w-5 text-muted-foreground" aria-hidden="true" />
 				{display}
 			</span>
 			{#each QUICK_MINUTES as m}
-				<button type="button" class="badge bg-muted text-muted-foreground hover:bg-accent" on:click={() => setTimer(m * 60)}>
+				<button
+					type="button"
+					class="badge bg-muted text-muted-foreground hover:bg-accent"
+					on:click={() => setTimer(m * 60)}
+				>
 					{m} min
 				</button>
 			{/each}
@@ -519,7 +554,12 @@
 					<Pause class="h-4 w-4" aria-hidden="true" /> Pausar
 				</button>
 			{:else}
-				<button type="button" class="btn btn-outline btn-sm" on:click={startTimer} disabled={remaining <= 0}>
+				<button
+					type="button"
+					class="btn btn-outline btn-sm"
+					on:click={startTimer}
+					disabled={remaining <= 0}
+				>
 					<Play class="h-4 w-4" aria-hidden="true" /> Iniciar
 				</button>
 			{/if}

@@ -21,7 +21,7 @@
 					defaultTitle: 'No se encontraron recetas',
 					defaultDescription: 'Intenta cambiar los filtros o busca con otros términos',
 					defaultActionLabel: 'Limpiar filtros',
-					defaultActionHref: '/buscar',
+					defaultActionHref: '/buscar'
 				};
 			case 'favorites':
 				return {
@@ -29,7 +29,7 @@
 					defaultTitle: 'No tienes recetas guardadas',
 					defaultDescription: 'Empieza a explorar y guarda tus recetas favoritas',
 					defaultActionLabel: 'Explorar recetas',
-					defaultActionHref: '/buscar',
+					defaultActionHref: '/buscar'
 				};
 			case 'recipes':
 				return {
@@ -37,7 +37,7 @@
 					defaultTitle: 'No hay recetas disponibles',
 					defaultDescription: 'Sé el primero en crear una receta en esta categoría',
 					defaultActionLabel: 'Crear receta',
-					defaultActionHref: '/recetas/nueva',
+					defaultActionHref: '/recetas/nueva'
 				};
 			case 'categories':
 				return {
@@ -45,7 +45,7 @@
 					defaultTitle: 'No hay categorías',
 					defaultDescription: 'Las categorías aparecerán aquí cuando se agreguen recetas',
 					defaultActionLabel: 'Ver recetas',
-					defaultActionHref: '/buscar',
+					defaultActionHref: '/buscar'
 				};
 			case 'tags':
 				return {
@@ -53,7 +53,7 @@
 					defaultTitle: 'No hay etiquetas',
 					defaultDescription: 'Las etiquetas aparecerán cuando se usen en recetas',
 					defaultActionLabel: 'Ver recetas',
-					defaultActionHref: '/buscar',
+					defaultActionHref: '/buscar'
 				};
 		}
 	}

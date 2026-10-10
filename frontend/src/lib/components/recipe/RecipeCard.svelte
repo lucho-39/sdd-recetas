@@ -49,7 +49,9 @@
 
 		<!-- Body -->
 		<div class="flex flex-1 flex-col gap-3 p-4">
-			<h3 class="line-clamp-2 text-base font-medium text-foreground transition-colors group-hover:text-primary md:text-lg">
+			<h3
+				class="line-clamp-2 text-base font-medium text-foreground transition-colors group-hover:text-primary md:text-lg"
+			>
 				{recipe.title}
 			</h3>
 
@@ -57,7 +59,9 @@
 				<p class="line-clamp-2 text-sm text-muted-foreground">{recipe.description}</p>
 			{/if}
 
-			<div class="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+			<div
+				class="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground"
+			>
 				<RatingStars value={recipe.avg_rating} count={recipe.rating_count} size="sm" showCount />
 				{#if recipe.prep_time_minutes}
 					<span class="inline-flex items-center gap-1">

@@ -30,7 +30,10 @@
 <section class="section" aria-labelledby="recipes-heading">
 	<div class="container">
 		<div class="mb-6 flex items-baseline justify-between gap-4">
-			<h2 id="recipes-heading" class="font-playfair text-2xl font-medium text-foreground md:text-3xl">
+			<h2
+				id="recipes-heading"
+				class="font-playfair text-2xl font-medium text-foreground md:text-3xl"
+			>
 				{data.query || data.category ? 'Resultados' : 'Recetas destacadas'}
 			</h2>
 			<span class="shrink-0 text-sm text-muted-foreground">{data.total} recetas</span>

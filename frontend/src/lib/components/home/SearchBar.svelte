@@ -42,11 +42,17 @@
 	}
 </script>
 
-<section class="sticky top-16 z-40 border-b border-border bg-background/95 backdrop-blur-sm" aria-label="Buscador de recetas">
+<section
+	class="sticky top-16 z-40 border-b border-border bg-background/95 backdrop-blur-sm"
+	aria-label="Buscador de recetas"
+>
 	<div class="container py-3 md:py-4">
 		<div class="flex flex-col gap-3 sm:flex-row">
 			<div class="relative flex-1">
-				<Search class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+				<Search
+					class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground"
+					aria-hidden="true"
+				/>
 				<input
 					type="search"
 					bind:value={query}
@@ -82,11 +88,18 @@
 
 		<!-- Category chips (mobile-first, always visible when open) -->
 		{#if showFilters}
-			<div id="category-filters" class="mt-3 flex flex-wrap gap-2" role="group" aria-label="Filtrar por categoría">
+			<div
+				id="category-filters"
+				class="mt-3 flex flex-wrap gap-2"
+				role="group"
+				aria-label="Filtrar por categoría"
+			>
 				{#each categories as cat}
 					<button
 						type="button"
-						class="badge border transition-colors {category === cat.slug ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-muted text-muted-foreground hover:bg-accent'}"
+						class="badge border transition-colors {category === cat.slug
+							? 'border-primary bg-primary text-primary-foreground'
+							: 'border-border bg-muted text-muted-foreground hover:bg-accent'}"
 						on:click={() => selectCategory(cat.slug)}
 						aria-pressed={category === cat.slug}
 					>

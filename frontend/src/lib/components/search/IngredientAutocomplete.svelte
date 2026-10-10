@@ -58,7 +58,12 @@
 		debounceTimer = setTimeout(fetchSuggestions, 200);
 	}
 
-	function selectIngredient(ing: { id: string; name: string; category: string; default_unit: string }) {
+	function selectIngredient(ing: {
+		id: string;
+		name: string;
+		category: string;
+		default_unit: string;
+	}) {
 		if (!selected.includes(ing.id)) {
 			labels = { ...labels, [ing.id]: ing.name };
 			selected = [...selected, ing.id];
@@ -94,7 +99,14 @@
 					on:click={() => removeIngredient(ingId)}
 					aria-label="Quitar ingrediente {labels[ingId] ?? ingId}"
 				>
-					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+						><path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						/></svg
+					>
 				</button>
 			</span>
 		{/each}
@@ -104,12 +116,12 @@
 		<input
 			type="text"
 			bind:value={query}
-			placeholder={placeholder}
+			{placeholder}
 			class="input-base pr-8"
 			on:input={handleInput}
 			on:keydown={handleKeydown}
-			on:focus={() => showSuggestions = true}
-			on:blur={() => setTimeout(() => showSuggestions = false, 200)}
+			on:focus={() => (showSuggestions = true)}
+			on:blur={() => setTimeout(() => (showSuggestions = false), 200)}
 			aria-autocomplete="list"
 			aria-controls="ingredient-suggestions"
 		/>

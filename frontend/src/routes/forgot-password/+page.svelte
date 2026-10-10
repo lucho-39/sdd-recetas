@@ -49,7 +49,15 @@
 				<form class="space-y-4" on:submit|preventDefault={handleSubmit}>
 					<div>
 						<label for="email" class="label">Email</label>
-						<input id="email" type="email" bind:value={email} class="input-base" autocomplete="email" required disabled={loading} />
+						<input
+							id="email"
+							type="email"
+							bind:value={email}
+							class="input-base"
+							autocomplete="email"
+							required
+							disabled={loading}
+						/>
 					</div>
 					<button type="submit" class="btn btn-primary w-full" disabled={loading}>Enviar</button>
 				</form>

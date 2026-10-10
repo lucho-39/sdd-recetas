@@ -29,11 +29,23 @@
 >
 	{#each [0, 1, 2, 3, 4] as i}
 		<span class="relative inline-block {sizeMap[size]}">
-			<svg class="{sizeMap[size]} absolute inset-0 text-muted-foreground/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+			<svg
+				class="{sizeMap[size]} absolute inset-0 text-muted-foreground/40"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.5"
+				aria-hidden="true"
+			>
 				<path d={starPath} />
 			</svg>
 			<span class="absolute inset-0 overflow-hidden" style="width: {starFill(i)}%">
-				<svg class="{sizeMap[size]} text-rating" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+				<svg
+					class="{sizeMap[size]} text-rating"
+					viewBox="0 0 24 24"
+					fill="currentColor"
+					aria-hidden="true"
+				>
 					<path d={starPath} />
 				</svg>
 			</span>

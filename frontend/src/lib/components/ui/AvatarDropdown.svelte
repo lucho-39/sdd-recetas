@@ -37,7 +37,9 @@
 		{#if user?.avatar_url}
 			<img src={user.avatar_url} alt="" class="h-8 w-8 rounded-full object-cover" />
 		{:else}
-			<span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">
+			<span
+				class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground"
+			>
 				{user?.display_name?.charAt(0).toUpperCase() ?? 'U'}
 			</span>
 		{/if}
@@ -56,16 +58,36 @@
 				<p class="truncate text-sm font-medium">{user?.display_name}</p>
 				<p class="truncate text-xs text-muted-foreground">{user?.email}</p>
 			</div>
-			<a href="/perfil" class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" role="menuitem" on:click={close}>
+			<a
+				href="/perfil"
+				class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent"
+				role="menuitem"
+				on:click={close}
+			>
 				<User class="h-4 w-4" aria-hidden="true" /> Perfil
 			</a>
-			<a href="/mis-recetas" class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" role="menuitem" on:click={close}>
+			<a
+				href="/mis-recetas"
+				class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent"
+				role="menuitem"
+				on:click={close}
+			>
 				<BookOpen class="h-4 w-4" aria-hidden="true" /> Mis Recetas
 			</a>
-			<a href="/mis-favoritos" class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" role="menuitem" on:click={close}>
+			<a
+				href="/mis-favoritos"
+				class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent"
+				role="menuitem"
+				on:click={close}
+			>
 				<Heart class="h-4 w-4" aria-hidden="true" /> Favoritos
 			</a>
-			<a href="/perfil" class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" role="menuitem" on:click={close}>
+			<a
+				href="/perfil"
+				class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent"
+				role="menuitem"
+				on:click={close}
+			>
 				<Settings class="h-4 w-4" aria-hidden="true" /> Configuración
 			</a>
 			<hr class="my-1 border-border" />

@@ -42,19 +42,22 @@ function createNotificationsStore() {
 	}
 
 	function showBrowserNotification(notification: AppNotification) {
-		if (!browser || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+		if (!browser || typeof Notification === 'undefined' || Notification.permission !== 'granted')
+			return;
 		const who = notification.actor?.display_name ?? 'Alguien';
 		const title =
-			notification.type === 'rating'
-				? `${who} calificó tu receta`
-				: `${who} guardó tu receta`;
+			notification.type === 'rating' ? `${who} calificó tu receta` : `${who} guardó tu receta`;
 		const body = notification.recipe_title ?? '';
 		const url = notification.recipe_slug ? `/receta/${notification.recipe_slug}` : '/';
 
 		if ('serviceWorker' in navigator) {
 			navigator.serviceWorker.ready
 				.then((registration) =>
-					registration.showNotification(title, { body, data: { url }, tag: notification.id ?? undefined })
+					registration.showNotification(title, {
+						body,
+						data: { url },
+						tag: notification.id ?? undefined
+					})
 				)
 				.catch(() => {});
 		} else {
@@ -85,7 +88,8 @@ function createNotificationsStore() {
 		const res = await apiFetch('/api/v1/push/subscribe', {
 			method: 'POST',
 			headers: {
-				'Content-Type': 'application/json'},
+				'Content-Type': 'application/json'
+			},
 			body: JSON.stringify(subscription.toJSON())
 		});
 		pushSubscribed = res.ok;
@@ -102,7 +106,8 @@ function createNotificationsStore() {
 				await apiFetch('/api/v1/push/subscribe', {
 					method: 'DELETE',
 					headers: {
-						'Content-Type': 'application/json'},
+						'Content-Type': 'application/json'
+					},
 					body: JSON.stringify({ endpoint: subscription.endpoint })
 				}).catch(() => {});
 			}
@@ -122,7 +127,8 @@ function createNotificationsStore() {
 		}
 	}
 
-	function connect(accessToken: string) {		if (!browser || socket) return;
+	function connect(accessToken: string) {
+		if (!browser || socket) return;
 		socket = io({
 			auth: { token: accessToken },
 			transports: ['websocket', 'polling']
@@ -134,8 +140,7 @@ function createNotificationsStore() {
 			update((s) => ({
 				...s,
 				items: eventInApp ? [notification, ...s.items].slice(0, MAX_ITEMS) : s.items,
-				unreadCount:
-					eventInApp && !notification.is_read ? s.unreadCount + 1 : s.unreadCount
+				unreadCount: eventInApp && !notification.is_read ? s.unreadCount + 1 : s.unreadCount
 			}));
 			if (get({ subscribe }).preferences.push_enabled && !pushSubscribed) {
 				showBrowserNotification(notification);
@@ -154,8 +159,7 @@ function createNotificationsStore() {
 		if (!accessToken) return;
 		update((s) => ({ ...s, loading: true }));
 		try {
-			const res = await apiFetch('/api/v1/notifications?limit=20', {
-				});
+			const res = await apiFetch('/api/v1/notifications?limit=20', {});
 			if (res.ok) {
 				const body = await res.json();
 				update((s) => ({
@@ -176,8 +180,7 @@ function createNotificationsStore() {
 		const accessToken = token();
 		if (!accessToken) return get({ subscribe }).preferences;
 		try {
-			const res = await apiFetch('/api/v1/users/me/notification-preferences', {
-				});
+			const res = await apiFetch('/api/v1/users/me/notification-preferences', {});
 			if (res.ok) {
 				const preferences = (await res.json()) as NotificationPreferences;
 				update((s) => ({ ...s, preferences }));
@@ -197,7 +200,8 @@ function createNotificationsStore() {
 		const res = await apiFetch('/api/v1/users/me/notification-preferences', {
 			method: 'PUT',
 			headers: {
-				'Content-Type': 'application/json'},
+				'Content-Type': 'application/json'
+			},
 			body: JSON.stringify(partial)
 		});
 		if (!res.ok) throw new Error(`API ${res.status}`);
@@ -218,7 +222,8 @@ function createNotificationsStore() {
 			};
 		});
 		await apiFetch(`/api/v1/notifications/${id}/read`, {
-			method: 'POST' }).catch(() => {});
+			method: 'POST'
+		}).catch(() => {});
 	}
 
 	async function markAllRead() {
@@ -226,7 +231,8 @@ function createNotificationsStore() {
 		if (!accessToken) return;
 		update((s) => ({ ...s, items: s.items.map((n) => ({ ...n, is_read: true })), unreadCount: 0 }));
 		await apiFetch('/api/v1/notifications/read-all', {
-			method: 'POST' }).catch(() => {});
+			method: 'POST'
+		}).catch(() => {});
 	}
 
 	async function remove(id: string) {
@@ -241,7 +247,8 @@ function createNotificationsStore() {
 			};
 		});
 		await apiFetch(`/api/v1/notifications/${id}`, {
-			method: 'DELETE' }).catch(() => {});
+			method: 'DELETE'
+		}).catch(() => {});
 	}
 
 	async function removeAll() {
@@ -249,7 +256,8 @@ function createNotificationsStore() {
 		if (!accessToken) return;
 		update((s) => ({ ...s, items: [], unreadCount: 0 }));
 		await apiFetch('/api/v1/notifications', {
-			method: 'DELETE' }).catch(() => {});
+			method: 'DELETE'
+		}).catch(() => {});
 	}
 
 	function start() {

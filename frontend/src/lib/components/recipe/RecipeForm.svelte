@@ -69,7 +69,10 @@
 	}
 
 	function addIngredient(ing: { id: string; name: string; default_unit: string }) {
-		rows = [...rows, { ingredient_id: ing.id, name: ing.name, amount: '', unit: ing.default_unit, notes: '' }];
+		rows = [
+			...rows,
+			{ ingredient_id: ing.id, name: ing.name, amount: '', unit: ing.default_unit, notes: '' }
+		];
 		ingQuery = '';
 		ingSuggestions = [];
 	}
@@ -81,7 +84,8 @@
 			const res = await apiFetch('/api/v1/ingredients', {
 				method: 'POST',
 				headers: {
-					'Content-Type': 'application/json'},
+					'Content-Type': 'application/json'
+				},
 				body: JSON.stringify({ name })
 			});
 			if (res.ok) {
@@ -182,7 +186,8 @@
 		const res = await apiFetch(slug ? `/api/v1/recipes/${slug}` : '/api/v1/recipes', {
 			method: slug ? 'PATCH' : 'POST',
 			headers: {
-				'Content-Type': 'application/json'},
+				'Content-Type': 'application/json'
+			},
 			body: JSON.stringify(payload)
 		});
 		saving = false;
@@ -203,7 +208,10 @@
 
 <form class="mx-auto max-w-2xl space-y-6" on:submit|preventDefault={submit}>
 	{#if error}
-		<p class="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
+		<p
+			class="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"
+			role="alert"
+		>
 			{error}
 		</p>
 	{/if}
@@ -214,20 +222,26 @@
 	</div>
 
 	<div>
-		<label for="description" class="mb-1 block text-sm font-medium text-foreground">Descripción</label>
+		<label for="description" class="mb-1 block text-sm font-medium text-foreground"
+			>Descripción</label
+		>
 		<textarea id="description" bind:value={description} rows="2" class="input-base"></textarea>
 	</div>
 
 	<div class="grid gap-4 sm:grid-cols-2">
 		<div>
-			<label for="category" class="mb-1 block text-sm font-medium text-foreground">Categoría *</label>
+			<label for="category" class="mb-1 block text-sm font-medium text-foreground"
+				>Categoría *</label
+			>
 			<select id="category" bind:value={categoryId} class="input-base" required>
 				<option value="">Elegí una categoría…</option>
 				{#each categories as cat}<option value={cat.id}>{cat.name}</option>{/each}
 			</select>
 		</div>
 		<div>
-			<label for="difficulty" class="mb-1 block text-sm font-medium text-foreground">Dificultad</label>
+			<label for="difficulty" class="mb-1 block text-sm font-medium text-foreground"
+				>Dificultad</label
+			>
 			<select id="difficulty" bind:value={difficulty} class="input-base">
 				{#each DIFFICULTIES as d}<option value={d.v}>{d.l}</option>{/each}
 			</select>
@@ -236,7 +250,13 @@
 
 	<div>
 		<label for="image" class="mb-1 block text-sm font-medium text-foreground">Imagen</label>
-		<input id="image" bind:value={imageUrl} class="input-base" maxlength="500" placeholder="https://… o subí un archivo" />
+		<input
+			id="image"
+			bind:value={imageUrl}
+			class="input-base"
+			maxlength="500"
+			placeholder="https://… o subí un archivo"
+		/>
 		<div class="mt-2 flex items-center gap-3">
 			<input
 				type="file"
@@ -249,13 +269,19 @@
 		</div>
 		{#if uploadError}<p class="mt-1 text-sm text-destructive" role="alert">{uploadError}</p>{/if}
 		{#if imageUrl}
-			<img src={imageUrl} alt="Vista previa" class="mt-3 h-40 w-full max-w-xs rounded-lg border border-border object-cover" />
+			<img
+				src={imageUrl}
+				alt="Vista previa"
+				class="mt-3 h-40 w-full max-w-xs rounded-lg border border-border object-cover"
+			/>
 		{/if}
 	</div>
 
 	<div class="grid gap-4 sm:grid-cols-3">
 		<div>
-			<label for="prep" class="mb-1 block text-sm font-medium text-foreground">Preparación (min)</label>
+			<label for="prep" class="mb-1 block text-sm font-medium text-foreground"
+				>Preparación (min)</label
+			>
 			<input id="prep" type="number" min="0" bind:value={prepTime} class="input-base" />
 		</div>
 		<div>
@@ -277,10 +303,35 @@
 				{#each rows as row, i (i)}
 					<li class="flex flex-wrap items-center gap-2">
 						<span class="min-w-32 flex-1 text-sm text-foreground">{row.name}</span>
-						<input type="number" min="0" step="any" bind:value={row.amount} class="input-base w-20 py-1.5" placeholder="Cant." aria-label="Cantidad de {row.name}" />
-						<input type="text" bind:value={row.unit} class="input-base w-24 py-1.5" placeholder="Unidad" aria-label="Unidad de {row.name}" />
-						<input type="text" bind:value={row.notes} class="input-base w-32 py-1.5" placeholder="Notas" aria-label="Notas de {row.name}" />
-						<button type="button" class="btn btn-ghost btn-sm text-destructive" on:click={() => removeRow(i)} aria-label="Quitar {row.name}">
+						<input
+							type="number"
+							min="0"
+							step="any"
+							bind:value={row.amount}
+							class="input-base w-20 py-1.5"
+							placeholder="Cant."
+							aria-label="Cantidad de {row.name}"
+						/>
+						<input
+							type="text"
+							bind:value={row.unit}
+							class="input-base w-24 py-1.5"
+							placeholder="Unidad"
+							aria-label="Unidad de {row.name}"
+						/>
+						<input
+							type="text"
+							bind:value={row.notes}
+							class="input-base w-32 py-1.5"
+							placeholder="Notas"
+							aria-label="Notas de {row.name}"
+						/>
+						<button
+							type="button"
+							class="btn btn-ghost btn-sm text-destructive"
+							on:click={() => removeRow(i)}
+							aria-label="Quitar {row.name}"
+						>
 							<Trash class="h-4 w-4" aria-hidden="true" />
 						</button>
 					</li>
@@ -297,16 +348,27 @@
 					class="input-base"
 					placeholder="Buscar en el catálogo…"
 				/>
-				<button type="button" class="btn btn-outline btn-sm" on:click={addManual} disabled={!ingQuery.trim()}>
+				<button
+					type="button"
+					class="btn btn-outline btn-sm"
+					on:click={addManual}
+					disabled={!ingQuery.trim()}
+				>
 					<IconPlus class="h-4 w-4" aria-hidden="true" /> Agregar
 				</button>
 			</div>
 			{#if ingError}<p class="mt-1 text-xs text-destructive">{ingError}</p>{/if}
 			{#if ingSuggestions.length > 0}
-				<ul class="absolute z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
+				<ul
+					class="absolute z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-border bg-popover shadow-lg"
+				>
 					{#each ingSuggestions as ing}
 						<li>
-							<button type="button" class="w-full px-3 py-2 text-left text-sm hover:bg-accent" on:click={() => addIngredient(ing)}>
+							<button
+								type="button"
+								class="w-full px-3 py-2 text-left text-sm hover:bg-accent"
+								on:click={() => addIngredient(ing)}
+							>
 								{ing.name}
 							</button>
 						</li>
@@ -326,8 +388,17 @@
 	</fieldset>
 
 	<div>
-		<label for="instructions" class="mb-1 block text-sm font-medium text-foreground">Preparación *</label>
-		<textarea id="instructions" bind:value={instructions} rows="6" class="input-base" placeholder="Un paso por línea…" required></textarea>
+		<label for="instructions" class="mb-1 block text-sm font-medium text-foreground"
+			>Preparación *</label
+		>
+		<textarea
+			id="instructions"
+			bind:value={instructions}
+			rows="6"
+			class="input-base"
+			placeholder="Un paso por línea…"
+			required
+		></textarea>
 	</div>
 
 	<label class="flex items-center gap-2 text-sm text-foreground">

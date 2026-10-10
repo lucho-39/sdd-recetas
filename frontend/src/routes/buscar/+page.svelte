@@ -4,13 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { IconSearch, IconAdjustments } from '@tabler/icons-svelte';
-	import {
-		recipesStore,
-		recipes,
-		loading,
-		loadingMore,
-		hasMore
-	} from '$lib/stores/recipes';
+	import { recipesStore, recipes, loading, loadingMore, hasMore } from '$lib/stores/recipes';
 	import { categoriesStore } from '$lib/stores/categories';
 	import CategoryFilter from '$components/search/CategoryFilter.svelte';
 	import TagAutocomplete from '$components/search/TagAutocomplete.svelte';
@@ -129,7 +123,10 @@
 
 <svelte:head>
 	<title>Buscar recetas — Recetario IA</title>
-	<meta name="description" content="Encontrá recetas por categoría, etiquetas, ingredientes y más." />
+	<meta
+		name="description"
+		content="Encontrá recetas por categoría, etiquetas, ingredientes y más."
+	/>
 </svelte:head>
 
 <div class="container py-6 md:py-8">
@@ -155,7 +152,10 @@
 						Buscar
 					</label>
 					<div class="relative">
-						<IconSearch class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+						<IconSearch
+							class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+							aria-hidden="true"
+						/>
 						<input
 							id="search-input"
 							type="search"
@@ -167,32 +167,49 @@
 					</div>
 				</div>
 
-				<CategoryFilter selected={category} onChange={(slug) => { category = slug; apply(); }} />
+				<CategoryFilter
+					selected={category}
+					onChange={(slug) => {
+						category = slug;
+						apply();
+					}}
+				/>
 
 				<div>
 					<span class="mb-2 block text-sm font-medium text-foreground">Etiquetas</span>
-					<TagAutocomplete selected={tags} onChange={(t) => { tags = t; apply(); }} />
+					<TagAutocomplete
+						selected={tags}
+						onChange={(t) => {
+							tags = t;
+							apply();
+						}}
+					/>
 				</div>
 
 				<div>
 					<span class="mb-2 block text-sm font-medium text-foreground">Ingredientes</span>
-					<IngredientAutocomplete selected={ingredients} onChange={(i) => { ingredients = i; apply(); }} />
+					<IngredientAutocomplete
+						selected={ingredients}
+						onChange={(i) => {
+							ingredients = i;
+							apply();
+						}}
+					/>
 				</div>
 
 				<div>
-					<label for="difficulty" class="mb-2 block text-sm font-medium text-foreground">Dificultad</label>
-					<select
-						id="difficulty"
-						bind:value={difficulty}
-						on:change={apply}
-						class="input-base"
+					<label for="difficulty" class="mb-2 block text-sm font-medium text-foreground"
+						>Dificultad</label
 					>
+					<select id="difficulty" bind:value={difficulty} on:change={apply} class="input-base">
 						{#each DIFFICULTIES as d}<option value={d.v}>{d.l}</option>{/each}
 					</select>
 				</div>
 
 				<div>
-					<label for="max-time" class="mb-2 block text-sm font-medium text-foreground">Tiempo total</label>
+					<label for="max-time" class="mb-2 block text-sm font-medium text-foreground"
+						>Tiempo total</label
+					>
 					<select id="max-time" bind:value={maxTime} on:change={apply} class="input-base">
 						{#each TIMES as t}<option value={t.v}>{t.l}</option>{/each}
 					</select>

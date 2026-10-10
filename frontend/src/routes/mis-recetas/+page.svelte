@@ -2,7 +2,13 @@
 	import { apiFetch } from '$lib/api';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { IconEyeFilled as Public, IconEyeOff as Private, IconTrashFilled as Trash, IconEdit as Edit, IconRestore as Restore } from '@tabler/icons-svelte';
+	import {
+		IconEyeFilled as Public,
+		IconEyeOff as Private,
+		IconTrashFilled as Trash,
+		IconEdit as Edit,
+		IconRestore as Restore
+	} from '@tabler/icons-svelte';
 	import { auth } from '$lib/stores/auth';
 	import { formatNumber } from '$lib/utils';
 	import RecipeCard from '$components/recipe/RecipeCard.svelte';
@@ -37,8 +43,7 @@
 		loading = true;
 		error = '';
 		try {
-			const res = await apiFetch('/api/v1/users/me/recipes?limit=100&include_deleted=true', {
-				});
+			const res = await apiFetch('/api/v1/users/me/recipes?limit=100&include_deleted=true', {});
 			if (!res.ok) throw new Error(`API ${res.status}`);
 			items = (await res.json()).recipes ?? [];
 		} catch (err) {
@@ -51,7 +56,7 @@
 	async function toggleVisibility(r: RecipeItem) {
 		await apiFetch(`/api/v1/recipes/${r.slug}`, {
 			method: 'PATCH',
-			headers: { 'Content-Type': 'application/json'},
+			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ is_public: !r.is_public })
 		});
 		await load();
@@ -60,13 +65,15 @@
 	async function remove(r: RecipeItem) {
 		if (!confirm(`¿Eliminar la receta "${r.title}"?`)) return;
 		await apiFetch(`/api/v1/recipes/${r.slug}`, {
-			method: 'DELETE' });
+			method: 'DELETE'
+		});
 		await load();
 	}
 
 	async function restore(r: RecipeItem) {
 		await apiFetch(`/api/v1/recipes/${r.slug}/restore`, {
-			method: 'POST' });
+			method: 'POST'
+		});
 		await load();
 	}
 
@@ -87,7 +94,11 @@
 
 	<div class="mb-6 flex gap-2">
 		{#each [{ k: 'public', l: 'Publicadas' }, { k: 'private', l: 'Privadas' }, { k: 'deleted', l: 'Borradas' }] as t}
-			<button type="button" class="btn {tab === t.k ? 'btn-primary' : 'btn-outline'} btn-sm" on:click={() => (tab = t.k as typeof tab)}>
+			<button
+				type="button"
+				class="btn {tab === t.k ? 'btn-primary' : 'btn-outline'} btn-sm"
+				on:click={() => (tab = t.k as typeof tab)}
+			>
 				{t.l}
 			</button>
 		{/each}
@@ -106,22 +117,43 @@
 					<RecipeCard recipe={r as any} />
 					<div class="flex items-center justify-between gap-2 px-1">
 						<span class="inline-flex items-center gap-1 text-xs text-muted-foreground">
-							{#if r.deleted_at}Borrada{:else if r.is_public}<Public class="h-3.5 w-3.5" aria-hidden="true" /> Pública{:else}<Private class="h-3.5 w-3.5" aria-hidden="true" /> Privada{/if}
+							{#if r.deleted_at}Borrada{:else if r.is_public}<Public
+									class="h-3.5 w-3.5"
+									aria-hidden="true"
+								/> Pública{:else}<Private class="h-3.5 w-3.5" aria-hidden="true" /> Privada{/if}
 							· {formatNumber(r.avg_rating)}★ · {r.visit_count} visitas
 						</span>
 						<div class="flex gap-1">
 							{#if r.deleted_at}
-								<button type="button" class="btn btn-ghost btn-sm" on:click={() => restore(r)} title="Restaurar">
+								<button
+									type="button"
+									class="btn btn-ghost btn-sm"
+									on:click={() => restore(r)}
+									title="Restaurar"
+								>
 									<Restore class="h-4 w-4" aria-hidden="true" />
 								</button>
 							{:else}
 								<a href={`/recetas/${r.slug}/editar`} class="btn btn-ghost btn-sm" title="Editar">
 									<Edit class="h-4 w-4" aria-hidden="true" />
 								</a>
-								<button type="button" class="btn btn-ghost btn-sm" on:click={() => toggleVisibility(r)} title={r.is_public ? 'Hacer privada' : 'Publicar'}>
-									{#if r.is_public}<Private class="h-4 w-4" aria-hidden="true" />{:else}<Public class="h-4 w-4" aria-hidden="true" />{/if}
+								<button
+									type="button"
+									class="btn btn-ghost btn-sm"
+									on:click={() => toggleVisibility(r)}
+									title={r.is_public ? 'Hacer privada' : 'Publicar'}
+								>
+									{#if r.is_public}<Private class="h-4 w-4" aria-hidden="true" />{:else}<Public
+											class="h-4 w-4"
+											aria-hidden="true"
+										/>{/if}
 								</button>
-								<button type="button" class="btn btn-ghost btn-sm text-destructive" on:click={() => remove(r)} title="Eliminar">
+								<button
+									type="button"
+									class="btn btn-ghost btn-sm text-destructive"
+									on:click={() => remove(r)}
+									title="Eliminar"
+								>
 									<Trash class="h-4 w-4" aria-hidden="true" />
 								</button>
 							{/if}

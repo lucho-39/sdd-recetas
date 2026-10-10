@@ -14,17 +14,17 @@
 		<label for={id} class="label">{label}</label>
 	{/if}
 	<input
-		type={type}
-		id={id}
+		{type}
+		{id}
 		bind:value
-		placeholder={placeholder}
-		disabled={disabled}
-		required={required}
+		{placeholder}
+		{disabled}
+		{required}
 		class="input-base"
 		aria-invalid={!!error}
 		aria-describedby={error ? `${id}-error` : undefined}
 	/>
 	{#if error}
-		<p id={id}-error class="text-sm text-destructive" role="alert">{error}</p>
+		<p id="{id}-error" class="text-sm text-destructive" role="alert">{error}</p>
 	{/if}
 </div>

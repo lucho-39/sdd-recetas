@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { IconChefHatFilled as ChefHat, IconAlertCircleFilled as AlertCircle, IconLoader2 as Loader } from '@tabler/icons-svelte';
+	import {
+		IconChefHatFilled as ChefHat,
+		IconAlertCircleFilled as AlertCircle,
+		IconLoader2 as Loader
+	} from '@tabler/icons-svelte';
 	import { auth } from '$lib/stores/auth';
 
 	let email = '';
@@ -56,7 +60,10 @@
 		<div class="card p-6">
 			<form class="space-y-4" on:submit|preventDefault={handleSubmit}>
 				{#if error}
-					<div class="flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
+					<div
+						class="flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
+						role="alert"
+					>
 						<AlertCircle class="h-5 w-5 shrink-0" aria-hidden="true" />
 						<p>{error}</p>
 					</div>
@@ -64,19 +71,51 @@
 
 				<div>
 					<label for="display_name" class="label">Nombre</label>
-					<input id="display_name" type="text" bind:value={displayName} class="input-base" maxlength="100" required disabled={loading} />
+					<input
+						id="display_name"
+						type="text"
+						bind:value={displayName}
+						class="input-base"
+						maxlength="100"
+						required
+						disabled={loading}
+					/>
 				</div>
 				<div>
 					<label for="email" class="label">Email</label>
-					<input id="email" type="email" bind:value={email} class="input-base" autocomplete="email" required disabled={loading} />
+					<input
+						id="email"
+						type="email"
+						bind:value={email}
+						class="input-base"
+						autocomplete="email"
+						required
+						disabled={loading}
+					/>
 				</div>
 				<div>
 					<label for="password" class="label">Contraseña</label>
-					<input id="password" type="password" bind:value={password} class="input-base" autocomplete="new-password" required disabled={loading} />
+					<input
+						id="password"
+						type="password"
+						bind:value={password}
+						class="input-base"
+						autocomplete="new-password"
+						required
+						disabled={loading}
+					/>
 				</div>
 				<div>
 					<label for="confirm" class="label">Repetir contraseña</label>
-					<input id="confirm" type="password" bind:value={confirm} class="input-base" autocomplete="new-password" required disabled={loading} />
+					<input
+						id="confirm"
+						type="password"
+						bind:value={confirm}
+						class="input-base"
+						autocomplete="new-password"
+						required
+						disabled={loading}
+					/>
 				</div>
 
 				<button type="submit" class="btn btn-primary w-full" disabled={loading}>

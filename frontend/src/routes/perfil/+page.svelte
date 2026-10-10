@@ -1,7 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { IconDeviceFloppy as Save, IconLockFilled as Lock, IconAlertTriangleFilled as AlertTriangle, IconTrashFilled as Trash, IconCircleCheckFilled as Check } from '@tabler/icons-svelte';
+	import {
+		IconDeviceFloppy as Save,
+		IconLockFilled as Lock,
+		IconAlertTriangleFilled as AlertTriangle,
+		IconTrashFilled as Trash,
+		IconCircleCheckFilled as Check
+	} from '@tabler/icons-svelte';
 	import { auth } from '$lib/stores/auth';
 	import { apiFetch } from '$lib/api';
 	import { notifications } from '$lib/stores/notifications';
@@ -38,7 +44,9 @@
 
 	const memberSince = (created?: string) =>
 		created
-			? new Intl.DateTimeFormat('es-AR', { year: 'numeric', month: 'long' }).format(new Date(created))
+			? new Intl.DateTimeFormat('es-AR', { year: 'numeric', month: 'long' }).format(
+					new Date(created)
+				)
 			: '—';
 
 	async function loadMyRecipes() {
@@ -235,11 +243,17 @@
 		<section class="card mb-8 p-6">
 			<div class="flex flex-col gap-6 sm:flex-row sm:items-center">
 				<AuthorAvatar
-					author={{ id: $auth.user.id, display_name: $auth.user.display_name, avatar_url: $auth.user.avatar_url }}
+					author={{
+						id: $auth.user.id,
+						display_name: $auth.user.display_name,
+						avatar_url: $auth.user.avatar_url
+					}}
 					size="lg"
 				/>
 				<div class="flex-1">
-					<p class="text-sm text-muted-foreground">Miembro desde {memberSince($auth.user.created_at)}</p>
+					<p class="text-sm text-muted-foreground">
+						Miembro desde {memberSince($auth.user.created_at)}
+					</p>
 					<p class="text-xs text-muted-foreground">{$auth.user.email}</p>
 				</div>
 			</div>
@@ -247,20 +261,39 @@
 			<div class="mt-6 grid gap-4 sm:grid-cols-2">
 				<div>
 					<label for="display_name" class="label">Nombre</label>
-					<input id="display_name" type="text" bind:value={displayName} class="input-base" maxlength="100" />
+					<input
+						id="display_name"
+						type="text"
+						bind:value={displayName}
+						class="input-base"
+						maxlength="100"
+					/>
 				</div>
 				<div>
 					<label for="avatar_url" class="label">URL de avatar</label>
-					<input id="avatar_url" type="url" bind:value={avatarUrl} class="input-base" placeholder="https://…" />
+					<input
+						id="avatar_url"
+						type="url"
+						bind:value={avatarUrl}
+						class="input-base"
+						placeholder="https://…"
+					/>
 				</div>
 			</div>
 
 			<div class="mt-4 flex items-center gap-3">
-				<button type="button" class="btn btn-primary btn-sm" on:click={saveProfile} disabled={savingProfile}>
+				<button
+					type="button"
+					class="btn btn-primary btn-sm"
+					on:click={saveProfile}
+					disabled={savingProfile}
+				>
 					<Save class="h-4 w-4" aria-hidden="true" /> Guardar cambios
 				</button>
 				{#if profileMessage}
-					<span class="inline-flex items-center gap-1 text-sm text-success"><Check class="h-4 w-4" aria-hidden="true" />{profileMessage}</span>
+					<span class="inline-flex items-center gap-1 text-sm text-success"
+						><Check class="h-4 w-4" aria-hidden="true" />{profileMessage}</span
+					>
 				{/if}
 				{#if profileError}
 					<span class="text-sm text-destructive" role="alert">{profileError}</span>
@@ -283,7 +316,9 @@
 
 		<!-- Notifications -->
 		<section class="card mb-8 p-6" aria-labelledby="notifications-heading">
-			<h2 id="notifications-heading" class="mb-1 text-xl font-medium text-foreground">Notificaciones</h2>
+			<h2 id="notifications-heading" class="mb-1 text-xl font-medium text-foreground">
+				Notificaciones
+			</h2>
 			<p class="mb-4 text-sm text-muted-foreground">Elegí qué querés recibir y por qué canal.</p>
 
 			{#if prefsError}<p class="mb-3 text-sm text-destructive" role="alert">{prefsError}</p>{/if}
@@ -293,11 +328,23 @@
 				<legend class="mb-2 text-sm font-medium text-foreground">Eventos</legend>
 				<div class="space-y-2">
 					<label class="flex items-center gap-2 text-sm">
-						<input type="checkbox" class="h-4 w-4" checked={prefs.favorites_enabled} disabled={savingPrefs} on:change={(e) => updatePref('favorites_enabled', e.currentTarget.checked)} />
+						<input
+							type="checkbox"
+							class="h-4 w-4"
+							checked={prefs.favorites_enabled}
+							disabled={savingPrefs}
+							on:change={(e) => updatePref('favorites_enabled', e.currentTarget.checked)}
+						/>
 						Cuando guardan mis recetas
 					</label>
 					<label class="flex items-center gap-2 text-sm">
-						<input type="checkbox" class="h-4 w-4" checked={prefs.ratings_enabled} disabled={savingPrefs} on:change={(e) => updatePref('ratings_enabled', e.currentTarget.checked)} />
+						<input
+							type="checkbox"
+							class="h-4 w-4"
+							checked={prefs.ratings_enabled}
+							disabled={savingPrefs}
+							on:change={(e) => updatePref('ratings_enabled', e.currentTarget.checked)}
+						/>
 						Cuando califican mis recetas
 					</label>
 				</div>
@@ -307,27 +354,54 @@
 				<legend class="mb-2 text-sm font-medium text-foreground">Canales</legend>
 				<div class="space-y-2">
 					<label class="flex items-center gap-2 text-sm">
-						<input type="checkbox" class="h-4 w-4" checked={prefs.in_app_enabled} disabled={savingPrefs} on:change={(e) => updatePref('in_app_enabled', e.currentTarget.checked)} />
+						<input
+							type="checkbox"
+							class="h-4 w-4"
+							checked={prefs.in_app_enabled}
+							disabled={savingPrefs}
+							on:change={(e) => updatePref('in_app_enabled', e.currentTarget.checked)}
+						/>
 						En la app (campanita)
 					</label>
 					<label class="flex items-center gap-2 text-sm">
-						<input type="checkbox" class="h-4 w-4" checked={prefs.email_enabled} disabled={savingPrefs} on:change={(e) => updatePref('email_enabled', e.currentTarget.checked)} />
+						<input
+							type="checkbox"
+							class="h-4 w-4"
+							checked={prefs.email_enabled}
+							disabled={savingPrefs}
+							on:change={(e) => updatePref('email_enabled', e.currentTarget.checked)}
+						/>
 						Email
 					</label>
 					<div class="flex flex-wrap items-center gap-3">
 						<label class="flex items-center gap-2 text-sm">
-							<input type="checkbox" class="h-4 w-4" checked={prefs.push_enabled} disabled={savingPrefs} on:change={(e) => togglePush(e.currentTarget.checked)} />
+							<input
+								type="checkbox"
+								class="h-4 w-4"
+								checked={prefs.push_enabled}
+								disabled={savingPrefs}
+								on:change={(e) => togglePush(e.currentTarget.checked)}
+							/>
 							Notificaciones del navegador
 						</label>
 						{#if pushPermission !== 'granted'}
-							<button type="button" class="btn btn-outline btn-sm" on:click={enablePush} disabled={savingPrefs}>Activar</button>
+							<button
+								type="button"
+								class="btn btn-outline btn-sm"
+								on:click={enablePush}
+								disabled={savingPrefs}>Activar</button
+							>
 						{:else}
 							<span class="text-xs text-muted-foreground">Permiso concedido</span>
-							<button type="button" class="btn btn-outline btn-sm" on:click={sendTestPush}>Probar</button>
+							<button type="button" class="btn btn-outline btn-sm" on:click={sendTestPush}
+								>Probar</button
+							>
 						{/if}
 					</div>
 					{#if pushPermission === 'denied'}
-						<p class="text-xs text-destructive">Bloqueaste las notificaciones; habilitalas en la configuración del sitio.</p>
+						<p class="text-xs text-destructive">
+							Bloqueaste las notificaciones; habilitalas en la configuración del sitio.
+						</p>
 					{/if}
 				</div>
 			</fieldset>
@@ -339,17 +413,38 @@
 
 			<div class="space-y-4">
 				<div>
-					<h3 class="mb-2 flex items-center gap-2 text-sm font-medium text-foreground"><Lock class="h-4 w-4" aria-hidden="true" /> Cambiar contraseña</h3>
+					<h3 class="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
+						<Lock class="h-4 w-4" aria-hidden="true" /> Cambiar contraseña
+					</h3>
 					<div class="grid gap-3 sm:grid-cols-2">
-						<input type="password" bind:value={currentPassword} class="input-base" placeholder="Contraseña actual" autocomplete="current-password" />
-						<input type="password" bind:value={newPassword} class="input-base" placeholder="Nueva contraseña" autocomplete="new-password" />
+						<input
+							type="password"
+							bind:value={currentPassword}
+							class="input-base"
+							placeholder="Contraseña actual"
+							autocomplete="current-password"
+						/>
+						<input
+							type="password"
+							bind:value={newPassword}
+							class="input-base"
+							placeholder="Nueva contraseña"
+							autocomplete="new-password"
+						/>
 					</div>
 					<div class="mt-3 flex items-center gap-3">
-						<button type="button" class="btn btn-outline btn-sm" on:click={changePassword} disabled={changingPassword || !currentPassword || newPassword.length < 8}>
+						<button
+							type="button"
+							class="btn btn-outline btn-sm"
+							on:click={changePassword}
+							disabled={changingPassword || !currentPassword || newPassword.length < 8}
+						>
 							Actualizar contraseña
 						</button>
 						{#if passwordMessage}<span class="text-sm text-success">{passwordMessage}</span>{/if}
-						{#if passwordError}<span class="text-sm text-destructive" role="alert">{passwordError}</span>{/if}
+						{#if passwordError}<span class="text-sm text-destructive" role="alert"
+								>{passwordError}</span
+							>{/if}
 					</div>
 				</div>
 
@@ -358,11 +453,24 @@
 				<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 					<div class="flex items-start gap-2 text-sm text-muted-foreground">
 						<AlertTriangle class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-						<p>La baja es reversible por soporte; la eliminación anonimiza tus datos de forma permanente.</p>
+						<p>
+							La baja es reversible por soporte; la eliminación anonimiza tus datos de forma
+							permanente.
+						</p>
 					</div>
 					<div class="flex gap-2">
-						<button type="button" class="btn btn-outline btn-sm" on:click={deactivateAccount} disabled={accountBusy}>Darme de baja</button>
-						<button type="button" class="btn btn-destructive btn-sm" on:click={deleteAccount} disabled={accountBusy}>
+						<button
+							type="button"
+							class="btn btn-outline btn-sm"
+							on:click={deactivateAccount}
+							disabled={accountBusy}>Darme de baja</button
+						>
+						<button
+							type="button"
+							class="btn btn-destructive btn-sm"
+							on:click={deleteAccount}
+							disabled={accountBusy}
+						>
 							<Trash class="h-4 w-4" aria-hidden="true" /> Eliminar cuenta
 						</button>
 					</div>

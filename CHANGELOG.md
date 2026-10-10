@@ -88,6 +88,12 @@ El proyecto está en fase **MVP (0.x)**.
 - Frontends en modo **build + preview** (sin HMR en contenedor).
 - **`pnpm run check` (svelte-check) habilitado** en el frontend: el typecheck era inexistente
   en la práctica y fue lo que destapó los bugs de la Fase 0 y de la Fase 2.
+- **`pnpm run lint` por fin ejecutable**: faltaban `.prettierrc` y `eslint.*` (los plugins ya
+  estaban en `devDependencies`), así que el script fallaba antes de analizar nada. Se agregó
+  `eslint.config.js` (flat config, con el parser de TypeScript enganchado a los `.svelte`),
+  `.prettierrc.json`, `.prettierignore` y se limpiaron los 17 errores que reportó —entre ellos
+  los menús con `role="menu"` sin foco ni teclado (AvatarDropdown, NotificationBell) y varias
+  piezas de código muerto. El barrido de formato propio de prettier va en un commit aparte.
 
 ### CI
 - `.github/workflows/ci.yml`: job de backend (Postgres + `uv sync` + `pytest`, incluida la suite) y

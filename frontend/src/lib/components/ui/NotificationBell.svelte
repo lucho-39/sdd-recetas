@@ -58,7 +58,9 @@
 	>
 		<Bell class="h-5 w-5" aria-hidden="true" />
 		{#if unread > 0}
-			<span class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-white">
+			<span
+				class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-white"
+			>
 				{badge}
 			</span>
 		{/if}
@@ -77,11 +79,19 @@
 				{#if $notifications.items.length > 0}
 					<div class="flex gap-2 text-xs">
 						{#if unread > 0}
-							<button type="button" class="text-primary hover:underline" on:click={() => notifications.markAllRead()}>
+							<button
+								type="button"
+								class="text-primary hover:underline"
+								on:click={() => notifications.markAllRead()}
+							>
 								Marcar leídas
 							</button>
 						{/if}
-						<button type="button" class="text-destructive hover:underline" on:click={() => notifications.removeAll()}>
+						<button
+							type="button"
+							class="text-destructive hover:underline"
+							on:click={() => notifications.removeAll()}
+						>
 							Borrar todas
 						</button>
 					</div>
@@ -95,7 +105,9 @@
 			{:else}
 				<ul class="max-h-96 overflow-y-auto">
 					{#each $notifications.items as notification (notification.id)}
-						<li class="group flex items-start gap-3 border-b border-border/60 px-3 py-3 hover:bg-accent/50">
+						<li
+							class="group flex items-start gap-3 border-b border-border/60 px-3 py-3 hover:bg-accent/50"
+						>
 							<button
 								type="button"
 								class="flex flex-1 items-start gap-3 text-left"
@@ -104,17 +116,25 @@
 								{#if notification.actor}
 									<AuthorAvatar author={notification.actor} size="xs" />
 								{:else}
-									<span class="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs" aria-hidden="true">🍳</span>
+									<span
+										class="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs"
+										aria-hidden="true">🍳</span
+									>
 								{/if}
 								<span class="min-w-0 flex-1">
 									<span class="block text-sm text-foreground">{describe(notification)}</span>
 									{#if notification.recipe_title}
-										<span class="block truncate text-xs text-muted-foreground">{notification.recipe_title}</span>
+										<span class="block truncate text-xs text-muted-foreground"
+											>{notification.recipe_title}</span
+										>
 									{/if}
-									<span class="block text-xs text-muted-foreground">{timeAgo(notification.created_at)}</span>
+									<span class="block text-xs text-muted-foreground"
+										>{timeAgo(notification.created_at)}</span
+									>
 								</span>
 								{#if !notification.is_read}
-									<span class="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" title="Sin leer"></span>
+									<span class="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" title="Sin leer"
+									></span>
 								{/if}
 							</button>
 							<button

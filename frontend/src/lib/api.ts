@@ -20,7 +20,7 @@ export function refreshAccessToken(): Promise<string | null> {
 			try {
 				const res = await fetch('/api/v1/auth/refresh', {
 					method: 'POST',
-					credentials: 'include',
+					credentials: 'include'
 				});
 				if (!res.ok) return null;
 				const data = await res.json();
