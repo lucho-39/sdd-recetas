@@ -97,62 +97,66 @@ Campos clave:
 **Request**:
 ```json
 {
-  "password": "password_actual",  // confirmación de identidad
-  "delete_recipes": false         // true = soft delete recetas + transferir a system user
+  "delete_recipes": false   // true = soft delete de las recetas del autor
 }
 ```
+**Comportamiento**: fija `is_active=false` y `deactivated_at`, revoca todos los refresh tokens y
+elimina la cookie. **No anonimiza nada** (`display_name`, avatar y email quedan intactos, porque
+la baja es reversible) y **no transfiere la autoría** de las recetas: si `delete_recipes=true`
+cada receta recibe `deleted_at` + `is_public=false` y sigue apuntando al autor original.
+
 **Happy Path (200)**:
 ```json
-{
-  "message": "Cuenta desactivada. Tus recetas y datos se conservan para que puedas reactivar tu cuenta en el futuro.",
-  "deactivated_at": "2026-09-05T10:30:00Z",
-  "recipes_affected": 0
-}
+{ "deactivated": true, "recipes_deleted": 0 }
 ```
-**Bad Path (400/401/403)**:
-- 401: "Contraseña incorrecta"
-- 403: "Cuenta ya desactivada"
-- 400: "Parámetros inválidos"
+**Bad Path (400/401/422)**:
+- 400: "Inactive user" — la baja se intenta con una cuenta ya desactivada
+- 401: token de acceso ausente o inválido
+- 422: cuerpo inválido
+
+**Sin implementar (brecha de seguridad)**: la doc original pedía `password` como confirmación de
+identidad antes de bajar la cuenta. Hoy basta con una sesión válida, así que una sesión robada
+puede destruir la cuenta. Queda pendiente; ver `user-stories.md` US-06.
 
 ### POST `/auth/reactivate` — Reactivación
-**Request**:
-```json
-{
-  "display_name": "Mi Nombre Nuevo",  // obligatorio, el anterior se anonimizó
-  "avatar_url": "https://..."         // opcional
-}
-```
-**Happy Path (200)**:
-```json
-{
-  "message": "Cuenta reactivada exitosamente. Bienvenido de nuevo.",
-  "user": { "id": "...", "email": "...", "display_name": "Mi Nombre Nuevo", "is_active": true }
-}
-```
-**Bad Path (400/403/404)**:
-- 403: "Cuenta no está desactivada"
-- 404: "Usuario no encontrado"
-- 400: "display_name requerido"
+**No existe como endpoint self-service.** Sólo hay reactivación **por admin**:
+`POST /api/admin/users/{id}/reactivate` (requiere rol admin, registra auditoría). Fija
+`is_active=true` y `deactivated_at=NULL`; como la baja nunca anonimizó nada, no hay nada que
+restaurar — `display_name`, avatar y recetas quedan tal cual estaban.
+**[v2]**: auto-reactivación por el propio usuario (password o magic link).
 
 ### POST `/auth/delete-account` — Eliminación GDPR
 **Request**:
 ```json
-{
-  "password": "password_actual",
-  "confirmation": "ELIMINAR MI CUENTA"  // confirmación expresa
-}
+{ "confirm": true }
 ```
+**Comportamiento**: anonimiza la propia fila de forma irreversible —
+`email → deleted+<id>@recetario.local`, `display_name → "Usuario eliminado"`, `avatar_url → NULL`,
+`password_hash` → valor aleatorio (las credenciales dejan de servir), `is_active=false`,
+`is_verified=false`, `deleted_at` seteado. Sus recetas pasan a soft delete y **conservan
+`author_id`**: al mostrarlas, el join resuelve "Usuario eliminado" gracias a la anonimización.
+Favoritos, visitas, calificaciones y tags **no se modifican** (apuntan a una fila ya anónima).
+Revoca los refresh tokens y elimina la cookie.
+
 **Happy Path (200)**:
 ```json
-{
-  "message": "Cuenta eliminada definitivamente. Tus recetas pasaron a 'Usuario eliminado' y ya no pueden asociarse a ti.",
-  "deleted_at": "2026-09-05T10:30:00Z"
-}
+{ "deleted": true, "recipes_deleted": 0 }
 ```
-**Bad Path (400/401/403)**:
-- 401: "Contraseña incorrecta"
-- 403: "Confirmación requerida: escribe exactamente 'ELIMINAR MI CUENTA'"
-- 400: "Parámetros inválidos"
+**Bad Path (400/401/422)**:
+- 400: "Confirmation required" — `confirm` en `false`
+- 400: "Inactive user"
+- 401: token de acceso ausente o inválido
+- 422: cuerpo inválido
+
+**Sin implementar (brecha de seguridad)**: la doc original pedía `password` más la frase exacta
+`"ELIMINAR MI CUENTA"` (403 si no coincidía). Hoy basta con `{"confirm": true}`. Queda pendiente;
+ver `user-stories.md` US-08.
+
+> **Nota sobre el diseño**: la versión anterior de este documento describía un usuario **"system"**
+> al que se transfería `author_id`, y el nullado de `favorites`/`visits`/`ratings`. Eso se descartó:
+> anonimizar in place ya produce "Usuario eliminado" en la UI con cero reasignación de claves
+> foráneas, y nullarlas sería destrucción de datos sin beneficio de privacidad (el email de la
+> fila ya es aleatorio y no identifica a nadie).
 
 ## Happy Path / Bad Path — Login
 

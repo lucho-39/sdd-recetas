@@ -41,35 +41,52 @@
 
 ### US-06: Desactivar cuenta (baja lógica)
 **Como** usuario, **quiero** desactivar mi cuenta temporalmente **para** irme pero poder volver.
-- **AC1**: Requiere password actual para confirmar identidad
-- **AC2**: Opción "Eliminar mis recetas también" (checkbox, default false)
-  - Si false: recetas mantienen autoría original, se muestran como "Usuario eliminado" en UI
-  - Si true: recetas → soft delete + author_id → system user
-- **AC3**: Favoritos, visitas, calificaciones SE MANTIENEN (user_id intacto para reactivación)
-- **AC4**: PII anonimizada en UI: display_name → "Usuario eliminado", avatar → NULL
-- **AC5**: Email reservado en BD (no se puede registrar nuevo con mismo email)
-- **AC6**: No puede loguear mientras desactivado; middleware bloquea con mensaje claro
-- **AC7**: Refresh tokens revocados; sesión terminada
+- **AC1**: Opción "Eliminar mis recetas también" (`delete_recipes`, default `false`)
+  - Si `false`: las recetas conservan autoría y siguen publicables.
+  - Si `true`: cada receta pasa a soft delete (`deleted_at` + `is_public=false`) y **sigue
+    apuntando al autor original**.
+- **AC2**: La baja **no anonimiza nada**: `display_name`, avatar y email quedan intactos en BD.
+  Es deliberado — la baja es reversible, y anonimizar en este punto haría imposible restaurar el
+  estado original del usuario.
+- **AC3**: Favoritos, visitas y calificaciones no se tocan (`user_id` intacto).
+- **AC4**: El email sigue ocupado en la tabla `users`, por lo que no se puede registrar otra
+  cuenta con el mismo.
+- **AC5**: No puede iniciar sesión: `POST /auth/login` responde **403 "Account is deactivated"**.
+- **AC6**: Se revocan todos los refresh tokens y se elimina la cookie de refresh; la sesión
+  queda invalidada.
 - **Ref**: RB-AUTH-08
+- **Sin implementar (brecha de seguridad)**: re-autenticación con la contraseña actual antes de
+  confirmar la baja. Hoy basta con tener una sesión válida. Ver `authentication.md`.
 
 ### US-07: Reactivar cuenta
 **Como** usuario que se desactivó, **quiero** reactivar mi cuenta **para** recuperar mis recetas y datos.
-- **AC1**: Verificación de identidad (password actual O magic link por email)
-- **AC2**: Requiere nuevo display_name (el anterior se perdió en anonimización)
-- **AC3**: `is_active=true`, `deactivated_at=NULL`, display_name restaurado
-- **AC4**: Recetas, favoritos, visitas, ratings se "reconectan" automáticamente (FKs intactos)
-- **AC5**: Si había elegido "eliminar recetas" en baja → esas recetas ya no se recuperan (están en system user)
+
+**Estado**: sólo reactivación **por admin** — `POST /api/admin/users/{id}/reactivate`, con registro
+de auditoría. Fija `is_active=true` y `deactivated_at=NULL`. Como la baja nunca anonimizó nada,
+no hay nada que restaurar: `display_name`, avatar y recetas quedan tal cual estaban.
+**[v2]**: auto-reactivación por el propio usuario (password o magic link) — `POST /auth/reactivate`
+**no existe** en el backend.
+
 - **Ref**: RB-AUTH-09
 
 ### US-08: Eliminar cuenta definitivamente (GDPR)
 **Como** usuario, **quiero** borrar mi cuenta irrevocablemente **para** ejercer mi derecho al olvido.
-- **AC1**: Requiere password actual + confirmación expresa ("ELIMINAR MI CUENTA")
-- **AC2**: Anonimización irreversible: email → `deleted_<uuid>@deleted.local`, PII borrada
-- **AC3**: Recetas → author_id → system user ("Usuario eliminado")
-- **AC4**: Favoritos/Visitas/Calificaciones → user_id → NULL (pierden trazabilidad)
-- **AC5**: Tags creados → created_by → NULL
-- **AC6**: No hay vuelta atrás; no se puede reactivar
+- **AC1**: Confirmación expresa mediante `{"confirm": true}`; sin ella la API responde **400
+  "Confirmation required"**.
+- **AC2**: Anonimización irreversible sobre la propia fila: `email → deleted+<id>@recetario.local`,
+  `display_name → "Usuario eliminado"`, `avatar_url → NULL`, `password_hash` → valor aleatorio
+  (las credenciales dejan de servir), `is_active=false`, `is_verified=false`, `deleted_at` seteado.
+- **AC3**: Sus recetas pasan a soft delete (`deleted_at` + `is_public=false`) y **conservan
+  `author_id`**: al mostrarlas, el join resuelve "Usuario eliminado" porque el `display_name`
+  de la fila ya fue anonimizado.
+- **AC4**: Favoritos, visitas, calificaciones y tags **no se modifican**. Apuntan a una fila ya
+  anonimizada (email aleatorio), que no identifica a nadie — el requisito de privacidad se cumple
+  sin destruir datos.
+- **AC5**: Se revocan los refresh tokens y se elimina la cookie; **no hay vuelta atrás** (no
+  existe endpoint de recuperación).
 - **Ref**: RB-AUTH-10
+- **Sin implementar**: re-autenticación con `password` + frase exacta `"ELIMINAR MI CUENTA"`,
+  y transferencia de `author_id` a un usuario "system". Ver `authentication.md`.
 
 ---
 

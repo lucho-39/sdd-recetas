@@ -184,14 +184,45 @@ enlace. El envío usa SMTP si está configurado (si no, `email_outbox`).
 **Estado**: **Implementado** — `POST /auth/forgot-password` (email vía SMTP/outbox, sin filtrar existencia) y `POST /auth/reset-password` (valida token y cambia la contraseña).
 
 ## RB-AUTH-08: Baja lógica de usuario (Soft Delete)
-**Descripción**: Usuario se desactiva (`is_active=false`), no se borra físicamente.
-**Estado**: **Implementado** — `POST /auth/deactivate` (propia cuenta, opcional borrar recetas) y desactivación por admin.
+**Descripción**: Usuario se desactiva (`is_active=false` + `deactivated_at`), no se borra físicamente.
+**Reglas**:
+- Sólo afecta a la propia cuenta (`POST /auth/deactivate`) o por admin.
+- **No anonimiza**: `display_name`, avatar y email se conservan, porque la baja es reversible.
+- Si `delete_recipes=true`, cada receta del autor recibe `deleted_at` + `is_public=false`;
+  **`author_id` no cambia**.
+- Se revocan los refresh tokens y se elimina la cookie.
+- La baja no hace nada si la cuenta ya está inactiva: `get_current_active_user` responde 400.
+**Sin implementar (brecha de seguridad)**: re-autenticación con la contraseña actual antes de bajar la cuenta.
+**Estado**: Implementado.
 
 ## RB-AUTH-09: Reactivación de usuario
-**Estado**: **Implementado por admin** (`POST /api/admin/users/{id}/reactivate`). La auto-reactivación por magic link queda **[v2]**.
+**Descripción**: Volver a poner `is_active=true` y limpiar `deactivated_at`.
+**Reglas**:
+- **Sólo por admin**: `POST /api/admin/users/{id}/reactivate`, con registro de auditoría.
+- Al no haber anonimización en la baja, no hay nada que restaurar: el perfil y las recetas
+  quedan tal cual estaban.
+**Sin implementar [v2]**: auto-reactivación por el propio usuario (`POST /auth/reactivate` no
+existe).
+**Estado**: Implementado por admin.
 
 ## RB-AUTH-10: Eliminación definitiva (GDPR)
-**Estado**: **Implementado** — `POST /auth/delete-account` (anonimiza PII y da de baja las recetas) y `POST /api/admin/users/{id}/gdpr-erase`.
+**Descripción**: Anonimización irreversible de la cuenta; no hay vuelta atrás.
+**Reglas**:
+- Anonimiza **sobre la propia fila**: `email → deleted+<id>@recetario.local`,
+  `display_name → "Usuario eliminado"`, `avatar_url → NULL`, `password_hash` → aleatorio,
+  `is_active=false`, `is_verified=false`, `deleted_at`.
+- Sus recetas pasan a soft delete y **conservan `author_id`**; el join resuelve
+  "Usuario eliminado" gracias a la anonimización del perfil.
+- Favoritos, visitas, calificaciones y tags **no se tocan**: apuntan a una fila ya anónima.
+- Confirmación explícita: `{"confirm": true}`; sin ella responde 400 "Confirmation required".
+- Vía admin equivalente: `POST /api/admin/users/{id}/gdpr-erase` (además registra auditoría y
+  acepta `delete_recipes`).
+**Descartado**: transferir `author_id` a un usuario "system" y nullar las claves foráneas de
+favoritos/visitas/calificaciones — anonimizar in place ya logra el objetivo visible, y nullarlas
+destruye datos sin ganancia de privacidad.
+**Sin implementar (brecha de seguridad)**: re-autenticación con contraseña + frase exacta
+`"ELIMINAR MI CUENTA"`.
+**Estado**: Implementado.
 
 ## RB-AUTH-11: Último login tracking
 **Descripción**: `last_login_at` se actualiza en cada login exitoso.

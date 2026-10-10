@@ -205,6 +205,25 @@ El proyecto está en fase **MVP (0.x)**.
 - 404 de `/register` y de las rutas del menú (`/mis-recetas`, `/mis-favoritos`).
 
 ### Docs
+- **Reescritura de la documentación de baja y eliminación de cuenta** para que describa el sistema
+  real. La versión anterior pedía `password` en `/auth/deactivate` y `/auth/delete-account`, la
+  frase exacta `"ELIMINAR MI CUENTA"`, un usuario **"system"** al que se transfería `author_id` y
+  el nullado de favoritos/visitas/calificaciones. El código nunca hizo nada de eso — y la doc se
+  contradecía a sí misma (US-06 AC4 anonimizaba `display_name` al desactivar, US-07 AC2 decía que
+  el original se había perdido y US-07 AC3 decía que se restauraba).
+  - `user-stories.md`: US-06, US-07 y US-08 reescriben sus criterios según el comportamiento
+    observable; US-07 queda aclarada como reactivación **sólo por admin** (`/auth/reactivate`
+    self-service no existe).
+  - `authentication.md`: contratos corregidos — `{"delete_recipes": false}` y `{"confirm": true}`
+    como requests, respuestas reales (`{"deactivated"|"deleted", "recipes_deleted"}`) y bad paths
+    verificados (400 "Inactive user" vía `get_current_active_user`, 422 por Pydantic).
+  - `business-rules.md`: RB-AUTH-08/09/10 con las reglas efectivas y la decisión de **descartar**
+    el usuario "system" (anonimizar in place ya produce "Usuario eliminado" en la UI; nullar las
+    claves foráneas sería destrucción de datos sin ganancia de privacidad, porque el email de la
+    fila ya es aleatorio).
+  - La re-autenticación con contraseña antes de destruir la cuenta queda marcada explícitamente
+    como **brecha de seguridad** en los tres archivos, en vez de figurar como requisito cumplido.
+  Motivo (ADR-000): un doc que se refuta a sí mismo no puede mandar sobre el código.
 - `user-stories.md`: **US-03 (OAuth), US-08 (baja/eliminación), US-37 (IA) y US-38 (modo cocina)**
   figuraban como *Won't / [v2]* pero ya estaban implementadas y cubiertas por la suite; se movieron
   a Must para que la priorización describa el producto real (total 38 Must + 1 Should, ninguna
