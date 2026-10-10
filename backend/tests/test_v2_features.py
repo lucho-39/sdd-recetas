@@ -96,6 +96,39 @@ async def test_refresh_rotation_and_reuse_detection(
     assert after.status_code == 401
 
 
+async def test_refresh_token_is_rejected_as_access_token(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """A 30-day refresh JWT must never authenticate a normal API call."""
+    await create_user(db_session, email="typecheck@example.com")
+
+    login = await client.post(
+        "/api/v1/auth/login",
+        data={"username": "typecheck@example.com", "password": TEST_PASSWORD},
+    )
+    refresh_token = login.cookies.get("refresh_token")
+    assert refresh_token
+
+    me = await client.get(
+        "/api/v1/auth/me", headers={"Authorization": f"Bearer {refresh_token}"}
+    )
+    assert me.status_code == 401
+
+    patch = await client.patch(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {refresh_token}"},
+        json={"display_name": "Hijacked"},
+    )
+    assert patch.status_code == 401
+
+    # The real access token still works, so the endpoint is not simply broken.
+    ok = await client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {login.json()['access_token']}"},
+    )
+    assert ok.status_code == 200
+
+
 async def test_oauth_unknown_provider(client: AsyncClient) -> None:
     response = await client.get("/api/v1/auth/oauth/facebook", follow_redirects=False)
     assert response.status_code == 404

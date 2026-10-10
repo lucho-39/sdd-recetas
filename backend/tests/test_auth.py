@@ -3,6 +3,7 @@ from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.v1.endpoints.auth import create_admin_user
 from app.core.config import get_settings
 from app.models import User, UserRole
 
@@ -196,12 +197,17 @@ async def test_bootstrap_admin_creates_admin_and_is_idempotent(
 ) -> None:
     settings = get_settings()
 
-    first = await client.post("/api/v1/auth/bootstrap-admin")
-    assert first.status_code == 201
+    # The bootstrap runs in the app lifespan; there is no public endpoint for
+    # it on purpose (recreating the admin must not be triggerable).
+    gone = await client.post("/api/v1/auth/bootstrap-admin")
+    assert gone.status_code in (404, 405)
 
-    # Idempotent: running again must not fail or duplicate the admin.
-    second = await client.post("/api/v1/auth/bootstrap-admin")
-    assert second.status_code == 201
+    first = await create_admin_user(db_session)
+    assert first is None
+
+    # Idempotent: running again must not fail, duplicate or reset the password.
+    second = await create_admin_user(db_session)
+    assert second is None
 
     result = await db_session.execute(
         select(User).where(User.email == settings.ADMIN_INITIAL_USER)

@@ -14,7 +14,7 @@ def _recipe_payload(category: Category, **overrides: object) -> dict:
         "description": "Clásica pizza casera",
         "category_id": str(category.id),
         "instructions": "Preparar la masa, agregar queso y hornear.",
-        "ingredients": [{"ingredient_id": "tomate", "quantity": 1, "unit": "unidad"}],
+        "ingredients": [],
         "is_public": True,
     }
     payload.update(overrides)
@@ -418,3 +418,120 @@ async def test_get_recipe_includes_my_rating(
 
     anonymous = await client.get(f"/api/v1/recipes/{recipe.slug}")
     assert anonymous.json()["my_rating"] is None
+
+
+async def test_private_recipe_is_hidden_from_slug_guessed_urls(
+    client: AsyncClient, db_session: AsyncSession, user: User, category: Category
+) -> None:
+    """RB-09: a private recipe must not be readable by anonymous visitors."""
+    private = await create_recipe(
+        db_session,
+        author=user,
+        category=category,
+        title="Cuaderno secreto",
+        slug="cuaderno-secreto",
+        is_public=False,
+    )
+
+    anonymous = await client.get(f"/api/v1/recipes/{private.slug}")
+    assert anonymous.status_code == 404
+
+    from conftest import create_user
+
+    stranger = await create_user(db_session, email="nosoy@delautor.test")
+    stranger_headers = {
+        "Authorization": f"Bearer {await _login(client, stranger.email)}"
+    }
+    assert (
+        await client.get(f"/api/v1/recipes/{private.slug}", headers=stranger_headers)
+    ).status_code == 404
+
+    author_headers = {
+        "Authorization": f"Bearer {await _login(client, user.email)}"
+    }
+    assert (
+        await client.get(f"/api/v1/recipes/{private.slug}", headers=author_headers)
+    ).status_code == 200
+
+
+async def _login(client: AsyncClient, email: str) -> str:
+    from conftest import TEST_PASSWORD
+
+    res = await client.post(
+        "/api/v1/auth/login", data={"username": email, "password": TEST_PASSWORD}
+    )
+    return res.json()["access_token"]
+
+
+async def test_create_recipe_rejects_ingredient_out_of_catalog(
+    client: AsyncClient, category: Category, auth_headers: dict
+) -> None:
+    """RF-12.6: ingredients must reference an existing, active catalog entry."""
+    payload = _recipe_payload(
+        category,
+        ingredients=[
+            {"ingredient_id": "00000000-0000-0000-0000-000000000000", "name": "Inventado"}
+        ],
+    )
+    response = await client.post("/api/v1/recipes", json=payload, headers=auth_headers)
+    assert response.status_code == 400
+    assert "Inventado" in response.json()["detail"]
+
+
+async def test_create_recipe_rejects_unknown_unit(
+    client: AsyncClient, category: Category, auth_headers: dict
+) -> None:
+    """RB-ING-02: units must come from the allowed whitelist."""
+    payload = _recipe_payload(
+        category,
+        ingredients=[{"name": "Tomate", "amount": 1, "unit": "cucharadones"}],
+    )
+    response = await client.post("/api/v1/recipes", json=payload, headers=auth_headers)
+    assert response.status_code == 422
+
+
+async def test_create_recipe_rejects_non_positive_amount(
+    client: AsyncClient, category: Category, auth_headers: dict
+) -> None:
+    payload = _recipe_payload(
+        category,
+        ingredients=[{"name": "Tomate", "amount": -3, "unit": "unidad"}],
+    )
+    response = await client.post("/api/v1/recipes", json=payload, headers=auth_headers)
+    assert response.status_code == 422
+
+
+async def test_create_recipe_accepts_catalog_ingredient(
+    client: AsyncClient, db_session: AsyncSession, category: Category, auth_headers: dict
+) -> None:
+    from conftest import create_ingredient
+
+    ingredient = await create_ingredient(db_session, slug="tomate", name="Tomate")
+    payload = _recipe_payload(
+        category,
+        ingredients=[
+            {
+                "ingredient_id": str(ingredient.id),
+                "name": "Tomate",
+                "amount": 2,
+                "unit": "unidad",
+            }
+        ],
+    )
+    response = await client.post("/api/v1/recipes", json=payload, headers=auth_headers)
+    assert response.status_code == 201
+    body = response.json()
+    assert body["ingredients"][0]["ingredient_id"] == str(ingredient.id)
+    assert body["ingredients"][0]["name"] == "Tomate"
+
+
+async def test_create_recipe_rejects_duplicated_ingredient(
+    client: AsyncClient, db_session: AsyncSession, category: Category, auth_headers: dict
+) -> None:
+    from conftest import create_ingredient
+
+    ingredient = await create_ingredient(db_session, slug="tomate", name="Tomate")
+    entry = {"ingredient_id": str(ingredient.id), "name": "Tomate", "unit": "unidad"}
+    payload = _recipe_payload(category, ingredients=[entry, dict(entry)])
+    response = await client.post("/api/v1/recipes", json=payload, headers=auth_headers)
+    assert response.status_code == 422

@@ -18,6 +18,8 @@ from app.schemas import (
     RecipeUpdate,
     RecipeResponse,
     RecipeListItem,
+    RecipeIngredient,
+    ingredients_as_dicts,
     SimilarRecipe,
     UserResponse,
 )
@@ -32,6 +34,26 @@ def slugify(text: str) -> str:
     text = re.sub(r'[\s_-]+', '-', text, flags=re.UNICODE)
     text = re.sub(r'^-+|-+$', '', text)
     return text
+
+
+def is_admin(user: Optional[User]) -> bool:
+    """True when the given user carries the admin role."""
+    if user is None:
+        return False
+    role = user.role.value if hasattr(user.role, "value") else user.role
+    return role == "admin"
+
+
+def recipe_visible_to(recipe: Recipe, user: Optional[User]) -> bool:
+    """RB-09: a public recipe is readable by anyone, a private one only by its
+    author (and by admins). Soft-deleted recipes are never visible."""
+    if recipe.deleted_at is not None:
+        return False
+    if recipe.is_public:
+        return True
+    if user is None:
+        return False
+    return user.id == recipe.author_id or is_admin(user)
 
 
 async def resolve_ingredient_names(
@@ -64,6 +86,37 @@ async def resolve_ingredient_names(
                 item["name"] = names[key]
 
     return items
+
+
+async def validate_ingredients(
+    db: AsyncSession, items: Optional[List[RecipeIngredient]]
+) -> List[dict]:
+    """RB-ING-02 / RF-12.6: every ingredient must reference an existing, active
+    catalog entry that has not been rejected by an admin."""
+    if not items:
+        return []
+
+    ids = {i.ingredient_id for i in items if i.ingredient_id is not None}
+    if ids:
+        result = await db.execute(
+            select(Ingredient.id).where(
+                Ingredient.id.in_(ids),
+                Ingredient.is_active.is_(True),
+                Ingredient.rejected.is_(False),
+            )
+        )
+        valid = {row[0] for row in result.all()}
+    else:
+        valid = set()
+
+    unknown = [i.name for i in items if i.ingredient_id is None or i.ingredient_id not in valid]
+    if unknown:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Ingredientes no disponibles o inexistentes: {', '.join(unknown)}",
+        )
+
+    return ingredients_as_dicts(items)
 
 
 async def sync_recipe_tags(
@@ -256,7 +309,7 @@ async def get_recipe(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user_optional),
 ):
-    """Get recipe by slug (public read)."""
+    """Get recipe by slug (public read, private only for author/admin)."""
     result = await db.execute(
         select(Recipe)
         .where(Recipe.slug == slug, Recipe.deleted_at.is_(None))
@@ -268,7 +321,8 @@ async def get_recipe(
     )
     recipe = result.scalar_one_or_none()
 
-    if not recipe:
+    # RB-09: a private recipe must not be reachable by slug guessing.
+    if not recipe or not recipe_visible_to(recipe, current_user):
         raise HTTPException(status_code=404, detail="Recipe not found")
 
     # Increment visit count
@@ -320,7 +374,7 @@ async def create_recipe(
         servings=recipe_data.servings,
         difficulty=recipe_data.difficulty,
         instructions=recipe_data.instructions,
-        ingredients=recipe_data.ingredients,
+        ingredients=await validate_ingredients(db, recipe_data.ingredients),
         is_public=recipe_data.is_public,
     )
 
@@ -360,6 +414,10 @@ async def update_recipe(
     # Update fields if provided
     update_data = recipe_data.model_dump(exclude_unset=True)
     tag_slugs = update_data.pop("tags", None)
+    if "ingredients" in update_data:
+        update_data["ingredients"] = await validate_ingredients(
+            db, recipe_data.ingredients
+        )
 
     # Handle title change -> slug regeneration
     similar_recipes: List[SimilarRecipe] = []
@@ -441,7 +499,7 @@ async def find_similar_recipes(
     )
     recipe = result.scalar_one_or_none()
 
-    if not recipe:
+    if not recipe or not recipe_visible_to(recipe, current_user):
         raise HTTPException(status_code=404, detail="Recipe not found")
 
     # Find similar recipes
