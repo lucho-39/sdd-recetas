@@ -5,6 +5,7 @@
 	import { IconTrashFilled as Trash, IconPlus } from '@tabler/icons-svelte';
 	import { categoriesStore } from '$lib/stores/categories';
 	import TagAutocomplete from '$components/search/TagAutocomplete.svelte';
+	import Modal from '$components/ui/Modal.svelte';
 	import type { Recipe } from '$lib/types';
 
 	export let initial: Partial<Recipe> | null = null;
@@ -15,6 +16,29 @@
 		{ v: 'easy', l: 'Fácil' },
 		{ v: 'medium', l: 'Media' },
 		{ v: 'hard', l: 'Difícil' }
+	];
+
+	// RF-12.2 / RF-12.3: hay que coincidir con VALID_CATEGORIES y VALID_UNITS del backend.
+	const INGREDIENT_CATEGORIES = [
+		{ v: 'proteina', l: 'Proteína' },
+		{ v: 'verdura', l: 'Verdura' },
+		{ v: 'fruta', l: 'Fruta' },
+		{ v: 'lacteo', l: 'Lácteo' },
+		{ v: 'grano', l: 'Grano' },
+		{ v: 'condimento', l: 'Condimento' },
+		{ v: 'grasa', l: 'Grasa' },
+		{ v: 'otro', l: 'Otro' }
+	];
+	const INGREDIENT_UNITS = [
+		'g',
+		'kg',
+		'ml',
+		'l',
+		'unidad',
+		'cucharada',
+		'cucharadita',
+		'taza',
+		'pizca'
 	];
 
 	type IngredientRow = {
@@ -46,13 +70,16 @@
 		})) ?? [];
 
 	let ingQuery = '';
-	let ingError = '';
 	let ingSuggestions: { id: string; name: string; default_unit: string }[] = [];
 	let ingTimer: ReturnType<typeof setTimeout>;
 	let saving = false;
 	let error = '';
 	let uploading = false;
 	let uploadError = '';
+	let showNewIngredient = false;
+	let creatingIngredient = false;
+	let modalError = '';
+	let newIngredient = { name: '', category: 'otro', default_unit: 'unidad', aliases: '' };
 
 	$: categories = $categoriesStore.categories;
 
@@ -77,40 +104,63 @@
 		ingSuggestions = [];
 	}
 
-	async function addManual() {
+	// RF-12.5: crear desde el selector abre un modal con categoría y unidad.
+	function addManual() {
 		const name = ingQuery.trim();
 		if (!name) return;
+		newIngredient = { name, category: 'otro', default_unit: 'unidad', aliases: '' };
+		modalError = '';
+		showNewIngredient = true;
+	}
+
+	async function saveNewIngredient() {
+		const name = newIngredient.name.trim();
+		if (name.length < 2) {
+			modalError = 'El nombre debe tener al menos 2 caracteres.';
+			return;
+		}
+		modalError = '';
+		creatingIngredient = true;
 		try {
 			const res = await apiFetch('/api/v1/ingredients', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
 				},
-				body: JSON.stringify({ name })
+				body: JSON.stringify({
+					name,
+					category: newIngredient.category,
+					default_unit: newIngredient.default_unit,
+					aliases: newIngredient.aliases
+						.split(',')
+						.map((a) => a.trim())
+						.filter(Boolean)
+				})
 			});
-			if (res.ok) {
-				const ingredient = await res.json();
-				rows = [
-					...rows,
-					{
-						ingredient_id: ingredient.id,
-						name: ingredient.name,
-						amount: '',
-						unit: ingredient.default_unit ?? '',
-						notes: ''
-					}
-				];
-			} else {
-				ingError = `No se pudo crear "${name}". Revisá el nombre o volvé a intentar.`;
+			if (!res.ok) {
+				const body = await res.json().catch(() => ({}));
+				modalError = typeof body.detail === 'string' ? body.detail : `No se pudo crear "${name}".`;
 				return;
 			}
+			const ingredient = await res.json();
+			rows = [
+				...rows,
+				{
+					ingredient_id: ingredient.id,
+					name: ingredient.name,
+					amount: '',
+					unit: ingredient.default_unit ?? '',
+					notes: ''
+				}
+			];
+			showNewIngredient = false;
+			ingQuery = '';
+			ingSuggestions = [];
 		} catch {
-			ingError = `No se pudo crear "${name}". Revisá tu conexión y volvé a intentar.`;
-			return;
+			modalError = 'No se pudo crear el ingrediente. Revisá tu conexión.';
+		} finally {
+			creatingIngredient = false;
 		}
-		ingQuery = '';
-		ingSuggestions = [];
-		ingError = '';
 	}
 
 	function removeRow(index: number) {
@@ -312,13 +362,16 @@
 							placeholder="Cant."
 							aria-label="Cantidad de {row.name}"
 						/>
-						<input
-							type="text"
+						<select
 							bind:value={row.unit}
 							class="input-base w-24 py-1.5"
-							placeholder="Unidad"
 							aria-label="Unidad de {row.name}"
-						/>
+						>
+							{#if row.unit && !INGREDIENT_UNITS.includes(row.unit)}
+								<option value={row.unit}>{row.unit}</option>
+							{/if}
+							{#each INGREDIENT_UNITS as u}<option value={u}>{u}</option>{/each}
+						</select>
 						<input
 							type="text"
 							bind:value={row.notes}
@@ -357,7 +410,6 @@
 					<IconPlus class="h-4 w-4" aria-hidden="true" /> Agregar
 				</button>
 			</div>
-			{#if ingError}<p class="mt-1 text-xs text-destructive">{ingError}</p>{/if}
 			{#if ingSuggestions.length > 0}
 				<ul
 					class="absolute z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-border bg-popover shadow-lg"
@@ -413,3 +465,71 @@
 		<a href="/mis-recetas" class="btn btn-outline">Cancelar</a>
 	</div>
 </form>
+
+<Modal
+	open={showNewIngredient}
+	title="Nuevo ingrediente"
+	on:close={() => (showNewIngredient = false)}
+>
+	<div class="space-y-4">
+		<div>
+			<label for="new-ing-name" class="label">Nombre</label>
+			<input
+				id="new-ing-name"
+				type="text"
+				bind:value={newIngredient.name}
+				class="input-base"
+				minlength="2"
+				maxlength="100"
+				required
+			/>
+		</div>
+
+		<div class="grid gap-4 sm:grid-cols-2">
+			<div>
+				<label for="new-ing-category" class="label">Categoría</label>
+				<select id="new-ing-category" bind:value={newIngredient.category} class="input-base">
+					{#each INGREDIENT_CATEGORIES as c}<option value={c.v}>{c.l}</option>{/each}
+				</select>
+			</div>
+			<div>
+				<label for="new-ing-unit" class="label">Unidad por defecto</label>
+				<select id="new-ing-unit" bind:value={newIngredient.default_unit} class="input-base">
+					{#each INGREDIENT_UNITS as u}<option value={u}>{u}</option>{/each}
+				</select>
+			</div>
+		</div>
+
+		<div>
+			<label for="new-ing-aliases" class="label"
+				>Aliases <span class="text-muted-foreground">(opcional, separados por coma)</span></label
+			>
+			<input
+				id="new-ing-aliases"
+				type="text"
+				bind:value={newIngredient.aliases}
+				class="input-base"
+				placeholder="tomate pera, cherry"
+			/>
+		</div>
+
+		{#if modalError}<p class="text-sm text-destructive" role="alert">{modalError}</p>{/if}
+		<p class="text-xs text-muted-foreground">
+			El ingrediente queda pendiente de validación por un administrador.
+		</p>
+	</div>
+
+	<svelte:fragment slot="footer">
+		<button type="button" class="btn btn-outline" on:click={() => (showNewIngredient = false)}>
+			Cancelar
+		</button>
+		<button
+			type="button"
+			class="btn btn-primary"
+			on:click={saveNewIngredient}
+			disabled={creatingIngredient}
+		>
+			{creatingIngredient ? 'Creando…' : 'Crear ingrediente'}
+		</button>
+	</svelte:fragment>
+</Modal>
