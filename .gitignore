@@ -71,6 +71,9 @@ yarn-error.log*
 pnpm-debug.log*
 .eslintcache
 .stylelintcache
+# Vite drops these next to vite.config.ts on each build
+*.timestamp-*.mjs
+*.timestamp-*.js
 .turbo/
 .vercel
 .netlify
