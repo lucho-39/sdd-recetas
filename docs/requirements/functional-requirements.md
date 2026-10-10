@@ -142,14 +142,20 @@
   (`RecipeForm` + `lib/components/ui/Modal.svelte`), ver RB-ING-03.
 - **RF-12.3 implementado**: la unidad de cada fila es un `<select>` sobre las 9 unidades
   de `VALID_UNITS` en lugar de texto libre.
-- **RF-12.8 implementado (backend)**: `ingredients.allowed_units` (JSONB, default `[]`)
+- **RF-12.8 implementado**: `ingredients.allowed_units` (JSONB, default `[]`)
   guarda las unidades alternativas compatibles. `validate_ingredients()` en
   `app/api/v1/endpoints/recipes.py` acepta sólo `default_unit` + las listadas y responde
   **422** con los ingredientes que fallan; una lista vacía queda **abierta**, que es el
   comportamiento de las 320 filas del seed. El alta valida cada valor contra `VALID_UNITS`
-  (**400**). **El frontend no filtra todavía**: el `<select>` de unidades sigue exponiendo
-  las 9 globales, lo que hoy no molesta porque ninguna fila tiene whitelist — hay que
-  filtrarlo cuando un admin empiece a cargar `allowed_units`.
+  (**400**). El formulario de receta limita el `<select>` de unidades de cada fila a
+  `default_unit` + las alternativas (`unitsFor()` en `RecipeForm.svelte`).
+  - **Alta de whitelist**: sólo `POST /api/v1/ingredients` la acepta al crear. **No hay
+    endpoint para editarla después** — hoy se setea por SQL. Hace falta un
+    `PATCH /api/admin/ingredients/{id}` si se quiere administrar desde la UI.
+  - **Límitación en edición**: al abrir una receta existente la fila no trae datos del
+    catálogo (`recipes.ingredients` guarda sólo `{ingredient_id, name, amount, unit,
+    notes}`, ver RB-ING-02), así que `allowed_units` queda vacío y el select ofrece las 9
+    globales. El filtrado aplica recién al agregar el ingrediente desde el autocompletado.
 - **Stack de migraciones arrancado**: `alembic/versions/` ya no está vacío. La 0001
   (`8fcd65d6eddf`) recrea el schema completo de 18 tablas y se aplicó con `alembic stamp`
   sobre la base existente; la 0002 (`1ac179e903af`) agrega `allowed_units`. La base real

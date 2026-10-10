@@ -47,6 +47,9 @@
 		amount: string | number;
 		unit: string;
 		notes: string;
+		default_unit: string;
+		/** RF-12.8: vacío = sin restricción; con valores = default_unit + alternativas. */
+		allowed_units: string[];
 	};
 
 	let title = initial?.title ?? '';
@@ -66,11 +69,18 @@
 			name: i.name ?? '',
 			amount: i.amount ?? '',
 			unit: i.unit ?? '',
-			notes: i.notes ?? ''
+			notes: i.notes ?? '',
+			default_unit: '',
+			allowed_units: []
 		})) ?? [];
 
 	let ingQuery = '';
-	let ingSuggestions: { id: string; name: string; default_unit: string }[] = [];
+	let ingSuggestions: {
+		id: string;
+		name: string;
+		default_unit: string;
+		allowed_units: string[];
+	}[] = [];
 	let ingTimer: ReturnType<typeof setTimeout>;
 	let saving = false;
 	let error = '';
@@ -95,13 +105,35 @@
 		}, 200);
 	}
 
-	function addIngredient(ing: { id: string; name: string; default_unit: string }) {
+	function addIngredient(ing: {
+		id: string;
+		name: string;
+		default_unit: string;
+		allowed_units?: string[];
+	}) {
 		rows = [
 			...rows,
-			{ ingredient_id: ing.id, name: ing.name, amount: '', unit: ing.default_unit, notes: '' }
+			{
+				ingredient_id: ing.id,
+				name: ing.name,
+				amount: '',
+				unit: ing.default_unit,
+				notes: '',
+				default_unit: ing.default_unit,
+				allowed_units: ing.allowed_units ?? []
+			}
 		];
 		ingQuery = '';
 		ingSuggestions = [];
+	}
+
+	// RF-12.8: a row only offers the units its catalog entry accepts. An empty
+	// whitelist (or a row loaded from an existing recipe, which carries no
+	// catalog data) falls back to the nine global units.
+	function unitsFor(row: IngredientRow): string[] {
+		if (row.allowed_units.length === 0) return INGREDIENT_UNITS;
+		const list = [row.default_unit, ...row.allowed_units].filter(Boolean);
+		return [...new Set(list)];
 	}
 
 	// RF-12.5: crear desde el selector abre un modal con categoría y unidad.
@@ -150,7 +182,9 @@
 					name: ingredient.name,
 					amount: '',
 					unit: ingredient.default_unit ?? '',
-					notes: ''
+					notes: '',
+					default_unit: ingredient.default_unit ?? '',
+					allowed_units: ingredient.allowed_units ?? []
 				}
 			];
 			showNewIngredient = false;
@@ -367,10 +401,10 @@
 							class="input-base w-24 py-1.5"
 							aria-label="Unidad de {row.name}"
 						>
-							{#if row.unit && !INGREDIENT_UNITS.includes(row.unit)}
+							{#if row.unit && !unitsFor(row).includes(row.unit)}
 								<option value={row.unit}>{row.unit}</option>
 							{/if}
-							{#each INGREDIENT_UNITS as u}<option value={u}>{u}</option>{/each}
+							{#each unitsFor(row) as u}<option value={u}>{u}</option>{/each}
 						</select>
 						<input
 							type="text"

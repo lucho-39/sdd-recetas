@@ -130,8 +130,13 @@ El proyecto está en fase **MVP (0.x)**.
   nombrando los ingredientes que fallan. Una lista vacía sigue siendo permisiva, así que
   las 320 filas del seed no cambian de comportamiento.
   - El alta (`POST /api/v1/ingredients`) valida cada valor contra `VALID_UNITS` → **400**.
-  - **El frontend todavía no filtra**: el `<select>` de unidades expone las 9 globales.
-    Hoy no molesta porque ninguna fila tiene whitelist cargada.
+  - El formulario de receta limita el `<select>` de unidades de cada fila a
+    `default_unit` + las alternativas; con la whitelist de `harina` cargada
+    (`g` + `kg`, `taza`) el selector baja de 9 opciones a 3.
+  - Dos huecos quedaron registrados en la doc: no hay endpoint para **editar** la
+    whitelist después de crear el ingrediente (hoy se setea por SQL), y al editar una
+    receta existente la fila no trae datos del catálogo, así que el filtrado aplica
+    recién al agregar el ingrediente desde el autocompletado.
 - **Stack de migraciones (Alembic) arrancado.** La 0001 (`8fcd65d6eddf`) recrea el schema
   completo de 18 tablas y se aplicó con `alembic stamp` sobre la base existente; la 0002
   (`1ac179e903af`) agrega `allowed_units`. `alembic.ini` y `env.py` ahora leen
