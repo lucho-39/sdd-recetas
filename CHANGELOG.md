@@ -72,6 +72,30 @@ El proyecto está en fase **MVP (0.x)**.
   pendientes sin romper las recetas que ya lo usan. Ambos auditados, y devuelven 400 si el estado de
   origen no corresponde (desvalidar algo ya pendiente, recuperar algo no rechazado). El listado admin
   de ingredientes ahora expone `created_by`, `validated_by`, `validated_at`, `rejected_by` y `rejected_at`.
+- **Validación completa de `normalize`** (UC-ADMIN-019 AC2): `slug` con control de unicidad (400 si
+  choca, se permite conservar el propio), `category` y `default_unit` contra los whitelists de
+  `app/core/units.py`, y `allowed_units` RF-12.8. El listado expone `created_by_email` vía
+  `selectinload`, sin N+1.
+- **`Dialog` y `AlertDialog` en el admin**: focus trap, `Escape`, `aria-modal` y restore del foco de
+  origen. Mismo design system que el frontend usuario; `AlertDialog` usa las clases `btn-*` en vez del
+  componente `Button`, porque el admin no lo tiene y no hacía falta.
+- **La página de ingredientes usa el design system** en vez de `prompt()`/`confirm()`: confirmación con
+  la ficha del ingrediente para validar y desvalidar, rechazo con las cuatro razones del spec más texto
+  libre, fusión con búsqueda sobre el catálogo oficial (no se tipea el slug), normalización de nombre,
+  slug, categoría, unidad y aliases, más filtro por categoría y paginación de 20.
+
+### Fixed — Panel de administración
+- **`tsconfig.json` del admin declaraba `"$lib"` sin `"$lib/*"`**, así que ningún alias resolvía:
+  `svelte-check` marcaba 28 errores de "Cannot find module" y el chequeo nunca había pasado. Ahora
+  extiende `./.svelte-kit/tsconfig.json` como el frontend usuario — **0 errores**.
+- **Faltaba `eslint.config.js` y `.prettierignore`** en el admin: `pnpm run lint` fallaba antes de
+  analizar un solo archivo. Con ambos, el lint pasa con 0 errores y 4 warnings preexistentes.
+- **El `+layout.svelte` estaba en modo runes a medias**: usaba `$derived`/`$effect` pero declaraba
+  `collapsed` y `mobileOpen` con `let`, que en runes no es reactivo — **el sidebar no colapsaba y el
+  menú móvil no se abría**. Ahora son `$state`, y los `on:click` y `<slot>` migraron a `onclick` y
+  `{@render}`.
+- `config/+page.svelte` tipaba los settings como `Record<string, unknown>`, lo que rompía los
+  `bind:checked`; ahora tiene un tipo abierto con los campos conocidos.
 - **Modo mantenimiento** (503 en tráfico público, panel admin accesible) y **rate limiting** por minuto
   (configurable, exento para `/api/admin`).
 

@@ -152,9 +152,10 @@
 - **AC3**: Al guardar → actualiza ingrediente + propaga cambios a recetas que lo usan (ingredient_id inmutable)
 
 **Estado del Epic A3** (auditado 2026-10-11):
-- **Backend — 9/9 rutas listas**: `GET` pending/validated/rejected, `POST` validate, reject, merge, normalize, **desvalidate** (UC-017 AC3) y **recover** (UC-018 AC3). Desvalidar y recuperar están auditados y devuelven 400 si el estado de origen no corresponde.
-- **Backend — huecos abiertos**: `usage_count` no existe como columna ni se calcula (lo piden UC-012 AC1/AC2); no hay endpoint de "ver uso en recetas" (UC-017 AC3); no hay notificación al creador al rechazar (UC-016 AC3), porque el proyecto no tiene sistema de notificaciones.
-- **Frontend — cubre los flujos base pero no la spec**: 3 tabs, validar, rechazar, mergear, normalizar. Usa `prompt()`/`confirm()` nativos en lugar del design system, el modal de normalizar sólo envía nombre y unidad (faltan slug, categoría y aliases), el merge pide el slug por teclado en vez de un select sobre el catálogo, y faltan las columnas `usage_count`, `created_by`, `created_at` y `aliases`, el filtro por categoría y las acciones desvalidar/recuperar.
+- **Backend — 9/9 rutas listas**: `GET` pending/validated/rejected, `POST` validate, reject, merge, normalize, desvalidate (UC-017 AC3) y recover (UC-018 AC3). Desvalidar y recuperar están auditados y devuelven 400 si el estado de origen no corresponde.
+- **Backend — validación de normalize completa (UC-019 AC2)**: `slug` único (400 si choca con otro, se permite conservar el propio), `category` y `default_unit` contra los whitelists de `app/core/units.py`, y `allowed_units` RF-12.8. El listado expone `created_by_email` vía `selectinload`, sin N+1.
+- **Frontend — cubre el epic**: `Dialog` y `AlertDialog` nuevos (focus trap, Escape, `aria-modal`), y la página usa el design system del admin en vez de `prompt()`/`confirm()`. Tres tabs, búsqueda, filtro por categoría y paginación de 20. Validar y desvalidar comparten una confirmación con la ficha del ingrediente (UC-013 AC1). Rechazar ofrece las cuatro razones de UC-016 AC1 y habilita texto libre con "Otro". Fusionar busca en el catálogo oficial y no acepta slug tipeado (UC-015 AC1). Normalizar edita nombre, slug, categoría, unidad y aliases (UC-014/019 AC1).
+- **A3 — huecos abiertos**: `usage_count` no existe como columna ni se calcula (lo piden UC-012 AC1/AC2, y también su ordenamiento por `usage_count DESC`); no hay endpoint de "ver uso en recetas" (UC-017 AC3); no hay notificación al creador al rechazar (UC-016 AC3), porque el proyecto no tiene sistema de notificaciones.
 
 ---
 
