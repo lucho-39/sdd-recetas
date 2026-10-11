@@ -1,0 +1,6 @@
+# %sveltekit.body% is not valid HTML and makes prettier bail on the whole file.
+src/app.html
+.svelte-kit
+build
+node_modules
+pnpm-lock.yaml

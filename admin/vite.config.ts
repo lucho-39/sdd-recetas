@@ -1,29 +1,29 @@
-import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vitest/config';
+import { sveltekit } from "@sveltejs/kit/vite";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-	plugins: [sveltekit()],
-	test: {
-		include: ['src/**/*.{test,spec}.{js,ts}'],
-	},
-	server: {
-		port: 3001,
-		host: true,
-		proxy: {
-			'/api': {
-				target: 'http://backend:8000',
-				changeOrigin: true
-			}
-		}
-	},
-	preview: {
-		port: 3001,
-		host: true,
-		proxy: {
-			'/api': {
-				target: 'http://backend:8000',
-				changeOrigin: true
-			}
-		}
-	},
+  plugins: [sveltekit()],
+  test: {
+    include: ["src/**/*.{test,spec}.{js,ts}"],
+  },
+  server: {
+    port: 3001,
+    host: true,
+    proxy: {
+      "/api": {
+        target: "http://backend:8000",
+        changeOrigin: true,
+      },
+    },
+  },
+  preview: {
+    port: 3001,
+    host: true,
+    proxy: {
+      "/api": {
+        target: "http://backend:8000",
+        changeOrigin: true,
+      },
+    },
+  },
 });

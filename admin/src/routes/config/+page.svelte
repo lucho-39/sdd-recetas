@@ -1,9 +1,23 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-		import { adminFetch } from '$lib/api';
-	import { auth } from '$lib/stores/auth';
+	import { adminFetch } from '$lib/api';
 
-	let settings: Record<string, unknown> = {};
+	/** Los checkboxes necesitan boolean, no unknown; el índice abierto
+	 *  absorbe campos nuevos del backend sin romper el chequeo. */
+	type AppSettings = {
+		registration_open?: boolean;
+		require_email_verification?: boolean;
+		maintenance_mode?: boolean;
+		max_upload_size_mb?: number | string;
+		rate_limit_per_minute?: number | string;
+		email_favorite_subject?: string;
+		email_favorite_body?: string;
+		email_rating_subject?: string;
+		email_rating_body?: string;
+		[key: string]: unknown;
+	};
+
+	let settings: AppSettings = {};
 	let loading = true;
 	let saving = false;
 	let error = '';
@@ -13,7 +27,7 @@
 		loading = true;
 		error = '';
 		try {
-			settings = (await adminFetch<{ settings: Record<string, unknown> }>('/config')).settings;
+			settings = (await adminFetch<{ settings: AppSettings }>('/config')).settings;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Error al cargar la configuración';
 		} finally {
@@ -26,7 +40,7 @@
 		error = '';
 		success = '';
 		try {
-			const res = await adminFetch<{ settings: Record<string, unknown> }>('/config', {
+			const res = await adminFetch<{ settings: AppSettings }>('/config', {
 				method: 'PUT',
 				body: JSON.stringify({ settings })
 			});

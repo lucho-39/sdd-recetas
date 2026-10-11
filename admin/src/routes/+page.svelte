@@ -10,7 +10,6 @@
 		IconStarFilled as Rating,
 		IconEyeFilled as Visits
 	} from '@tabler/icons-svelte';
-	import { auth } from '$lib/stores/auth';
 	import BarChart from '$lib/components/BarChart.svelte';
 
 	let stats: Record<string, number> | null = null;

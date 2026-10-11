@@ -1,1 +1,7 @@
-export { auth, isAuthenticated, currentUser, accessToken, authLoading } from './auth';
+export {
+  auth,
+  isAuthenticated,
+  currentUser,
+  accessToken,
+  authLoading,
+} from "./auth";

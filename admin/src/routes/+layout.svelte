@@ -20,8 +20,12 @@
 	} from '@tabler/icons-svelte';
 	import { auth } from '$lib/stores/auth';
 
-	let collapsed = false;
-	let mobileOpen = false;
+	let { children } = $props();
+
+	// Runes mode ($derived/$effect below): a plain `let` would not re-render,
+	// so the sidebar never collapsed and the mobile menu never opened.
+	let collapsed = $state(false);
+	let mobileOpen = $state(false);
 
 	const nav = [
 		{ href: '/', label: 'Dashboard', icon: Dashboard },
@@ -64,7 +68,7 @@
 </script>
 
 {#if isLoginPage || !$auth.isAuthenticated}
-	<slot />
+	{@render children()}
 {:else}
 	<div class="flex min-h-screen bg-background text-foreground">
 		<!-- Sidebar -->
@@ -91,7 +95,7 @@
 						class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors {active
 							? 'bg-primary text-primary-foreground'
 							: 'text-muted-foreground hover:bg-accent hover:text-foreground'} {collapsed ? 'justify-center' : ''}"
-						on:click={() => (mobileOpen = false)}
+						onclick={() => (mobileOpen = false)}
 					>
 						<item.icon class="h-5 w-5 shrink-0" aria-hidden="true" />
 						{#if !collapsed}<span>{item.label}</span>{/if}
@@ -104,7 +108,7 @@
 				class="m-2 hidden items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground lg:flex {collapsed
 					? 'justify-center'
 					: ''}"
-				on:click={toggleCollapsed}
+				onclick={toggleCollapsed}
 				aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
 			>
 				<Collapse class="h-5 w-5 transition-transform {collapsed ? 'rotate-180' : ''}" aria-hidden="true" />
@@ -113,26 +117,26 @@
 		</aside>
 
 		{#if mobileOpen}
-			<div class="fixed inset-0 z-40 bg-black/40 lg:hidden" on:click={() => (mobileOpen = false)} aria-hidden="true"></div>
+			<div class="fixed inset-0 z-40 bg-black/40 lg:hidden" onclick={() => (mobileOpen = false)} aria-hidden="true"></div>
 		{/if}
 
 		<!-- Main -->
 		<div class="flex flex-1 flex-col transition-all duration-200 {collapsed ? 'lg:ml-16' : 'lg:ml-64'}">
 			<header class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur-sm md:px-6">
-				<button type="button" class="rounded-md p-2 hover:bg-accent lg:hidden" on:click={() => (mobileOpen = true)} aria-label="Abrir menú">
+				<button type="button" class="rounded-md p-2 hover:bg-accent lg:hidden" onclick={() => (mobileOpen = true)} aria-label="Abrir menú">
 					<Menu class="h-6 w-6" aria-hidden="true" />
 				</button>
 				<span class="ml-auto truncate text-sm text-muted-foreground">
 					{$auth.user?.display_name ?? 'Administrador'}
 				</span>
-				<button type="button" class="ml-3 inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground" on:click={handleLogout}>
+				<button type="button" class="ml-3 inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground" onclick={handleLogout}>
 					<Logout class="h-4 w-4" aria-hidden="true" />
 					<span class="hidden sm:inline">Cerrar sesión</span>
 				</button>
 			</header>
 
 			<main id="main-content" class="flex-1 p-4 md:p-6 lg:p-8">
-				<slot />
+				{@render children()}
 			</main>
 		</div>
 	</div>

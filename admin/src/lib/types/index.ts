@@ -7,7 +7,7 @@ export interface User {
   email: string;
   display_name: string;
   avatar_url?: string;
-  role: 'user' | 'admin';
+  role: "user" | "admin";
   is_active: boolean;
   is_verified: boolean;
   must_change_password: boolean;
@@ -120,7 +120,11 @@ export interface DashboardMetrics {
 export interface ContentMetrics {
   recipes_by_status: { public: number; private: number; deleted: number };
   recipes_by_category: Record<string, number>;
-  quality: { with_rating_ge_3: number; with_rating_ge_4: number; rating_distribution: Record<number, number> };
+  quality: {
+    with_rating_ge_3: number;
+    with_rating_ge_4: number;
+    rating_distribution: Record<number, number>;
+  };
   engagement: { top_visited: any[]; top_saved: any[]; top_rated: any[] };
 }
 
