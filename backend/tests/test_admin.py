@@ -540,10 +540,70 @@ async def test_admin_ingredient_merge(
     )
     assert response.status_code == 200
     assert response.json()["recipes_updated"] == 1
+    # UC-ADMIN-015 AC2: the official absorbs the duplicate's usage, which
+    # falls out of the rewrite because usage_count is counted on read.
+    assert response.json()["target_usage_count"] == 1
 
     await db_session.refresh(recipe)
     assert recipe.ingredients[0]["ingredient_id"] == str(target.id)
     assert await db_session.get(type(source), source.id) is None
+
+
+async def test_admin_ingredient_usage_count_comes_from_recipes(
+    client: AsyncClient,
+    admin_headers: dict,
+    db_session: AsyncSession,
+    user: User,
+    category,
+) -> None:
+    """UC-ADMIN-012 AC2: usage_count counts live recipes referencing the id."""
+    ingredient = await create_ingredient(
+        db_session, slug="usado", name="Usado", created_by=user.id
+    )
+    await create_recipe(
+        db_session,
+        author=user,
+        category=category,
+        title="Receta con uso",
+        slug="receta-con-uso",
+        ingredients=[
+            {"ingredient_id": str(ingredient.id), "amount": 1, "unit": "g"}
+        ],
+    )
+
+    response = await client.get("/api/admin/ingredients/pending", headers=admin_headers)
+    row = next(i for i in response.json()["items"] if i["id"] == str(ingredient.id))
+    assert row["usage_count"] == 1
+
+
+async def test_admin_ingredient_pending_orders_by_usage_desc(
+    client: AsyncClient,
+    admin_headers: dict,
+    db_session: AsyncSession,
+    user: User,
+    category,
+) -> None:
+    """UC-ADMIN-012 AC1: the pending list is ordered by usage_count DESC."""
+    used = await create_ingredient(
+        db_session, slug="con-uso", name="Con Uso", created_by=user.id
+    )
+    unused = await create_ingredient(
+        db_session, slug="sin-uso", name="Sin Uso", created_by=user.id
+    )
+    await create_recipe(
+        db_session,
+        author=user,
+        category=category,
+        title="Otra receta",
+        slug="otra-receta",
+        ingredients=[
+            {"ingredient_id": str(used.id), "amount": 1, "unit": "g"}
+        ],
+    )
+
+    response = await client.get("/api/admin/ingredients/pending", headers=admin_headers)
+    ids = [i["id"] for i in response.json()["items"]]
+    assert ids.index(str(used.id)) < ids.index(str(unused.id))
 
 
 async def test_admin_error_log(

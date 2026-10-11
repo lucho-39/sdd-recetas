@@ -22,6 +22,7 @@
 		category: string;
 		default_unit: string;
 		aliases: string[];
+		usage_count: number;
 		is_active: boolean;
 		validated_by_admin: boolean;
 		validated_at?: string | null;
@@ -331,6 +332,7 @@
 					<th class="p-3">Nombre</th>
 					<th class="p-3">Categoría</th>
 					<th class="p-3">Unidad</th>
+					<th class="p-3">Usos</th>
 					<th class="p-3">Aliases</th>
 					<th class="p-3">Creado por</th>
 					<th class="p-3">Fecha</th>
@@ -349,6 +351,7 @@
 						</td>
 						<td class="p-3 text-muted-foreground">{item.category}</td>
 						<td class="p-3 text-muted-foreground">{item.default_unit}</td>
+						<td class="p-3 text-muted-foreground">{item.usage_count}</td>
 						<td class="p-3 text-muted-foreground">
 							{#if item.aliases.length}
 								{item.aliases.join(', ')}

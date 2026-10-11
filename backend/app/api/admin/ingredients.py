@@ -5,7 +5,7 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, or_, select
+from sqlalchemy import String, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -24,7 +24,31 @@ from app.schemas.admin import (
 router = APIRouter()
 
 
-def _serialize(ing: Ingredient) -> dict:
+def _usage_count_expr():
+    """Correlated count of live recipes referencing this ingredient.
+
+    Recipes embed the id inside a JSONB array — there is no join table and no
+    foreign key — so usage_count is counted on read instead of stored. The
+    merge endpoint already rewrites those ids to the target, which makes the
+    official ingredient absorb the duplicate's count with no bookkeeping.
+    """
+    reference = func.jsonb_build_array(
+        func.jsonb_build_object("ingredient_id", cast(Ingredient.id, String))
+    )
+    return (
+        select(func.count())
+        .select_from(Recipe)
+        .where(
+            Recipe.deleted_at.is_(None),
+            Recipe.ingredients.op("@>")(reference),
+        )
+        .correlate(Ingredient)
+        .scalar_subquery()
+        .label("usage_count")
+    )
+
+
+def _serialize(ing: Ingredient, usage_count: int = 0) -> dict:
     return {
         "id": str(ing.id),
         "slug": ing.slug,
@@ -33,6 +57,7 @@ def _serialize(ing: Ingredient) -> dict:
         "default_unit": ing.default_unit,
         "allowed_units": ing.allowed_units or [],
         "aliases": ing.aliases or [],
+        "usage_count": usage_count,
         "is_active": ing.is_active,
         "validated_by_admin": ing.validated_by_admin,
         "validated_by": str(ing.validated_by) if ing.validated_by else None,
@@ -45,6 +70,21 @@ def _serialize(ing: Ingredient) -> dict:
         "created_by_email": ing.created_by_user.email if ing.created_by_user else None,
         "created_at": ing.created_at,
     }
+
+
+async def _usage_count_for(db: AsyncSession, ingredient_id: UUID) -> int:
+    """Same count as _usage_count_expr, for the single-ingredient routes."""
+    reference = func.jsonb_build_array(
+        func.jsonb_build_object("ingredient_id", str(ingredient_id))
+    )
+    return await db.scalar(
+        select(func.count())
+        .select_from(Recipe)
+        .where(
+            Recipe.deleted_at.is_(None),
+            Recipe.ingredients.op("@>")(reference),
+        )
+    ) or 0
 
 
 async def _get_ingredient(db: AsyncSession, ingredient_id: UUID) -> Ingredient | None:
@@ -68,6 +108,7 @@ async def _list(
     category: str | None,
     page: int,
     limit: int,
+    sort: str = "name",
 ):
     filters = list(conditions)
     if search:
@@ -76,17 +117,26 @@ async def _list(
     if category:
         filters.append(Ingredient.category == category)
 
+    usage_count = _usage_count_expr()
     total = await db.scalar(select(func.count()).select_from(Ingredient).where(*filters))
+    order = (
+        (usage_count.desc(), Ingredient.name.asc())
+        if sort == "usage"
+        else (Ingredient.name.asc(),)
+    )
     result = await db.execute(
-        select(Ingredient)
+        select(Ingredient, usage_count)
         .where(*filters)
         .options(selectinload(Ingredient.created_by_user))
-        .order_by(Ingredient.name)
+        .order_by(*order)
         .offset((page - 1) * limit)
         .limit(limit)
     )
     return {
-        "items": [_serialize(i) for i in result.scalars().all()],
+        "items": [
+            _serialize(ing, usage_count=usage or 0)
+            for ing, usage in result.all()
+        ],
         "total": total,
         "page": page,
         "limit": limit,
@@ -99,6 +149,7 @@ async def list_pending(
     category: str | None = Query(None),
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
+    sort: str = Query("usage", pattern="^(usage|name)$"),
     _=Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
@@ -110,6 +161,7 @@ async def list_pending(
         category=category,
         page=page,
         limit=limit,
+        sort=sort,
     )
 
 
@@ -119,6 +171,7 @@ async def list_validated(
     category: str | None = Query(None),
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
+    sort: str = Query("usage", pattern="^(usage|name)$"),
     _=Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
@@ -129,6 +182,7 @@ async def list_validated(
         category=category,
         page=page,
         limit=limit,
+        sort=sort,
     )
 
 
@@ -174,7 +228,8 @@ async def validate_ingredient(
     )
     await db.commit()
     await db.refresh(ingredient)
-    return _serialize(ingredient)
+    usage = await _usage_count_for(db, ingredient.id)
+    return _serialize(ingredient, usage_count=usage)
 
 
 @router.post("/{ingredient_id}/reject", summary="Reject ingredient (admin)")
@@ -202,7 +257,8 @@ async def reject_ingredient(
     )
     await db.commit()
     await db.refresh(ingredient)
-    return _serialize(ingredient)
+    usage = await _usage_count_for(db, ingredient.id)
+    return _serialize(ingredient, usage_count=usage)
 
 
 @router.post("/{ingredient_id}/merge", summary="Merge ingredient into another (admin)")
@@ -248,11 +304,13 @@ async def merge_ingredient(
     )
     await db.delete(source)
     await db.commit()
+    target_usage = await _usage_count_for(db, target.id)
     return {
         "merged": True,
         "source_id": str(ingredient_id),
         "target_id": str(target.id),
         "recipes_updated": recipes_updated,
+        "target_usage_count": target_usage,
     }
 
 
@@ -312,7 +370,8 @@ async def normalize_ingredient(
     )
     await db.commit()
     await db.refresh(ingredient)
-    return _serialize(ingredient)
+    usage = await _usage_count_for(db, ingredient.id)
+    return _serialize(ingredient, usage_count=usage)
 
 
 @router.post("/{ingredient_id}/desvalidate", summary="Desvalidate ingredient (admin)")
@@ -345,7 +404,8 @@ async def desvalidate_ingredient(
     )
     await db.commit()
     await db.refresh(ingredient)
-    return _serialize(ingredient)
+    usage = await _usage_count_for(db, ingredient.id)
+    return _serialize(ingredient, usage_count=usage)
 
 
 @router.post("/{ingredient_id}/recover", summary="Recover rejected ingredient (admin)")
@@ -382,4 +442,5 @@ async def recover_ingredient(
     )
     await db.commit()
     await db.refresh(ingredient)
-    return _serialize(ingredient)
+    usage = await _usage_count_for(db, ingredient.id)
+    return _serialize(ingredient, usage_count=usage)

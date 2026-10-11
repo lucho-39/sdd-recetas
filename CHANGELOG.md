@@ -83,6 +83,14 @@ El proyecto está en fase **MVP (0.x)**.
   la ficha del ingrediente para validar y desvalidar, rechazo con las cuatro razones del spec más texto
   libre, fusión con búsqueda sobre el catálogo oficial (no se tipea el slug), normalización de nombre,
   slug, categoría, unidad y aliases, más filtro por categoría y paginación de 20.
+- **`usage_count` de ingredientes** (UC-ADMIN-012 AC1/AC2, UC-ADMIN-014 AC1): contado en la lectura con
+  un `COUNT` correlacionado sobre `recipes.ingredients @>`, no almacenado. Las recetas guardan el id del
+  ingrediente en un array JSONB sin tabla de unión ni foreign key, así que una columna habría sido una
+  segunda fuente de verdad frágil — a diferencia de `Tag.usage_count`, que sí tiene join table y por eso
+  se sincroniza en el CRUD. El listado de pendientes ordena por `usage_count DESC` por defecto
+  (`sort=usage|name`), la tabla muestra la columna **Usos**, y el merge devuelve `target_usage_count`:
+  como el endpoint ya reescribe los ids al destino, absorber el conteo del duplicado (UC-ADMIN-015 AC2)
+  queda gratis, sin lógica de reconciliación.
 
 ### Fixed — Panel de administración
 - **`tsconfig.json` del admin declaraba `"$lib"` sin `"$lib/*"`**, así que ningún alias resolvía:
