@@ -312,6 +312,75 @@ async def test_admin_ingredient_recover_requires_rejected(
     assert "not rejected" in response.json()["detail"]
 
 
+async def test_admin_ingredient_normalize_rejects_duplicate_slug(
+    client: AsyncClient, admin_headers: dict, db_session: AsyncSession
+) -> None:
+    """UC-ADMIN-019 AC2: the slug feeds every recipe link, so a collision is 400."""
+    await create_ingredient(db_session, slug="pimiento", name="Pimiento")
+    other = await create_ingredient(db_session, slug="berenjena", name="Berenjena")
+
+    response = await client.post(
+        f"/api/admin/ingredients/{other.id}/normalize",
+        headers=admin_headers,
+        json={"slug": "pimiento", "mark_validated": False},
+    )
+    assert response.status_code == 400
+    assert "Slug already in use" in response.json()["detail"]
+
+
+async def test_admin_ingredient_normalize_allows_keeping_its_own_slug(
+    client: AsyncClient, admin_headers: dict, db_session: AsyncSession
+) -> None:
+    ingredient = await create_ingredient(db_session, slug="sal", name="Sal")
+    response = await client.post(
+        f"/api/admin/ingredients/{ingredient.id}/normalize",
+        headers=admin_headers,
+        json={"slug": "sal", "mark_validated": False},
+    )
+    assert response.status_code == 200
+    assert response.json()["slug"] == "sal"
+
+
+async def test_admin_ingredient_normalize_rejects_invalid_category(
+    client: AsyncClient, admin_headers: dict, db_session: AsyncSession
+) -> None:
+    ingredient = await create_ingredient(db_session, slug="azafran", name="Azafran")
+    response = await client.post(
+        f"/api/admin/ingredients/{ingredient.id}/normalize",
+        headers=admin_headers,
+        json={"category": "especias-exoticas", "mark_validated": False},
+    )
+    assert response.status_code == 400
+    assert "especias-exoticas" in response.json()["detail"]
+
+
+async def test_admin_ingredient_normalize_rejects_invalid_unit(
+    client: AsyncClient, admin_headers: dict, db_session: AsyncSession
+) -> None:
+    ingredient = await create_ingredient(db_session, slug="pimienta", name="Pimienta")
+    response = await client.post(
+        f"/api/admin/ingredients/{ingredient.id}/normalize",
+        headers=admin_headers,
+        json={"default_unit": "cucharadones", "mark_validated": False},
+    )
+    assert response.status_code == 400
+    assert "cucharadones" in response.json()["detail"]
+
+
+async def test_admin_ingredient_list_exposes_creator_email(
+    client: AsyncClient, admin_headers: dict, db_session: AsyncSession, user: User
+) -> None:
+    """UC-ADMIN-012 AC2 asks for created_by; the UUID alone is not linkable."""
+    ingredient = await create_ingredient(
+        db_session, slug="origen", name="Origen", created_by=user.id
+    )
+
+    response = await client.get("/api/admin/ingredients/pending", headers=admin_headers)
+    row = next(i for i in response.json()["items"] if i["id"] == str(ingredient.id))
+    assert row["created_by"] == str(user.id)
+    assert row["created_by_email"] == user.email
+
+
 async def test_admin_recipes_series(
     client: AsyncClient, admin_headers: dict, recipe: Recipe
 ) -> None:

@@ -7,11 +7,12 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.audit import record_audit
 from app.core.database import get_db
 from app.core.security import require_admin
-from app.core.units import VALID_UNITS
+from app.core.units import VALID_CATEGORIES, VALID_UNITS
 from app.models import Ingredient, Recipe, User
 from app.schemas.admin import (
     IngredientMergeRequest,
@@ -41,8 +42,23 @@ def _serialize(ing: Ingredient) -> dict:
         "rejected_by": str(ing.rejected_by) if ing.rejected_by else None,
         "rejected_at": ing.rejected_at,
         "created_by": str(ing.created_by) if ing.created_by else None,
+        "created_by_email": ing.created_by_user.email if ing.created_by_user else None,
         "created_at": ing.created_at,
     }
+
+
+async def _get_ingredient(db: AsyncSession, ingredient_id: UUID) -> Ingredient | None:
+    """Load an ingredient with its creator so _serialize can show the email.
+
+    Without this every single-ingredient route would lazy-load the relation
+    and trip over SQLAlchemy's async detached-instance guard.
+    """
+    result = await db.execute(
+        select(Ingredient)
+        .where(Ingredient.id == ingredient_id)
+        .options(selectinload(Ingredient.created_by_user))
+    )
+    return result.scalar_one_or_none()
 
 
 async def _list(
@@ -64,6 +80,7 @@ async def _list(
     result = await db.execute(
         select(Ingredient)
         .where(*filters)
+        .options(selectinload(Ingredient.created_by_user))
         .order_by(Ingredient.name)
         .offset((page - 1) * limit)
         .limit(limit)
@@ -140,7 +157,7 @@ async def validate_ingredient(
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    ingredient = await db.get(Ingredient, ingredient_id)
+    ingredient = await _get_ingredient(db, ingredient_id)
     if not ingredient:
         raise HTTPException(status_code=404, detail="Ingredient not found")
     ingredient.validated_by_admin = True
@@ -167,7 +184,7 @@ async def reject_ingredient(
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    ingredient = await db.get(Ingredient, ingredient_id)
+    ingredient = await _get_ingredient(db, ingredient_id)
     if not ingredient:
         raise HTTPException(status_code=404, detail="Ingredient not found")
     ingredient.rejected = True
@@ -246,9 +263,23 @@ async def normalize_ingredient(
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    ingredient = await db.get(Ingredient, ingredient_id)
+    ingredient = await _get_ingredient(db, ingredient_id)
     if not ingredient:
         raise HTTPException(status_code=404, detail="Ingredient not found")
+
+    # UC-ADMIN-019 AC2: the slug feeds every recipe link and the public
+    # autocomplete keys off category/unit, so a bad value here breaks the
+    # public site long after the modal is closed.
+    if data.slug is not None and data.slug != ingredient.slug:
+        duplicate = await db.scalar(select(Ingredient.id).where(Ingredient.slug == data.slug))
+        if duplicate:
+            raise HTTPException(status_code=400, detail="Slug already in use")
+
+    if data.category is not None and data.category not in VALID_CATEGORIES:
+        raise HTTPException(status_code=400, detail=f"Invalid category: {data.category}")
+
+    if data.default_unit is not None and data.default_unit not in VALID_UNITS:
+        raise HTTPException(status_code=400, detail=f"Invalid unit: {data.default_unit}")
 
     # RF-12.8: the whitelist feeds validate_ingredients(), so a typo here
     # would silently lock every recipe out of that unit.
@@ -295,7 +326,7 @@ async def desvalidate_ingredient(
     The ingredient stays active so recipes using it keep resolving; it just
     loses its official-catalogue status until it is reviewed again.
     """
-    ingredient = await db.get(Ingredient, ingredient_id)
+    ingredient = await _get_ingredient(db, ingredient_id)
     if not ingredient:
         raise HTTPException(status_code=404, detail="Ingredient not found")
     if not ingredient.validated_by_admin:
@@ -329,7 +360,7 @@ async def recover_ingredient(
     The rejection fields are cleared (they describe the rejected state, not the
     transition) and the reason travels to the audit log instead.
     """
-    ingredient = await db.get(Ingredient, ingredient_id)
+    ingredient = await _get_ingredient(db, ingredient_id)
     if not ingredient:
         raise HTTPException(status_code=404, detail="Ingredient not found")
     if not ingredient.rejected:

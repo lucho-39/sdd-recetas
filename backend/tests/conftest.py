@@ -17,6 +17,7 @@ import os
 os.environ["JWT_ALGORITHM"] = os.environ.get("TEST_JWT_ALGORITHM", "HS256")
 
 from typing import AsyncGenerator
+from uuid import UUID
 
 import pytest
 import pytest_asyncio
@@ -231,6 +232,7 @@ async def create_ingredient(
     allowed_units: list[str] | None = None,
     aliases: list[str] | None = None,
     is_active: bool = True,
+    created_by: UUID | None = None,
 ) -> Ingredient:
     ingredient = Ingredient(
         slug=slug,
@@ -240,6 +242,7 @@ async def create_ingredient(
         allowed_units=allowed_units or [],
         aliases=aliases or [],
         is_active=is_active,
+        created_by=created_by,
     )
     db.add(ingredient)
     await db.commit()
