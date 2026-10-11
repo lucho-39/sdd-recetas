@@ -467,3 +467,59 @@ async def recover_ingredient(
     await db.refresh(ingredient)
     usage = await _usage_count_for(db, ingredient.id)
     return _serialize(ingredient, usage_count=usage)
+
+
+@router.get(
+    "/{ingredient_id}/usages",
+    summary="Recipes using an ingredient (admin)",
+)
+async def list_ingredient_usages(
+    ingredient_id: UUID,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    _=Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """UC-ADMIN-017 AC3: show which recipes reference this ingredient.
+
+    The same JSONB containment the count uses, but returning the rows so an
+    admin can see where the ingredient is actually being used before
+    deciding to desvalidate it.
+    """
+    if not await db.get(Ingredient, ingredient_id):
+        raise HTTPException(status_code=404, detail="Ingredient not found")
+
+    reference = func.jsonb_build_array(
+        func.jsonb_build_object("ingredient_id", str(ingredient_id))
+    )
+    contains = Recipe.ingredients.op("@>")(reference)
+    live = Recipe.deleted_at.is_(None)
+
+    total = await db.scalar(
+        select(func.count()).select_from(Recipe).where(live, contains)
+    )
+    result = await db.execute(
+        select(Recipe)
+        .where(live, contains)
+        .order_by(Recipe.created_at.desc())
+        .offset((page - 1) * limit)
+        .limit(limit)
+        .options(selectinload(Recipe.author))
+    )
+    return {
+        "items": [
+            {
+                "id": str(r.id),
+                "slug": r.slug,
+                "title": r.title,
+                "is_public": r.is_public,
+                "author": r.author.display_name if r.author else None,
+                "author_id": str(r.author_id),
+                "created_at": r.created_at,
+            }
+            for r in result.scalars().all()
+        ],
+        "total": total,
+        "page": page,
+        "limit": limit,
+    }

@@ -590,6 +590,43 @@ async def test_admin_ingredient_merge_unions_aliases(
     assert target.aliases == ["tomate", "jitomate", "cherry", "mini"]
 
 
+async def test_admin_ingredient_usages(
+    client: AsyncClient,
+    admin_headers: dict,
+    db_session: AsyncSession,
+    user: User,
+    category,
+) -> None:
+    """UC-ADMIN-017 AC3: list the recipes that reference the ingredient."""
+    ingredient = await create_ingredient(
+        db_session, slug="cebolla-usos", name="Cebolla"
+    )
+    recipe = await create_recipe(
+        db_session,
+        author=user,
+        category=category,
+        title="Sofrito",
+        slug="sofrito-usos",
+        ingredients=[{"ingredient_id": str(ingredient.id), "amount": 1, "unit": "unidad"}],
+    )
+
+    response = await client.get(
+        f"/api/admin/ingredients/{ingredient.id}/usages", headers=admin_headers
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 1
+    assert body["items"][0]["id"] == str(recipe.id)
+    assert body["items"][0]["title"] == "Sofrito"
+    assert body["items"][0]["author"] == user.display_name
+
+    missing = await client.get(
+        "/api/admin/ingredients/00000000-0000-0000-0000-000000000000/usages",
+        headers=admin_headers,
+    )
+    assert missing.status_code == 404
+
+
 async def test_admin_ingredient_usage_count_comes_from_recipes(
     client: AsyncClient,
     admin_headers: dict,

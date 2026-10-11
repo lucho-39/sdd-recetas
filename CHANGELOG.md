@@ -96,6 +96,10 @@ El proyecto está en fase **MVP (0.x)**.
   `ingredients.merged_into` (FK a sí misma, migración `21978cca6cdc`). Los aliases del duplicado se
   unen a los del oficial sin duplicarlos, y tanto la respuesta como la auditoría reportan
   `aliases_added`. Un fusionado no pertenece a ninguna cola, así que los tres listados lo excluyen.
+- **"Ver uso en recetas"** (UC-ADMIN-017 AC3): `GET /api/admin/ingredients/{id}/usages` lista las
+  recetas vivas que referencian el ingrediente — el mismo `@>` de JSONB que usa el conteo — con
+  paginación y el autor. En el tab de validados hay una acción nueva que abre un dialog con el
+  listado, para ver dónde se usa un ingrediente antes de desvalidarlo.
 
 ### Fixed — Panel de administración
 - **`tsconfig.json` del admin declaraba `"$lib"` sin `"$lib/*"`**, así que ningún alias resolvía:

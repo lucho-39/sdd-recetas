@@ -7,6 +7,7 @@
 		IconGitMerge as Merge,
 		IconArrowBackUp as Recover,
 		IconEyeOff as Desvalidate,
+		IconListSearch as Usages,
 		IconChevronLeft as Prev,
 		IconChevronRight as Next
 	} from '@tabler/icons-svelte';
@@ -67,6 +68,13 @@
 	let nCategory = '';
 	let nUnit = '';
 	let nAliases = '';
+
+	/** UC-017 AC3: ver en qué recetas se usa el ingrediente antes de desvalidarlo. */
+	let usagesItem: Ingredient | null = null;
+	let usages: { id: string; title: string; slug: string; author: string | null }[] = [];
+	let usagesTotal = 0;
+	let usagesLoading = false;
+	let usagesError = '';
 
 	let recoverItem: Ingredient | null = null;
 	let recoverReason = '';
@@ -279,6 +287,27 @@
 		}
 	}
 
+	/** UC-017 AC3: ver uso en recetas. */
+	async function openUsages(item: Ingredient) {
+		usagesItem = item;
+		usages = [];
+		usagesTotal = 0;
+		usagesError = '';
+		usagesLoading = true;
+		try {
+			const data = await adminFetch<{
+				items: { id: string; title: string; slug: string; author: string | null }[];
+				total: number;
+			}>(`/ingredients/${item.id}/usages?limit=50`);
+			usages = data.items;
+			usagesTotal = data.total;
+		} catch (err) {
+			usagesError = err instanceof Error ? err.message : 'Error';
+		} finally {
+			usagesLoading = false;
+		}
+	}
+
 	onMount(load);
 </script>
 
@@ -377,6 +406,15 @@
 								</button>
 							{/if}
 							{#if tab === 'validated'}
+								<button
+									type="button"
+									class="btn btn-ghost btn-sm"
+									title="Ver uso en recetas"
+									aria-label="Ver uso de {item.name} en recetas"
+									on:click={() => openUsages(item)}
+								>
+									<Usages class="h-4 w-4" aria-hidden="true" />
+								</button>
 								<button
 									type="button"
 									class="btn btn-ghost btn-sm"
@@ -492,6 +530,35 @@
 		</dl>
 	{/if}
 </AlertDialog>
+
+<!-- UC-017 AC3: listado de recetas que usan el ingrediente. -->
+<Dialog
+	open={usagesItem !== null}
+	title="Uso en recetas"
+	description={usagesItem ? `Recetas que usan "${usagesItem.name}".` : null}
+	onClose={() => (usagesItem = null)}
+>
+	{#if usagesLoading}
+		<p class="text-sm text-muted-foreground">Cargando…</p>
+	{:else if usagesError}
+		<p class="text-sm text-destructive" role="alert">{usagesError}</p>
+	{:else if usages.length === 0}
+		<p class="text-sm text-muted-foreground">Ninguna receta lo usa.</p>
+	{:else}
+		<p class="text-sm text-muted-foreground">{usagesTotal} en total</p>
+		<ul class="mt-2 divide-y divide-border">
+			{#each usages as r (r.id)}
+				<li class="flex items-baseline justify-between gap-3 py-2">
+					<div class="min-w-0">
+						<p class="truncate text-sm font-medium text-foreground">{r.title}</p>
+						<p class="truncate text-xs text-muted-foreground">/{r.slug}</p>
+					</div>
+					<span class="shrink-0 text-xs text-muted-foreground">{r.author ?? '—'}</span>
+				</li>
+			{/each}
+		</ul>
+	{/if}
+</Dialog>
 
 <!-- UC-016 AC1: preset reasons, and "Otro" opens a free-text field. -->
 <Dialog
