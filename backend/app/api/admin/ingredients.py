@@ -16,6 +16,7 @@ from app.models import Ingredient, Recipe, User
 from app.schemas.admin import (
     IngredientMergeRequest,
     IngredientNormalizeRequest,
+    IngredientRecoverRequest,
     IngredientRejectRequest,
 )
 
@@ -33,9 +34,13 @@ def _serialize(ing: Ingredient) -> dict:
         "aliases": ing.aliases or [],
         "is_active": ing.is_active,
         "validated_by_admin": ing.validated_by_admin,
+        "validated_by": str(ing.validated_by) if ing.validated_by else None,
         "validated_at": ing.validated_at,
         "rejected": ing.rejected,
         "rejection_reason": ing.rejection_reason,
+        "rejected_by": str(ing.rejected_by) if ing.rejected_by else None,
+        "rejected_at": ing.rejected_at,
+        "created_by": str(ing.created_by) if ing.created_by else None,
         "created_at": ing.created_at,
     }
 
@@ -273,6 +278,76 @@ async def normalize_ingredient(
         target_type="ingredient",
         target_id=str(ingredient.id),
         detail=update_data,
+    )
+    await db.commit()
+    await db.refresh(ingredient)
+    return _serialize(ingredient)
+
+
+@router.post("/{ingredient_id}/desvalidate", summary="Desvalidate ingredient (admin)")
+async def desvalidate_ingredient(
+    ingredient_id: UUID,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """UC-ADMIN-017 AC3: move a validated ingredient back to the pending queue.
+
+    The ingredient stays active so recipes using it keep resolving; it just
+    loses its official-catalogue status until it is reviewed again.
+    """
+    ingredient = await db.get(Ingredient, ingredient_id)
+    if not ingredient:
+        raise HTTPException(status_code=404, detail="Ingredient not found")
+    if not ingredient.validated_by_admin:
+        raise HTTPException(status_code=400, detail="Ingredient is not validated")
+
+    ingredient.validated_by_admin = False
+    ingredient.validated_at = None
+    ingredient.validated_by = None
+
+    await record_audit(
+        db,
+        admin.id,
+        "ingredient.desvalidate",
+        target_type="ingredient",
+        target_id=str(ingredient.id),
+    )
+    await db.commit()
+    await db.refresh(ingredient)
+    return _serialize(ingredient)
+
+
+@router.post("/{ingredient_id}/recover", summary="Recover rejected ingredient (admin)")
+async def recover_ingredient(
+    ingredient_id: UUID,
+    data: IngredientRecoverRequest,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """UC-ADMIN-018 AC3: move a rejected ingredient back to pending with a reason.
+
+    The rejection fields are cleared (they describe the rejected state, not the
+    transition) and the reason travels to the audit log instead.
+    """
+    ingredient = await db.get(Ingredient, ingredient_id)
+    if not ingredient:
+        raise HTTPException(status_code=404, detail="Ingredient not found")
+    if not ingredient.rejected:
+        raise HTTPException(status_code=400, detail="Ingredient is not rejected")
+
+    ingredient.rejected = False
+    ingredient.rejection_reason = None
+    ingredient.rejected_by = None
+    ingredient.rejected_at = None
+    ingredient.is_active = True
+
+    await record_audit(
+        db,
+        admin.id,
+        "ingredient.recover",
+        target_type="ingredient",
+        target_id=str(ingredient.id),
+        detail={"reason": data.reason},
     )
     await db.commit()
     await db.refresh(ingredient)

@@ -67,6 +67,11 @@ El proyecto está en fase **MVP (0.x)**.
 - **Errores** (`/errores`): respuestas 5xx capturadas por un middleware.
 - **Estadísticas por receta** (`GET /recipes/{id}/stats`) con vista expandible en `/recetas`.
 - **Reactivar** y **borrado GDPR** de usuarios (`/usuarios`); **fusión** de ingredientes duplicados (`/ingredientes`).
+- **Desvalidar** y **recuperar** ingredientes (`POST /api/admin/ingredients/{id}/desvalidate` y `/recover`),
+  cerrando UC-ADMIN-017 AC3 y UC-ADMIN-018 AC3: mueven un ingrediente entre catálogo oficial y cola de
+  pendientes sin romper las recetas que ya lo usan. Ambos auditados, y devuelven 400 si el estado de
+  origen no corresponde (desvalidar algo ya pendiente, recuperar algo no rechazado). El listado admin
+  de ingredientes ahora expone `created_by`, `validated_by`, `validated_at`, `rejected_by` y `rejected_at`.
 - **Modo mantenimiento** (503 en tráfico público, panel admin accesible) y **rate limiting** por minuto
   (configurable, exento para `/api/admin`).
 

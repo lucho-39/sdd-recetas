@@ -107,6 +107,12 @@ class IngredientRejectRequest(BaseModel):
     reason: str = Field(..., min_length=3, max_length=500)
 
 
+class IngredientRecoverRequest(BaseModel):
+    """Reason a rejected ingredient is being moved back to pending."""
+
+    reason: str = Field(..., min_length=3, max_length=500)
+
+
 class IngredientNormalizeRequest(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=100)
     category: Optional[str] = Field(None, max_length=30)

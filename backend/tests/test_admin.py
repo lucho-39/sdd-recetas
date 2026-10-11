@@ -234,6 +234,84 @@ async def test_admin_ingredient_normalize_rejects_invalid_allowed_unit(
     assert "cucharadones" in response.json()["detail"]
 
 
+async def test_admin_ingredient_desvalidate(
+    client: AsyncClient, admin_headers: dict, db_session: AsyncSession
+) -> None:
+    """UC-ADMIN-017 AC3: a validated ingredient goes back to the pending queue."""
+    ingredient = await create_ingredient(db_session, slug="volver", name="Volver")
+    await client.post(
+        f"/api/admin/ingredients/{ingredient.id}/validate", headers=admin_headers
+    )
+
+    response = await client.post(
+        f"/api/admin/ingredients/{ingredient.id}/desvalidate", headers=admin_headers
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["validated_by_admin"] is False
+    assert body["validated_at"] is None
+    assert body["validated_by"] is None
+    assert body["is_active"] is True
+
+    pending = await client.get("/api/admin/ingredients/pending", headers=admin_headers)
+    assert any(i["id"] == str(ingredient.id) for i in pending.json()["items"])
+
+
+async def test_admin_ingredient_desvalidate_requires_validated(
+    client: AsyncClient, admin_headers: dict, db_session: AsyncSession
+) -> None:
+    ingredient = await create_ingredient(db_session, slug="nunca", name="Nunca")
+    response = await client.post(
+        f"/api/admin/ingredients/{ingredient.id}/desvalidate", headers=admin_headers
+    )
+    assert response.status_code == 400
+    assert "not validated" in response.json()["detail"]
+
+
+async def test_admin_ingredient_recover(
+    client: AsyncClient, admin_headers: dict, db_session: AsyncSession
+) -> None:
+    """UC-ADMIN-018 AC3: a rejected ingredient goes back to pending with a reason."""
+    ingredient = await create_ingredient(db_session, slug="recuperar", name="Recuperar")
+    await client.post(
+        f"/api/admin/ingredients/{ingredient.id}/reject",
+        headers=admin_headers,
+        json={"reason": "Spam"},
+    )
+
+    response = await client.post(
+        f"/api/admin/ingredients/{ingredient.id}/recover",
+        headers=admin_headers,
+        json={"reason": "Era un falso positivo"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["rejected"] is False
+    assert body["rejection_reason"] is None
+    assert body["rejected_by"] is None
+    assert body["rejected_at"] is None
+    assert body["is_active"] is True
+
+    pending = await client.get("/api/admin/ingredients/pending", headers=admin_headers)
+    assert any(i["id"] == str(ingredient.id) for i in pending.json()["items"])
+
+    rejected = await client.get("/api/admin/ingredients/rejected", headers=admin_headers)
+    assert not any(i["id"] == str(ingredient.id) for i in rejected.json()["items"])
+
+
+async def test_admin_ingredient_recover_requires_rejected(
+    client: AsyncClient, admin_headers: dict, db_session: AsyncSession
+) -> None:
+    ingredient = await create_ingredient(db_session, slug="activo", name="Activo")
+    response = await client.post(
+        f"/api/admin/ingredients/{ingredient.id}/recover",
+        headers=admin_headers,
+        json={"reason": "No estaba rechazado"},
+    )
+    assert response.status_code == 400
+    assert "not rejected" in response.json()["detail"]
+
+
 async def test_admin_recipes_series(
     client: AsyncClient, admin_headers: dict, recipe: Recipe
 ) -> None:

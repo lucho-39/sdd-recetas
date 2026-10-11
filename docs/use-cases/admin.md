@@ -1,7 +1,8 @@
 # Casos de Uso: Administración (Proyecto Independiente)
 
 **Proyecto**: `recetario-admin` (SvelteKit separado)  
-**Auth**: Independiente del frontend usuario — JWT propio (HS256 en MVP; RS256 queda v2) (`role: "admin"`), cookies HttpOnly, refresh rotation propia. **Endpoints `/api/admin/*` pendientes de implementar.**
+**Auth**: Independiente del frontend usuario — JWT propio (HS256 en MVP; RS256 queda v2) (`role: "admin"`), cookies HttpOnly, refresh rotation propia.
+**Estado del backend**: los 10 módulos `/api/admin/*` están implementados (36 endpoints): `users`, `recipes`, `ingredients`, `categories`, `tags`, `audit`, `errors`, `metrics`, `config`. Huecos puntuales por épico, detallados en cada Epic.
 **Actores**: Administrador (usuario con `role: "admin"`)  
 **API**: Consume misma API backend (`/api/admin/*` endpoints con scope `admin`)
 
@@ -149,6 +150,11 @@
 - **AC1**: Modal: name (editable, slug auto), category, default_unit (selector unidades válidas), aliases (textarea)
 - **AC2**: Validación: slug único, categoría válida, unidad en whitelist (g, kg, ml, l, unidad, cucharada, cucharadita, taza, pizca)
 - **AC3**: Al guardar → actualiza ingrediente + propaga cambios a recetas que lo usan (ingredient_id inmutable)
+
+**Estado del Epic A3** (auditado 2026-10-11):
+- **Backend — 9/9 rutas listas**: `GET` pending/validated/rejected, `POST` validate, reject, merge, normalize, **desvalidate** (UC-017 AC3) y **recover** (UC-018 AC3). Desvalidar y recuperar están auditados y devuelven 400 si el estado de origen no corresponde.
+- **Backend — huecos abiertos**: `usage_count` no existe como columna ni se calcula (lo piden UC-012 AC1/AC2); no hay endpoint de "ver uso en recetas" (UC-017 AC3); no hay notificación al creador al rechazar (UC-016 AC3), porque el proyecto no tiene sistema de notificaciones.
+- **Frontend — cubre los flujos base pero no la spec**: 3 tabs, validar, rechazar, mergear, normalizar. Usa `prompt()`/`confirm()` nativos en lugar del design system, el modal de normalizar sólo envía nombre y unidad (faltan slug, categoría y aliases), el merge pide el slug por teclado en vez de un select sobre el catálogo, y faltan las columnas `usage_count`, `created_by`, `created_at` y `aliases`, el filtro por categoría y las acciones desvalidar/recuperar.
 
 ---
 
@@ -371,9 +377,9 @@
    Claims: { sub, email, role: "admin", admin_id, jti }
 5. SvelteKit store guarda access token (memoria), refresh en cookie
 6. Requests a /api/admin/* → Authorization: Bearer <access>
-7. Backend valida JWT (HS256 en MVP) + claim role="admin" + acceso a /api/admin/* **[endpoints pendientes]**
-6. Refresh: POST /auth/refresh (cookie) → nuevo pair (rotación)
-7. Logout: POST /auth/logout → revoca refresh actual + access token blacklist (opcional)
+7. Backend valida JWT (HS256 en MVP) + claim role="admin" + acceso a /api/admin/* **[endpoints implementados]**
+8. Refresh: POST /auth/refresh (cookie) → nuevo par (rotación)
+9. Logout: POST /auth/logout → revoca refresh actual + access token blacklist (opcional)
 ```
 
 ---
