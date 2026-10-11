@@ -218,6 +218,12 @@ class Ingredient(Base):
     rejection_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     rejected_by: Mapped[Optional[uuid4]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     rejected_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Set instead of deleting the row when an admin merges a duplicate into
+    # the official catalog entry (UC-ADMIN-015 AC2). The recipes already point
+    # at the target, so this keeps the merge auditable without losing history.
+    merged_into: Mapped[Optional[uuid4]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ingredients.id"), nullable=True
+    )
     created_by: Mapped[Optional[uuid4]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

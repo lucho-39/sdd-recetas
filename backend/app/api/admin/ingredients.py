@@ -66,6 +66,7 @@ def _serialize(ing: Ingredient, usage_count: int = 0) -> dict:
         "rejection_reason": ing.rejection_reason,
         "rejected_by": str(ing.rejected_by) if ing.rejected_by else None,
         "rejected_at": ing.rejected_at,
+        "merged_into": str(ing.merged_into) if ing.merged_into else None,
         "created_by": str(ing.created_by) if ing.created_by else None,
         "created_by_email": ing.created_by_user.email if ing.created_by_user else None,
         "created_at": ing.created_at,
@@ -110,7 +111,11 @@ async def _list(
     limit: int,
     sort: str = "name",
 ):
-    filters = list(conditions)
+    filters = [
+        # A merged duplicate is no longer manageable: it belongs to no queue.
+        Ingredient.merged_into.is_(None),
+        *conditions,
+    ]
     if search:
         term = f"%{search}%"
         filters.append(or_(Ingredient.name.ilike(term), Ingredient.slug.ilike(term)))
@@ -269,7 +274,12 @@ async def merge_ingredient(
     db: AsyncSession = Depends(get_db),
 ):
     """Reassign every recipe reference from the source ingredient to the target
-    and delete the source (duplicate cleanup)."""
+    and retire the duplicate (UC-ADMIN-015 AC2).
+
+    The duplicate is soft-deleted, not deleted: `is_active=false` takes it out
+    of the public catalog and `merged_into` records where it went so the merge
+    stays auditable. The aliases are unioned into the target first.
+    """
     if ingredient_id == data.target_id:
         raise HTTPException(status_code=400, detail="Cannot merge an ingredient into itself")
 
@@ -294,15 +304,27 @@ async def merge_ingredient(
             recipe.ingredients = new_items
             recipes_updated += 1
 
+    existing_aliases = target.aliases or []
+    merged_aliases = list(
+        dict.fromkeys([*existing_aliases, *(source.aliases or [])])
+    )
+    if merged_aliases != existing_aliases:
+        target.aliases = merged_aliases
+
     await record_audit(
         db,
         admin.id,
         "ingredient.merge",
         target_type="ingredient",
         target_id=str(source.id),
-        detail={"target_id": str(target.id), "recipes_updated": recipes_updated},
+        detail={
+            "target_id": str(target.id),
+            "recipes_updated": recipes_updated,
+            "aliases_added": [a for a in merged_aliases if a not in existing_aliases],
+        },
     )
-    await db.delete(source)
+    source.is_active = False
+    source.merged_into = target.id
     await db.commit()
     target_usage = await _usage_count_for(db, target.id)
     return {
@@ -310,6 +332,7 @@ async def merge_ingredient(
         "source_id": str(ingredient_id),
         "target_id": str(target.id),
         "recipes_updated": recipes_updated,
+        "aliases_added": [a for a in merged_aliases if a not in existing_aliases],
         "target_usage_count": target_usage,
     }
 

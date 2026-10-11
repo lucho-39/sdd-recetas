@@ -91,6 +91,11 @@ El proyecto está en fase **MVP (0.x)**.
   (`sort=usage|name`), la tabla muestra la columna **Usos**, y el merge devuelve `target_usage_count`:
   como el endpoint ya reescribe los ids al destino, absorber el conteo del duplicado (UC-ADMIN-015 AC2)
   queda gratis, sin lógica de reconciliación.
+- **UC-ADMIN-015 AC2 completo en el merge de ingredientes**: el duplicado ya no se borra. Se retira con
+  soft delete (`is_active=false`, que lo saca del catálogo público) y deja rastro en la columna nueva
+  `ingredients.merged_into` (FK a sí misma, migración `21978cca6cdc`). Los aliases del duplicado se
+  unen a los del oficial sin duplicarlos, y tanto la respuesta como la auditoría reportan
+  `aliases_added`. Un fusionado no pertenece a ninguna cola, así que los tres listados lo excluyen.
 
 ### Fixed — Panel de administración
 - **`tsconfig.json` del admin declaraba `"$lib"` sin `"$lib/*"`**, así que ningún alias resolvía:

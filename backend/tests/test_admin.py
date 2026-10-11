@@ -546,7 +546,48 @@ async def test_admin_ingredient_merge(
 
     await db_session.refresh(recipe)
     assert recipe.ingredients[0]["ingredient_id"] == str(target.id)
-    assert await db_session.get(type(source), source.id) is None
+    # UC-ADMIN-015 AC2: soft delete, not DELETE — the duplicate keeps its
+    # row so the merge stays auditable.
+    await db_session.refresh(source)
+    assert source.is_active is False
+    assert source.merged_into == target.id
+    assert await db_session.get(type(source), source.id) is not None
+
+    # A merged duplicate belongs to no queue, so it must leave every list.
+    for tab in ("pending", "validated", "rejected"):
+        listing = await client.get(f"/api/admin/ingredients/{tab}", headers=admin_headers)
+        assert all(i["id"] != str(source.id) for i in listing.json()["items"])
+
+
+async def test_admin_ingredient_merge_unions_aliases(
+    client: AsyncClient,
+    admin_headers: dict,
+    db_session: AsyncSession,
+    user: User,
+    category,
+) -> None:
+    """UC-ADMIN-015 AC2: the official keeps its aliases and gains the duplicate's."""
+    source = await create_ingredient(
+        db_session, slug="tomate-cherry", name="Tomate cherry", aliases=["cherry", "mini"]
+    )
+    target = await create_ingredient(
+        db_session,
+        slug="tomate",
+        name="Tomate",
+        created_by=user.id,
+        aliases=["tomate", "jitomate"],
+    )
+
+    response = await client.post(
+        f"/api/admin/ingredients/{source.id}/merge",
+        headers=admin_headers,
+        json={"target_id": str(target.id)},
+    )
+    assert response.status_code == 200
+    assert response.json()["aliases_added"] == ["cherry", "mini"]
+
+    await db_session.refresh(target)
+    assert target.aliases == ["tomate", "jitomate", "cherry", "mini"]
 
 
 async def test_admin_ingredient_usage_count_comes_from_recipes(
