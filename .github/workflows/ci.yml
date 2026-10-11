@@ -31,8 +31,9 @@ jobs:
       JWT_ALGORITHM: HS256
       # Default is /app/uploads, which does not exist (and is not writable)
       # on a runner, so importing app.main died on mkdir before a single
-      # test collected.
-      UPLOADS_DIR: ${{ runner.temp }}/uploads
+      # test collected. Not runner.temp: that context is unavailable at
+      # job level and fails workflow validation before any job is created.
+      UPLOADS_DIR: /tmp/uploads
 
     defaults:
       run:
