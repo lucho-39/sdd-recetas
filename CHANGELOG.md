@@ -159,6 +159,22 @@ El proyecto está en fase **MVP (0.x)**.
     fija a mano en `'[]'::jsonb`; migró las 320 filas existentes sin errores.
 
 ### Fixed
+- **`docs/ui/02-components.md` ya no contradice al filesystem.** El catálogo declaraba 38
+  componentes y sólo 18 existían; además 9 componentes reales ni siquiera estaban
+  catalogados. Verificado en ambas direcciones: 27 entradas en el filesystem, 27 en la
+  doc.
+  - **20 entradas marcadas `[no implementado]`** en vez de borradas: la especificación de
+    `AdminTable`, `AdminLayout`, `FilterSidebar` y compañía es lo que hay que construir en
+    Fase 3, y borrarla destruiría trabajo de diseño hecho. La convención queda documentada
+    en el encabezado.
+  - **9 entradas agregadas** (`Button`, `Input`, `AvatarDropdown`, `AlertDialog`,
+    `ConfirmHost`, `RecipeForm`, `RecipeCardSkeleton`, `ReviewList`, `PublicProfile`), con
+    las props que realmente exporta cada uno.
+  - **3 marcadas `[sin uso]`**: `Alert`, `Toast` e `Input` existen pero ningún archivo del
+    proyecto los importa.
+  - La tabla de verificación decía que `Modal/Sheet` estaba completo; `Sheet` no existe.
+    Quedó como `Dialog / AlertDialog`, que sí. También estaba duplicada la fila de
+    `RecipeCard` y repetida la numeración de secciones (dos "10").
 - **Brecha de seguridad: cuenta destruible con una sesión robada**. `POST /auth/deactivate` y
   `POST /auth/delete-account` no pedían nada más que un access token válido, así que cualquiera
   con una sesión secuestrada podía borrar una cuenta de forma irreversible. Ambos exigen ahora la

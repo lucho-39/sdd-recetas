@@ -1,6 +1,37 @@
 # Especificación de Componentes
 
 > Catálogo completo de componentes: props, estados, variants, a11y, testing.
+>
+> **Convención de estado**:
+> - **`[no implementado]`** — el componente está especificado acá pero todavía no existe en
+>   `frontend/src/lib/components/`. La especificación se conserva a propósito: es lo que hay
+>   que construir en Fase 3. No debe leerse como código disponible.
+> - **`[sin uso]`** — el componente existe pero ningún archivo del proyecto lo importa.
+>
+> Verificado contra el filesystem el 2026-10-11: 18 de las 38 entradas originales existen
+> (20 marcadas `[no implementado]`) y 5 componentes existentes no estaban catalogados
+> (ahora agregados).
+
+---
+
+## 0. Base UI
+
+### Button (`components/ui/Button.svelte`)
+
+Primitiva de acción. Se renderiza como `<a>` cuando recibe `href`.
+
+**Props**: `variant` (filled / outline / ghost / destructive / link), `size: 'default' | 'sm' | 'lg' | 'icon'`, `disabled = false`, `loading = false`, `type: 'button' | 'submit' | 'reset' = 'button'`, `href?: string`, `className = ''`, `fullWidth = false`
+**Eventos**: `click` (vía `createEventDispatcher`)
+**Estados**: `loading` muestra un spinner y marca `aria-busy`; `disabled` setea `aria-disabled` en la variante link.
+
+---
+
+### Input (`components/ui/Input.svelte`) **[sin uso]**
+
+Campo de texto con label y mensaje de error asociado.
+
+**Props**: `type: 'text' | 'email' | 'password' | 'number' | 'search' = 'text'`, `placeholder = ''`, `value = ''`, `disabled = false`, `required = false`, `id: string`, `label: string`, `error?: string`
+**A11y**: el `<p>` de error lleva `role="alert"` y está vinculado al input por `aria-describedby`.
 
 ---
 
@@ -42,6 +73,15 @@ interface NavbarProps {
 
 ---
 
+### AvatarDropdown (`components/ui/AvatarDropdown.svelte`)
+
+Menú de cuenta del navbar. Recibe el `user` completo y renderiza avatar o fallback con iniciales, display_name y email en la cabecera, más *Perfil*, *Configuración* y *Cerrar sesión*.
+
+**Props**: `user: User`
+**Estilos**: trigger con `rounded-full` + `hover:bg-accent`; panel `absolute right-0 top-full z-50 w-56` con borde y sombra; items con `hover:bg-accent`.
+
+---
+
 ### Footer (`components/layout/Footer.svelte`)
 
 **Contenido**: Links legales, redes sociales, versión, copyright
@@ -50,7 +90,7 @@ interface NavbarProps {
 
 ---
 
-### Breadcrumb (`components/layout/Breadcrumb.svelte`)
+### Breadcrumb (`components/layout/Breadcrumb.svelte`) **[no implementado]**
 
 **Props**: `items: { label: string; href?: string }[]`
 **Auto-generado**: Desde router (basado en ruta actual)
@@ -147,7 +187,7 @@ interface TagAutocompleteProps {
 
 ---
 
-### ActiveFiltersChips (`components/search/ActiveFiltersChips.svelte`)
+### ActiveFiltersChips (`components/search/ActiveFiltersChips.svelte`) **[no implementado]**
 
 **Props**: `filters: SearchFilters`, `onRemove: (key: string, value?: string) => void`, `onClearAll: () => void`
 
@@ -291,7 +331,7 @@ interface RecipeCardProps {
 
 ---
 
-### TagChip (`components/recipe/TagChip.svelte`)
+### TagChip (`components/recipe/TagChip.svelte`) **[no implementado]**
 
 **Props**: `tag: Tag` | `{ label: string }`, `variant?: 'default' | 'outline'`, `removable?: boolean`, `onRemove?: () => void`
 
@@ -341,9 +381,35 @@ const hasPartial = fraction >= 0.75;
 
 ---
 
+### RecipeForm (`components/recipe/RecipeForm.svelte`)
+
+Alta y edición de recetas. Un solo componente para ambas rutas: si recibe `slug` está editando.
+
+**Props**: `initial: Partial<Recipe> | null = null`, `slug: string | null = null`
+
+**Secciones**: título, descripción, categoría, imagen, tiempos, porciones, dificultad, visibilidad, instrucciones, tags y filas de ingredientes (cantidad + unidad + notas).
+
+**Ingredientes**: cada fila arma su `<select>` de unidades con `unitsFor()` — la whitelist del catálogo (`default_unit` + `allowed_units`, RF-12.8) o las nueve globales si no hay whitelist. El autocompletado trae las unidades del catálogo; si el nombre no existe, un modal de alta (`RF-12.5`) lo crea antes de agregar la fila.
+
+---
+
+### RecipeCardSkeleton (`components/recipe/RecipeCardSkeleton.svelte`)
+
+Placeholder de carga para el grid. Sin props.
+
+---
+
+### ReviewList (`components/recipe/ReviewList.svelte`)
+
+Reseñas de una receta.
+
+**Props**: `recipeId: string`, `refreshKey = 0` (recarga al cambiar, p. ej. al enviar una reseña nueva)
+
+---
+
 ## 4. Recipe Detail Components
 
-### RecipeHero (`components/recipe/RecipeHero.svelte`)
+### RecipeHero (`components/recipe/RecipeHero.svelte`) **[no implementado]**
 
 **Props**: `recipe: Recipe`, `onShare?: () => void`, `onSave?: () => void`, `onCook?: () => void`
 
@@ -353,7 +419,7 @@ const hasPartial = fraction >= 0.75;
 
 ---
 
-### RecipeMeta (`components/recipe/RecipeMeta.svelte`)
+### RecipeMeta (`components/recipe/RecipeMeta.svelte`) **[no implementado]**
 
 **Props**: `recipe: Recipe`
 
@@ -365,7 +431,7 @@ Tiempo: {prep} min prep + {cook} min cocción · {servings} porciones · {diffic
 
 ---
 
-### IngredientList (`components/recipe/IngredientList.svelte`)
+### IngredientList (`components/recipe/IngredientList.svelte`) **[no implementado]**
 
 **Props**: `ingredients: RecipeIngredient[]` (con `ingredient_id` resuelto a `Ingrediente`)
 
@@ -384,7 +450,7 @@ Tiempo: {prep} min prep + {cook} min cocción · {servings} porciones · {diffic
 
 ---
 
-### InstructionSteps (`components/recipe/InstructionSteps.svelte`)
+### InstructionSteps (`components/recipe/InstructionSteps.svelte`) **[no implementado]**
 
 **Props**: `steps: string[]` (array de líneas, cada línea = paso), `onCook?: () => void`
 
@@ -409,7 +475,7 @@ Tiempo: {prep} min prep + {cook} min cocción · {servings} porciones · {diffic
 
 ---
 
-### RatingSection (`components/recipe/RatingSection.svelte`)
+### RatingSection (`components/recipe/RatingSection.svelte`) **[no implementado]**
 
 **Props**: `recipe: Recipe`, `userRating?: Rating | null`, `onRate: (score: number) => void`, `onReview: (text: string) => void`
 
@@ -423,7 +489,7 @@ Tiempo: {prep} min prep + {cook} min cocción · {servings} porciones · {diffic
 
 ## 5. Search Components
 
-### FilterSidebar (`components/search/FilterSidebar.svelte`)
+### FilterSidebar (`components/search/FilterSidebar.svelte`) **[no implementado]**
 
 **Props**: `filters: SearchFilters`, `onChange: (filters) => void`, `categories: Category[]`, `open: boolean`, `onClose: () => void`
 
@@ -440,7 +506,7 @@ Tiempo: {prep} min prep + {cook} min cocción · {servings} porciones · {diffic
 
 ---
 
-### SearchToolbar (`components/search/SearchToolbar.svelte`)
+### SearchToolbar (`components/search/SearchToolbar.svelte`) **[no implementado]**
 
 **Props**: `sort: SortOption`, `onSortChange: (sort) => void`, `view: 'grid' | 'list'`, `onViewChange: (view) => void`, `totalCount: number`
 
@@ -450,7 +516,7 @@ Tiempo: {prep} min prep + {cook} min cocción · {servings} porciones · {diffic
 
 ## 6. Auth Components
 
-### AuthForm (`components/auth/AuthForm.svelte`)
+### AuthForm (`components/auth/AuthForm.svelte`) **[no implementado]**
 
 **Props**: `mode: 'login' | 'register' | 'forgot' | 'reset'`, `returnTo?: string`
 
@@ -466,7 +532,7 @@ Tiempo: {prep} min prep + {cook} min cocción · {servings} porciones · {diffic
 
 ---
 
-### PasswordStrengthMeter (`components/auth/PasswordStrengthMeter.svelte`)
+### PasswordStrengthMeter (`components/auth/PasswordStrengthMeter.svelte`) **[no implementado]**
 
 **Props**: `password: string`, `requirements?: string[]`
 
@@ -483,7 +549,7 @@ Tiempo: {prep} min prep + {cook} min cocción · {servings} porciones · {diffic
 
 ## 7. Profile & Settings
 
-### AvatarUpload (`components/profile/AvatarUpload.svelte`)
+### AvatarUpload (`components/profile/AvatarUpload.svelte`) **[no implementado]**
 
 **Props**: `currentUrl?: string`, `onUpload: (file: File) => Promise<string>`, `size?: 'sm' | 'md' | 'lg'`
 
@@ -492,12 +558,20 @@ Tiempo: {prep} min prep + {cook} min cocción · {servings} porciones · {diffic
 
 ---
 
-### ProfileTabs (`components/profile/ProfileTabs.svelte`)
+### ProfileTabs (`components/profile/ProfileTabs.svelte`) **[no implementado]**
 
 **Tabs**: Perfil | Seguridad | Cuenta
 - **Perfil**: Nombre, avatar, email (read-only), bio (futuro)
 - **Seguridad**: Cambiar password, sesiones activas (listado + "Cerrar todas"), 2FA (v2)
 - **Cuenta**: Baja lógica (con checkbox "eliminar recetas"), GDPR (confirmación expresa)
+
+---
+
+### PublicProfile (`components/profile/PublicProfile.svelte`)
+
+Perfil público de otro usuario: cabecera con los datos del perfil y grilla de sus recetas.
+
+**Props**: `profile: { id, display_name, avatar_url, bio, ... }`, `recipes: Recipe[] = []`
 
 ---
 
@@ -565,7 +639,7 @@ campanita, `role="menu"` en el dropdown.
 
 ## 10. Common / Feedback
 
-### Toast (`components/ui/Toast.svelte` / Sonner)
+### Toast (`components/ui/Toast.svelte` / Sonner) **[sin uso]**
 
 **Variants**: `success`, `error`, `warning`, `info`, `loading`
 **API**: `toast.success("Guardado")`, `toast.error("Error")`, `toast.loading("Guardando...")`
@@ -574,16 +648,30 @@ campanita, `role="menu"` en el dropdown.
 
 ---
 
-### Modal / Dialog (`components/ui/Dialog.svelte`, `AlertDialog.svelte`)
+### Modal / Dialog (`components/ui/Dialog.svelte`)
 
-**Props**: `open: boolean`, `onClose: () => void`, `title`, `description`, `children`
-**A11y**: Focus trap, `aria-modal="true"`, `role="dialog"`, `aria-labelledby`, `aria-describedby`, ESC para cerrar, click overlay para cerrar (configurable)
-
-**AlertDialog**: `destructive` action confirmación (borrar, baja, GDPR) — requiere confirmación explícita
+**Props**: `open: boolean`, `title`, `description`, `closeOnOverlay = true`, `onClose: () => void`, `children`
+**A11y**: Focus trap, `aria-modal="true"`, `role="dialog"`, `aria-labelledby`, `aria-describedby`, ESC para cerrar, click overlay para cerrar (configurable). El foco va al área de contenido (un `<form>` abre en su primer campo, una confirmación en *Cancelar*); no se usa el atributo HTML `autofocus`, que hace fallar svelte-check.
 
 ---
 
-### Sheet / Drawer (`components/ui/Sheet.svelte`)
+### AlertDialog (`components/ui/AlertDialog.svelte`)
+
+Confirmación destructiva construida sobre `Dialog`. Reemplaza los `confirm()` nativos.
+
+**Props**: `open`, `title`, `description | null`, `confirmLabel = 'Confirmar'`, `cancelLabel = 'Cancelar'`, `destructive = false`, `loading = false`, `confirmDisabled = false`, `onConfirm: () => void`, `onClose: () => void`
+
+**Uso**: `confirmDialog()` en `lib/stores/confirm.ts` devuelve `Promise<boolean>` y se resuelve contra un único `<ConfirmHost />` montado en `+layout.svelte`. Para pedir la contraseña además existe `confirmPasswordDialog()`, que devuelve `{confirmed, password}`.
+
+---
+
+### ConfirmHost (`components/ui/ConfirmHost.svelte`)
+
+Host sin props: lee el estado del store `confirm` y renderiza el diálogo que corresponda. Cuando el store marca `requirePassword`, muestra un input `type="password"` con clase `input-base` antes de habilitar la confirmación.
+
+---
+
+### Sheet / Drawer (`components/ui/Sheet.svelte`) **[no implementado]**
 
 **Props**: `open`, `onClose`, `side: 'left' | 'right' | 'bottom'`, `children`
 **Sizes**: `sm` (320px), `md` (384px), `lg` (512px), `full` (100vw)
@@ -591,7 +679,7 @@ campanita, `role="menu"` en el dropdown.
 
 ---
 
-### Tooltip (`components/ui/Tooltip.svelte`)
+### Tooltip (`components/ui/Tooltip.svelte`) **[no implementado]**
 
 **Props**: `content`, `side: 'top' | 'bottom' | 'left' | 'right'`, `delay?: number`
 **Trigger**: `hover` + `focus` (teclado)
@@ -606,13 +694,13 @@ campanita, `role="menu"` en el dropdown.
 
 ---
 
-### ErrorState (`components/common/ErrorState.svelte`)
+### ErrorState (`components/common/ErrorState.svelte`) **[no implementado]**
 
 **Props**: `message`, `onRetry?: () => void`, `onGoBack?: () => void`
 
 ---
 
-### Alert (`components/ui/Alert.svelte`) — **Network Errors & Destructive Alerts**
+### Alert (`components/ui/Alert.svelte`) — **Network Errors & Destructive Alerts** **[sin uso]**
 
 **Props**:
 ```typescript
@@ -758,9 +846,9 @@ export function showServerError(retryAction?: () => void) {
 
 ---
 
-## 10. Admin Components (Proyecto Admin)
+## 11. Admin Components (Proyecto Admin)
 
-### AdminLayout (`components/admin/AdminLayout.svelte`)
+### AdminLayout (`components/admin/AdminLayout.svelte`) **[no implementado]**
 
 **Sidebar navegación**: Dashboard, Categorías, Usuarios, Ingredientes, Métricas, Config, Auditoría
 **Header**: Usuario admin + logout
@@ -768,7 +856,7 @@ export function showServerError(retryAction?: () => void) {
 
 ---
 
-### AdminTable (`components/admin/AdminTable.svelte`)
+### AdminTable (`components/admin/AdminTable.svelte`) **[no implementado]**
 
 **Props**: `columns: ColumnDef[]`, `data: any[]`, `pagination`, `sorting`, `filtering`, `selection`, `actions: RowAction[]`
 
@@ -776,7 +864,7 @@ export function showServerError(retryAction?: () => void) {
 
 ---
 
-### AdminFormModal (`components/admin/AdminFormModal.svelte`)
+### AdminFormModal (`components/admin/AdminFormModal.svelte`) **[no implementado]**
 
 **Props**: `open`, `onClose`, `title`, `fields: FieldDef[]`, `onSubmit: (data) => Promise<void>`, `initialData?`
 
@@ -784,7 +872,7 @@ export function showServerError(retryAction?: () => void) {
 
 ---
 
-## 11. Design Tokens Reference (para implementación)
+## 12. Design Tokens Reference (para implementación)
 
 ### Colors (Tailwind config extend)
 ```js
@@ -877,9 +965,12 @@ boxShadow: {
 | CategoryBadge | ✅ (colores, variants) | ✅ (contraste) | ✅ |
 | RatingStars | ✅ (fraccional, interactive) | ✅ (ARIA label) | ✅ |
 | SearchBar | ✅ (debounce, chips) | ✅ (focus trap, ARIA) | ✅ |
-| RecipeCard | ✅ | ✅ | ✅ |
 | CookingStepper | ✅ (wake lock, voz, timer) | ✅ (voice commands) | ✅ |
-| Modal/Sheet | ✅ (focus trap, ESC) | ✅ (focus trap, ARIA) | ✅ |
+| Dialog / AlertDialog | ✅ (focus trap, ESC) | ✅ (focus trap, ARIA) | ✅ |
+
+> `Sheet` y `Tooltip` figuran en la sección "Implementación Sugerida" como trabajo
+> pendiente: ninguno de los dos existe todavía, así que no pueden marcarse como
+> verificados en esta tabla.
 
 ---
 
