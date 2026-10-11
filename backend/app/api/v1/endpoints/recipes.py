@@ -59,12 +59,13 @@ def recipe_visible_to(recipe: Recipe, user: Optional[User]) -> bool:
     return user.id == recipe.author_id or is_admin(user)
 
 
-async def resolve_ingredient_names(
+async def resolve_ingredient_catalog(
     db: AsyncSession, ingredients: Optional[List[dict]]
 ) -> List[dict]:
-    """Return a copy of the ingredient list with the catalog name resolved.
+    """Return a copy of the ingredient list with catalog data resolved.
 
-    The JSONB stores only ``ingredient_id``; the UI needs the display name.
+    The JSONB stores only ``ingredient_id``; the UI needs the display name and,
+    for RF-12.8, the unit whitelist that narrows the edit form's <select>.
     Unknown / non-UUID ids are left untouched.
     """
     items = copy.deepcopy(ingredients or [])
@@ -80,13 +81,20 @@ async def resolve_ingredient_names(
 
     if ids:
         result = await db.execute(
-            select(Ingredient.id, Ingredient.name).where(Ingredient.id.in_(ids))
+            select(
+                Ingredient.id,
+                Ingredient.name,
+                Ingredient.default_unit,
+                Ingredient.allowed_units,
+            ).where(Ingredient.id.in_(ids))
         )
-        names = {str(row[0]): row[1] for row in result.all()}
+        catalog = {str(row[0]): row for row in result.all()}
         for item in items:
-            key = str(item.get("ingredient_id"))
-            if key in names:
-                item["name"] = names[key]
+            row = catalog.get(str(item.get("ingredient_id")))
+            if row:
+                item["name"] = row[1]
+                item["default_unit"] = row[2]
+                item["allowed_units"] = row[3] or []
 
     return items
 
@@ -359,7 +367,7 @@ async def get_recipe(
     # per visitor per day. This read endpoint must not inflate the counter.
 
     response = RecipeResponse.model_validate(recipe)
-    response.ingredients = await resolve_ingredient_names(db, response.ingredients)
+    response.ingredients = await resolve_ingredient_catalog(db, response.ingredients)
 
     if current_user is not None:
         response.my_rating = await db.scalar(

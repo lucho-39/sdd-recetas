@@ -140,10 +140,11 @@ El proyecto está en fase **MVP (0.x)**.
   - `VALID_UNITS`/`VALID_CATEGORIES` vivían duplicadas en `api/v1/endpoints/ingredients.py`
     y `schemas/recipe.py`; pasaron a `app/core/units.py` para que las rutas de admin y las
     públicas validen contra el mismo set.
-  - Queda registrado que al editar una receta existente la fila no trae datos del
-    catálogo (`recipes.ingredients` guarda sólo `{ingredient_id, name, amount, unit,
-    notes}`, ver RB-ING-02), así que `allowed_units` queda vacío y el filtrado aplica
-    recién al agregar el ingrediente desde el autocompletado.
+  - `GET /api/v1/recipes/{slug}` anexa `default_unit` y `allowed_units` a cada fila de
+    `ingredients`, así que **editar una receta existente también limita el `<select>`**.
+    Lo absorbe `resolve_ingredient_catalog()` (antes `resolve_ingredient_names`), que ya
+    hacía el lookup del catálogo para el `name`: un mismo `IN`, cero round trips extra.
+    El JSONB sigue guardando sólo los cinco campos de siempre.
 - **Stack de migraciones (Alembic) arrancado.** La 0001 (`8fcd65d6eddf`) recrea el schema
   completo de 18 tablas y se aplicó con `alembic stamp` sobre la base existente; la 0002
   (`1ac179e903af`) agrega `allowed_units`. `alembic.ini` y `env.py` ahora leen

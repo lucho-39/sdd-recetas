@@ -153,10 +153,10 @@
     `POST /api/admin/ingredients/{id}/normalize` mandando `allowed_units` (y
     `mark_validated: false` si no querés que la llamada además valide el ingrediente).
     Los valores se chequean contra `VALID_UNITS` → **400**.
-  - **Límitación en edición**: al abrir una receta existente la fila no trae datos del
-    catálogo (`recipes.ingredients` guarda sólo `{ingredient_id, name, amount, unit,
-    notes}`, ver RB-ING-02), así que `allowed_units` queda vacío y el select ofrece las 9
-    globales. El filtrado aplica recién al agregar el ingrediente desde el autocompletado.
+  - **La whitelist viaja en la lectura**: `GET /api/v1/recipes/{slug}` anexa
+    `default_unit` y `allowed_units` a cada fila de `ingredients`, así que editar una
+    receta existente limita el `<select>` con el mismo criterio que una fila recién
+    elegida. Antes la fila nacía vacía y ofrecía las 9 globales.
 - **Stack de migraciones arrancado**: `alembic/versions/` ya no está vacío. La 0001
   (`8fcd65d6eddf`) recrea el schema completo de 18 tablas y se aplicó con `alembic stamp`
   sobre la base existente; la 0002 (`1ac179e903af`) agrega `allowed_units`. La base real

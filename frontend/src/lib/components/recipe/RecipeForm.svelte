@@ -70,8 +70,11 @@
 			amount: i.amount ?? '',
 			unit: i.unit ?? '',
 			notes: i.notes ?? '',
-			default_unit: '',
-			allowed_units: []
+			// RF-12.8: present when the recipe came through
+			// resolve_ingredient_catalog(), so an edit opens with the same
+			// narrowed unit menu a freshly picked ingredient gets.
+			default_unit: i.default_unit ?? '',
+			allowed_units: i.allowed_units ?? []
 		})) ?? [];
 
 	let ingQuery = '';

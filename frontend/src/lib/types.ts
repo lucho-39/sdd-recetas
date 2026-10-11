@@ -50,6 +50,8 @@ export interface Ingredient {
 	name: string;
 	category: string;
 	default_unit: string;
+	/** RF-12.8: alternative units this entry accepts; empty = unrestricted. */
+	allowed_units: string[];
 	aliases: string[];
 	is_active: boolean;
 	validated_by_admin?: boolean;
@@ -61,6 +63,9 @@ export interface RecipeIngredient {
 	amount: number;
 	unit: string;
 	notes?: string | null;
+	/** RF-12.8: filled in by the read endpoint's catalog lookup. */
+	default_unit?: string;
+	allowed_units?: string[];
 	ingredient?: Ingredient;
 }
 

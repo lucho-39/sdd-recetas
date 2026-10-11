@@ -251,6 +251,11 @@ pantalla.
   `{default_unit} ∪ allowed_units`; si no, **422** (RF-12.8). Una lista vacía no restringe nada.
 - `notes`: string opcional.
 - Sin ingredientes duplicados dentro de la misma receta.
+**Lo que almacena el JSONB vs. lo que responde la API**: la columna guarda sólo los cinco
+campos de arriba. El `GET /api/v1/recipes/{slug}` anexa a cada fila `default_unit` y
+`allowed_units` desde el catálogo (`resolve_ingredient_catalog()`), además de re-resolver
+`name`; es el mismo único lookup, y lo necesita el form de edición para limitar el
+`<select>` de unidades sin un round trip extra.
 **Errores**: ingrediente inexistente/inactivo → **400**; unidad inválida, `amount <= 0` o duplicado → **422** (validador de Pydantic).
 **Implementación**: `validate_ingredients()` en `app/api/v1/endpoints/recipes.py`, aplicado en `create_recipe` y `update_recipe`; `unit_must_be_known` en `app/schemas/recipe.py`.
 **Estado**: Implementado (validación completa en creación y actualización).
