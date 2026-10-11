@@ -29,6 +29,10 @@ jobs:
       DATABASE_URL: postgresql+asyncpg://recetario:changeme@localhost:5432/recetario
       JWT_SECRET: ci-secret
       JWT_ALGORITHM: HS256
+      # Default is /app/uploads, which does not exist (and is not writable)
+      # on a runner, so importing app.main died on mkdir before a single
+      # test collected.
+      UPLOADS_DIR: ${{ runner.temp }}/uploads
 
     defaults:
       run:
@@ -90,3 +94,44 @@ jobs:
 
       - name: Build
         run: pnpm run build
+
+  admin-checks:
+    name: Admin checks
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: admin
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm 9 on purpose: pnpm 10+ refuses install when build scripts are
+      # not explicitly approved, and the local containers are not where CI
+      # runs. Same pin as the frontend job so both stay in step.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: admin/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Same reason as the frontend job: the build alone passes with broken
+      # types and lint errors, so the gates must run separately or rot.
+      - name: Type check
+        run: pnpm run check
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Build
+        run: pnpm run build
+
