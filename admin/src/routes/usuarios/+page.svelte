@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import {
+		IconRefresh as Reactivate,
 		IconTrashFilled as Erase,
 		IconUserCheck as Activate,
 		IconUserOff as Deactivate
 	} from '@tabler/icons-svelte';
 	import { adminFetch, formatDate } from '$lib/api';
+	import AlertDialog from '$lib/components/AlertDialog.svelte';
 
 	type UserRow = {
 		id: string;
@@ -100,38 +102,65 @@
 		apply();
 	}
 
-	async function toggleActive(row: UserRow) {
-		await adminFetch(`/users/${row.id}/${row.is_active ? 'deactivate' : 'activate'}`, {
-			method: 'POST'
-		});
-		await load();
+	type Dialog =
+		| { kind: 'activate' | 'deactivate' | 'reactivate'; row: UserRow }
+		| { kind: 'gdpr-warning' | 'gdpr-recipes'; row: UserRow };
+
+	let dialog: Dialog | null = null;
+	let deleteRecipes = false;
+	let busy = false;
+
+	async function confirm() {
+		if (!dialog) return;
+		const current = dialog;
+
+		// UC-ADMIN-010 AC2: two gates, not one. The irreversible warning first;
+		// only after accepting it does the recipe question appear, so "I accept
+		// the risk" and "also delete the recipes" stay separate decisions.
+		// Both dialogs abort on cancel or Escape — neither ever proceeds.
+		if (current.kind === 'gdpr-warning') {
+			dialog = { kind: 'gdpr-recipes', row: current.row };
+			return;
+		}
+
+		busy = true;
+		error = '';
+		try {
+			if (current.kind === 'gdpr-recipes') {
+				await adminFetch(`/users/${current.row.id}/gdpr-erase`, {
+					method: 'POST',
+					body: JSON.stringify({ delete_recipes: deleteRecipes })
+				});
+			} else {
+				await adminFetch(`/users/${current.row.id}/${current.kind}`, { method: 'POST' });
+			}
+			dialog = null;
+			await load();
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'La operación falló';
+		} finally {
+			busy = false;
+		}
 	}
 
 	async function changeRole(row: UserRow, next: string) {
+		error = '';
 		try {
 			await adminFetch(`/users/${row.id}/role`, {
 				method: 'PATCH',
 				body: JSON.stringify({ role: next })
 			});
 		} catch (err) {
+			// Demoting yourself is a 403; leave the select showing what the
+			// server actually stored instead of what the admin hoped for.
 			error = err instanceof Error ? err.message : 'No se pudo cambiar el rol';
 		}
 		await load();
 	}
 
-	async function gdprErase(row: UserRow) {
-		if (
-			!confirm(
-				`¿Anonimizar los datos de "${row.display_name}"? Estaacción no se puede deshacer.`
-			)
-		)
-			return;
-		const deleteRecipes = confirm('¿Eliminar también sus recetas? (Cancelar = conservarlas)');
-		await adminFetch(`/users/${row.id}/gdpr-erase`, {
-			method: 'POST',
-			body: JSON.stringify({ delete_recipes: deleteRecipes })
-		});
-		await load();
+	function openGdpr(row: UserRow) {
+		deleteRecipes = false;
+		dialog = { kind: 'gdpr-warning', row };
 	}
 
 	function badge(row: UserRow) {
@@ -272,29 +301,55 @@
 						<td class="p-3 whitespace-nowrap text-muted-foreground">
 							{row.last_login_at ? formatDate(row.last_login_at) : '—'}
 						</td>
+						<td class="p-3 text-right">{row.recipes_count}</td>
+						<td class="p-3 text-right">{row.favorites_count}</td>
+						<td class="p-3 text-right">{row.ratings_count}</td>
 						<td class="p-3 text-right">
-							<button
-								type="button"
-								class="btn btn-ghost btn-sm"
-								title={row.is_active ? 'Desactivar' : 'Activar'}
-								aria-label="{row.is_active ? 'Desactivar' : 'Activar'} a {row.display_name}"
-								on:click={() => toggleActive(row)}
-							>
-								{#if row.is_active}
+							{#if row.deleted_at}
+								<!-- UC-ADMIN-010 AC1: already erased, nothing left to act on. -->
+								<span class="text-xs text-muted-foreground">Sin acciones</span>
+							{:else if row.is_active}
+								<button
+									type="button"
+									class="btn btn-ghost btn-sm"
+									title="Desactivar"
+									aria-label="Desactivar a {row.display_name}"
+									on:click={() => (dialog = { kind: 'deactivate', row })}
+								>
 									<Deactivate class="h-4 w-4" aria-hidden="true" />
-								{:else}
+								</button>
+							{:else}
+								<button
+									type="button"
+									class="btn btn-ghost btn-sm"
+									title="Activar"
+									aria-label="Activar a {row.display_name}"
+									on:click={() => (dialog = { kind: 'activate', row })}
+								>
 									<Activate class="h-4 w-4" aria-hidden="true" />
+								</button>
+								{#if row.deactivated_at}
+									<!-- UC-ADMIN-009 AC1: only a stamped suspension can be force-reactivated. -->
+									<button
+										type="button"
+										class="btn btn-ghost btn-sm"
+										title="Forzar reactivación"
+										aria-label="Forzar reactivación de {row.display_name}"
+										on:click={() => (dialog = { kind: 'reactivate', row })}
+									>
+										<Reactivate class="h-4 w-4" aria-hidden="true" />
+									</button>
 								{/if}
-							</button>
-							<button
-								type="button"
-								class="btn btn-ghost btn-sm text-destructive"
-								title="Borrar datos (GDPR)"
-								aria-label="Borrar los datos de {row.display_name}"
-								on:click={() => gdprErase(row)}
-							>
-								<Erase class="h-4 w-4" aria-hidden="true" />
-							</button>
+								<button
+									type="button"
+									class="btn btn-ghost btn-sm text-destructive"
+									title="Borrar datos (GDPR)"
+									aria-label="Borrar los datos de {row.display_name}"
+									on:click={() => openGdpr(row)}
+								>
+									<Erase class="h-4 w-4" aria-hidden="true" />
+								</button>
+							{/if}
 						</td>
 					</tr>
 				{/each}
@@ -323,3 +378,74 @@
 		</div>
 	</div>
 </div>
+
+{#if dialog?.kind === 'deactivate'}
+	<AlertDialog
+		open
+		destructive
+		title="Desactivar cuenta"
+		description="Deja de poder iniciar sesión y revoca sus sesiones activas. Puedes volver a activarla cuando quieras."
+		confirmLabel="Desactivar"
+		loading={busy}
+		onConfirm={confirm}
+		onClose={() => (dialog = null)}
+	>
+		<p class="text-sm text-muted-foreground">{dialog.row.display_name} · {dialog.row.email}</p>
+	</AlertDialog>
+{:else if dialog?.kind === 'activate'}
+	<AlertDialog
+		open
+		title="Activar cuenta"
+		description="Restaura el acceso inmediatamente."
+		confirmLabel="Activar"
+		loading={busy}
+		onConfirm={confirm}
+		onClose={() => (dialog = null)}
+	>
+		<p class="text-sm text-muted-foreground">{dialog.row.display_name} · {dialog.row.email}</p>
+	</AlertDialog>
+{:else if dialog?.kind === 'reactivate'}
+	<AlertDialog
+		open
+		title="Forzar reactivación"
+		description="Se le enviará un email para definir nuevo display_name y elegir contraseña."
+		confirmLabel="Reactivar"
+		loading={busy}
+		onConfirm={confirm}
+		onClose={() => (dialog = null)}
+	>
+		<p class="text-sm text-muted-foreground">{dialog.row.display_name} · {dialog.row.email}</p>
+	</AlertDialog>
+{:else if dialog?.kind === 'gdpr-warning'}
+	<AlertDialog
+		open
+		destructive
+		title="ELIMINAR DEFINITIVAMENTE al usuario"
+		description="Esta acción es IRREVERSIBLE: la PII queda anonimizada, sus recetas pasan al usuario system y las FK quedan en NULL."
+		confirmLabel="Continuar"
+		loading={busy}
+		onConfirm={confirm}
+		onClose={() => (dialog = null)}
+	>
+		<p class="text-sm text-muted-foreground">{dialog.row.display_name} · {dialog.row.email}</p>
+	</AlertDialog>
+{:else if dialog?.kind === 'gdpr-recipes'}
+	<AlertDialog
+		open
+		destructive
+		title="¿Eliminar también sus recetas?"
+		description="Dejarlas marcadas hace soft delete de todo lo que haya creado. Desmarcadas quedan publicadas bajo el usuario system."
+		confirmLabel="Eliminar cuenta"
+		loading={busy}
+		onConfirm={confirm}
+		onClose={() => (dialog = null)}
+	>
+		<p class="mb-3 text-sm text-muted-foreground">
+			{dialog.row.display_name} · {dialog.row.email}
+		</p>
+		<label class="flex items-center gap-2 text-sm text-foreground">
+			<input type="checkbox" bind:checked={deleteRecipes} class="h-4 w-4" />
+			Eliminar también sus recetas
+		</label>
+	</AlertDialog>
+{/if}
