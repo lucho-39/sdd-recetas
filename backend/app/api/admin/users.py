@@ -2,7 +2,7 @@
 Admin: user management (/api/admin/users).
 """
 import secrets
-from datetime import datetime
+from datetime import UTC, date, datetime, time, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -12,14 +12,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.audit import record_audit
 from app.core.database import get_db
 from app.core.security import get_password_hash, require_admin
-from app.models import Recipe, User, UserRole
+from app.models import Favorite, OAuthAccount, Rating, Recipe, User, UserRole
 from app.schemas.admin import GdprEraseRequest, UserAdminUpdate
 from app.schemas.auth import UserResponse
 
 router = APIRouter()
 
 
-def _to_item(user: User) -> dict:
+def _to_item(user: User, **extra: object) -> dict:
     return {
         "id": str(user.id),
         "email": user.email,
@@ -29,14 +29,38 @@ def _to_item(user: User) -> dict:
         "is_verified": user.is_verified,
         "created_at": user.created_at,
         "last_login_at": user.last_login_at,
+        **extra,
     }
+
+
+def _provider_filter(provider: str):
+    """UC-ADMIN-005 AC2: ``email`` means "no linked OAuth account at all"."""
+    linked = select(OAuthAccount.id).where(OAuthAccount.user_id == User.id).correlate(User)
+    if provider == "email":
+        return ~linked.exists()
+    return linked.where(OAuthAccount.provider == provider).exists()
+
+
+def _status_filter(state: str) -> list:
+    # ``deleted`` is orthogonal to activity: a GDPR-erased account is both
+    # inactive and deleted, and belongs in the "deleted" bucket.
+    if state == "deleted":
+        return [User.deleted_at.is_not(None)]
+    active = state == "active"
+    return [User.is_active.is_(active), User.deleted_at.is_(None)]
 
 
 @router.get("", summary="List users (admin)")
 async def list_users(
     search: str | None = Query(None),
-    is_active: bool | None = Query(None),
-    role: str | None = Query(None),
+    account_status: str | None = Query(
+        None, alias="status", pattern="^(active|inactive|deleted)$"
+    ),
+    role: str | None = Query(None, pattern="^(user|admin)$"),
+    provider: str | None = Query(None, pattern="^(email|google|github)$"),
+    created_from: date | None = Query(None),
+    created_to: date | None = Query(None),
+    sort: str = Query("created_at", pattern="^(created_at|last_login_at|email|recipes_count)$"),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     _=Depends(require_admin),
@@ -46,26 +70,94 @@ async def list_users(
     if search:
         term = f"%{search}%"
         filters.append(or_(User.email.ilike(term), User.display_name.ilike(term)))
-    if is_active is not None:
-        filters.append(User.is_active == is_active)
-    if role in {"user", "admin"}:
+    if account_status:
+        filters.extend(_status_filter(account_status))
+    if role:
         filters.append(User.role == UserRole(role))
+    if provider:
+        filters.append(_provider_filter(provider))
+
+    # UC-ADMIN-005 AC2: an inclusive day range, so picking the same date twice
+    # matches that day rather than only its first instant.
+    if created_from is not None:
+        filters.append(User.created_at >= _at_start_of_day(created_from))
+    if created_to is not None:
+        filters.append(User.created_at < _at_start_of_day(created_to + timedelta(days=1)))
+
+    recipes_count = (
+        select(func.count(Recipe.id))
+        .where(Recipe.author_id == User.id, Recipe.deleted_at.is_(None))
+        .correlate(User)
+        .scalar_subquery()
+    )
+    favorites_count = (
+        # Composite PK, so there is no ``id`` column to count.
+        select(func.count(Favorite.recipe_id))
+        .where(Favorite.user_id == User.id)
+        .correlate(User)
+        .scalar_subquery()
+    )
+    ratings_count = (
+        select(func.count(Rating.id))
+        .where(Rating.user_id == User.id)
+        .correlate(User)
+        .scalar_subquery()
+    )
+    # A user may link more than one provider; show one, filter with EXISTS so
+    # every linked provider still matches.
+    provider_value = func.coalesce(
+        select(func.min(OAuthAccount.provider))
+        .where(OAuthAccount.user_id == User.id)
+        .correlate(User)
+        .scalar_subquery(),
+        "email",
+    )
 
     total = await db.scalar(select(func.count()).select_from(User).where(*filters))
-    result = await db.execute(
-        select(User)
+    stmt = (
+        select(
+            User,
+            provider_value.label("provider"),
+            recipes_count.label("recipes_count"),
+            favorites_count.label("favorites_count"),
+            ratings_count.label("ratings_count"),
+        )
         .where(*filters)
-        .order_by(User.created_at.desc())
+        .order_by(*_order_by(sort, recipes_count))
         .offset((page - 1) * limit)
         .limit(limit)
     )
-    users = result.scalars().all()
+    rows = (await db.execute(stmt)).all()
     return {
-        "items": [_to_item(u) for u in users],
+        "items": [
+            _to_item(
+                user,
+                provider=provider,
+                recipes_count=recipes,
+                favorites_count=favorites,
+                ratings_count=ratings,
+            )
+            for user, provider, recipes, favorites, ratings in rows
+        ],
         "total": total,
         "page": page,
         "limit": limit,
     }
+
+
+def _at_start_of_day(day: date) -> datetime:
+    """Store datetimes are tz-aware; asyncpg rejects a naive bound on them."""
+    return datetime.combine(day, time.min, tzinfo=UTC)
+
+
+def _order_by(sort: str, recipes_count):
+    if sort == "last_login_at":
+        return (User.last_login_at.desc().nullslast(),)
+    if sort == "email":
+        return (User.email.asc(),)
+    if sort == "recipes_count":
+        return (recipes_count.desc(),)
+    return (User.created_at.desc(),)
 
 
 @router.get("/{user_id}", response_model=UserResponse, summary="User detail (admin)")

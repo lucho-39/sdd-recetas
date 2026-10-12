@@ -3,7 +3,7 @@ from conftest import create_ingredient, create_recipe
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Recipe, User
+from app.models import OAuthAccount, Recipe, User
 
 
 async def test_admin_endpoints_require_auth(client: AsyncClient) -> None:
@@ -36,6 +36,86 @@ async def test_admin_list_users(
     assert response.status_code == 200
     emails = [u["email"] for u in response.json()["items"]]
     assert user.email in emails
+
+
+async def test_admin_list_users_returns_every_ac_column(
+    client: AsyncClient, admin_headers: dict, user: User, recipe: Recipe
+) -> None:
+    """UC-ADMIN-005 AC1: counts and provider, not just the user row."""
+    response = await client.get("/api/admin/users", headers=admin_headers)
+    assert response.status_code == 200
+    by_email = {u["email"]: u for u in response.json()["items"]}
+
+    assert by_email[user.email]["provider"] == "email"
+    assert by_email[user.email]["recipes_count"] == 1  # from the `recipe` fixture
+    assert by_email[user.email]["favorites_count"] == 0
+    assert by_email[user.email]["ratings_count"] == 0
+    assert "last_login_at" in by_email[user.email]
+
+
+async def test_admin_list_users_paginates(
+    client: AsyncClient, admin_headers: dict, user: User
+) -> None:
+    """UC-ADMIN-005 AC1: 20 per page by default, echoed back for the pager."""
+    response = await client.get("/api/admin/users", headers=admin_headers)
+    assert response.json()["limit"] == 20
+
+    single = await client.get("/api/admin/users?limit=1", headers=admin_headers)
+    body = single.json()
+    assert len(body["items"]) == 1
+    assert body["limit"] == 1
+    assert body["total"] >= 2
+
+
+async def test_admin_list_users_filters_by_status(
+    client: AsyncClient, admin_headers: dict, user: User, db_session: AsyncSession
+) -> None:
+    """UC-ADMIN-005 AC2: active / inactive are separate buckets."""
+    await client.post(f"/api/admin/users/{user.id}/deactivate", headers=admin_headers)
+
+    active = await client.get("/api/admin/users?status=active", headers=admin_headers)
+    inactive = await client.get("/api/admin/users?status=inactive", headers=admin_headers)
+    active_emails = [u["email"] for u in active.json()["items"]]
+    inactive_emails = [u["email"] for u in inactive.json()["items"]]
+
+    assert user.email not in active_emails
+    assert user.email in inactive_emails
+
+
+async def test_admin_list_users_filters_by_provider(
+    client: AsyncClient, admin_headers: dict, user: User, db_session: AsyncSession
+) -> None:
+    """UC-ADMIN-005 AC2: ``email`` means no linked OAuth account at all."""
+    db_session.add(OAuthAccount(user_id=user.id, provider="google", provider_id="g-1"))
+    await db_session.commit()
+
+    google = await client.get("/api/admin/users?provider=google", headers=admin_headers)
+    assert [u["email"] for u in google.json()["items"]] == [user.email]
+
+    email_only = await client.get("/api/admin/users?provider=email", headers=admin_headers)
+    assert user.email not in [u["email"] for u in email_only.json()["items"]]
+
+
+async def test_admin_list_users_sorts_by_recipes_count(
+    client: AsyncClient, admin_headers: dict, recipe: Recipe
+) -> None:
+    """UC-ADMIN-005 AC4: recipes_count sorts on the correlated subquery."""
+    response = await client.get("/api/admin/users?sort=recipes_count", headers=admin_headers)
+    assert response.status_code == 200
+    counts = [u["recipes_count"] for u in response.json()["items"]]
+    assert counts == sorted(counts, reverse=True)
+
+
+async def test_admin_list_users_filters_by_registration_date(
+    client: AsyncClient, admin_headers: dict, user: User
+) -> None:
+    """UC-ADMIN-005 AC2: the range is inclusive of whole days."""
+    past = await client.get("/api/admin/users?created_from=2000-01-01", headers=admin_headers)
+    assert past.status_code == 200
+    assert past.json()["total"] >= 2
+
+    future = await client.get("/api/admin/users?created_from=2100-01-01", headers=admin_headers)
+    assert future.json()["total"] == 0
 
 
 async def test_admin_deactivate_and_activate_user(
