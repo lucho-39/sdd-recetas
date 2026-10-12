@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.database import get_db
-from app.models import User
+from app.models import RefreshToken, User
 
 settings = get_settings()
 
@@ -162,6 +162,24 @@ def is_token_blacklisted(token: str) -> bool:
 def clear_blacklist() -> None:
     """Clear the in-memory token blacklist (used by tests)."""
     _blacklisted_tokens.clear()
+
+
+async def revoke_all_refresh_tokens(db: AsyncSession, user_id) -> None:
+    """Revoke every live refresh token belonging to ``user_id``.
+
+    Access tokens expire in minutes, but a refresh token would otherwise keep
+    minting them for days — so deactivating an account without revoking is not
+    really deactivating it. The caller owns the transaction.
+    """
+    rows = (
+        await db.execute(
+            select(RefreshToken).where(
+                RefreshToken.user_id == user_id, RefreshToken.revoked == False
+            )
+        )
+    ).scalars().all()
+    for row in rows:
+        row.revoked = True
 
 
 async def get_current_user(

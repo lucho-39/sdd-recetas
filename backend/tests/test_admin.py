@@ -1,9 +1,12 @@
 """Tests for the administrative API (/api/admin)."""
+from datetime import UTC, datetime, timedelta
+
 from conftest import create_ingredient, create_recipe
 from httpx import AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import OAuthAccount, Recipe, User
+from app.models import AuditLog, EmailOutbox, OAuthAccount, Recipe, RefreshToken, User
 
 
 async def test_admin_endpoints_require_auth(client: AsyncClient) -> None:
@@ -843,3 +846,81 @@ async def test_rate_limit_returns_429(
     assert first.status_code == 200
     assert second.status_code == 200
     assert third.status_code == 429
+
+
+async def test_admin_deactivate_stamps_and_revokes_sessions(
+    client: AsyncClient, admin_headers: dict, user: User, db_session: AsyncSession
+) -> None:
+    """UC-ADMIN-007 AC2: suspend the account *and* cut short the session it holds."""
+    token = RefreshToken(
+        user_id=user.id,
+        jti="jti-deactivate",
+        family_id="family-deactivate",
+        expires_at=datetime.now(UTC) + timedelta(days=7),
+    )
+    db_session.add(token)
+    await db_session.commit()
+
+    response = await client.post(f"/api/admin/users/{user.id}/deactivate", headers=admin_headers)
+    assert response.status_code == 200
+    assert response.json()["deactivated_at"] is not None
+
+    await db_session.refresh(user)
+    assert user.is_active is False
+    assert user.deactivated_at is not None
+
+    await db_session.refresh(token)
+    assert token.revoked is True
+
+
+async def test_admin_activate_clears_deactivation_stamp(
+    client: AsyncClient, admin_headers: dict, user: User, db_session: AsyncSession
+) -> None:
+    """UC-ADMIN-007 AC3: restored accounts must not keep reading as suspended."""
+    await client.post(f"/api/admin/users/{user.id}/deactivate", headers=admin_headers)
+
+    response = await client.post(f"/api/admin/users/{user.id}/activate", headers=admin_headers)
+    assert response.status_code == 200
+    assert response.json()["deactivated_at"] is None
+
+    await db_session.refresh(user)
+    assert user.is_active is True
+    assert user.deactivated_at is None
+
+
+async def test_admin_reactivate_rejects_a_live_account(
+    client: AsyncClient, admin_headers: dict, user: User
+) -> None:
+    """UC-ADMIN-009 AC1: only is_active=false with a deactivation stamp."""
+    response = await client.post(f"/api/admin/users/{user.id}/reactivate", headers=admin_headers)
+    assert response.status_code == 400
+
+
+async def test_admin_reactivate_restores_account_and_emails_link(
+    client: AsyncClient, admin_headers: dict, user: User, db_session: AsyncSession
+) -> None:
+    """UC-ADMIN-009 AC3: back to active, stamp cleared, magic link sent."""
+    await client.post(f"/api/admin/users/{user.id}/deactivate", headers=admin_headers)
+
+    response = await client.post(f"/api/admin/users/{user.id}/reactivate", headers=admin_headers)
+    assert response.status_code == 200
+    assert response.json()["is_active"] is True
+    assert response.json()["deactivated_at"] is None
+
+    await db_session.refresh(user)
+    assert user.must_change_password is False
+    assert user.deactivated_at is None
+
+    emails = (
+        await db_session.execute(
+            select(EmailOutbox).where(EmailOutbox.to_email == user.email)
+        )
+    ).scalars().all()
+    assert any("reset-password?token=" in (email.body or "") for email in emails)
+
+    actions = (
+        await db_session.execute(
+            select(AuditLog.action).where(AuditLog.target_id == str(user.id))
+        )
+    ).scalars().all()
+    assert "user.force_reactivate" in actions

@@ -27,6 +27,7 @@ from app.core.security import (
     decode_token,
     get_current_active_user,
     get_password_hash,
+    revoke_all_refresh_tokens,
     verify_password,
 )
 from app.models import OAuthAccount, Recipe, RefreshToken, User, UserRole
@@ -394,19 +395,6 @@ async def verify_email(
     return {"message": "Email verified successfully"}
 
 
-async def _revoke_all_refresh_tokens(db: AsyncSession, user_id) -> None:
-    rows = (
-        await db.execute(
-            select(RefreshToken).where(
-                RefreshToken.user_id == user_id, RefreshToken.revoked == False
-            )
-        )
-    ).scalars().all()
-    for row in rows:
-        row.revoked = True
-    await db.commit()
-
-
 def _require_password(user: User, password: str) -> None:
     """Re-authenticate before a destructive account operation.
 
@@ -447,7 +435,7 @@ async def deactivate_account(
 
     current_user.is_active = False
     current_user.deactivated_at = datetime.utcnow()
-    await _revoke_all_refresh_tokens(db, current_user.id)
+    await revoke_all_refresh_tokens(db, current_user.id)
     await db.commit()
 
     response.delete_cookie(key="refresh_token", path="/api/v1/auth/refresh")
@@ -487,7 +475,7 @@ async def delete_account(
     current_user.is_verified = False
     current_user.deleted_at = datetime.utcnow()
 
-    await _revoke_all_refresh_tokens(db, current_user.id)
+    await revoke_all_refresh_tokens(db, current_user.id)
     await db.commit()
 
     response.delete_cookie(key="refresh_token", path="/api/v1/auth/refresh")

@@ -10,11 +10,17 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.audit import record_audit
+from app.core.config import get_settings
 from app.core.database import get_db
-from app.core.security import get_password_hash, require_admin
+from app.core.security import (
+    create_password_reset_token,
+    get_password_hash,
+    require_admin,
+    revoke_all_refresh_tokens,
+)
 from app.models import Favorite, OAuthAccount, Rating, Recipe, User, UserRole
 from app.schemas.admin import GdprEraseRequest, UserAdminUpdate
-from app.schemas.auth import UserResponse
+from app.services.email import send_email
 
 router = APIRouter()
 
@@ -24,11 +30,16 @@ def _to_item(user: User, **extra: object) -> dict:
         "id": str(user.id),
         "email": user.email,
         "display_name": user.display_name,
+        "avatar_url": user.avatar_url,
         "role": user.role.value if hasattr(user.role, "value") else user.role,
         "is_active": user.is_active,
         "is_verified": user.is_verified,
         "created_at": user.created_at,
         "last_login_at": user.last_login_at,
+        # Without these the row cannot tell "inactive" from "GDPR erased":
+        # both have is_active=False.
+        "deactivated_at": user.deactivated_at,
+        "deleted_at": user.deleted_at,
         **extra,
     }
 
@@ -160,7 +171,7 @@ def _order_by(sort: str, recipes_count):
     return (User.created_at.desc(),)
 
 
-@router.get("/{user_id}", response_model=UserResponse, summary="User detail (admin)")
+@router.get("/{user_id}", summary="User detail (admin)")
 async def get_user(
     user_id: UUID,
     _=Depends(require_admin),
@@ -169,7 +180,10 @@ async def get_user(
     user = await db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user
+    # _to_item, not UserResponse: the shared auth schema backs the public
+    # /auth and /users/me endpoints, and UC-ADMIN-006 needs avatar_url plus
+    # the two tombstone dates that schema does not carry.
+    return _to_item(user)
 
 
 @router.post("/{user_id}/activate", summary="Activate user (admin)")
@@ -183,6 +197,10 @@ async def activate_user(
         raise HTTPException(status_code=404, detail="User not found")
     user.is_active = True
     user.is_verified = True
+    # UC-ADMIN-007 AC3: restoring access also clears the deactivation stamp,
+    # otherwise the row still reads as "deactivated" and UC-009 AC1 no longer
+    # distinguishes this account from one that is still suspended.
+    user.deactivated_at = None
     await record_audit(db, admin.id, "user.activate", target_type="user", target_id=str(user.id))
     await db.commit()
     return _to_item(user)
@@ -198,7 +216,12 @@ async def deactivate_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     user.is_active = False
+    # UC-ADMIN-007 AC2: stamp the suspension (UC-009 AC1 keys off it) and cut
+    # short any session already held by the account — flipping is_active only
+    # stops new logins, while a live refresh token keeps minting access tokens.
+    user.deactivated_at = datetime.utcnow()
     await record_audit(db, admin.id, "user.deactivate", target_type="user", target_id=str(user.id))
+    await revoke_all_refresh_tokens(db, user.id)
     await db.commit()
     return _to_item(user)
 
@@ -209,14 +232,52 @@ async def reactivate_user(
     admin=Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
+    """UC-ADMIN-009: restore an account the admin had suspended."""
     user = await db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    if user.is_active or user.deactivated_at is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only a deactivated account can be reactivated",
+        )
+
     user.is_active = True
     user.deactivated_at = None
-    await record_audit(db, admin.id, "user.reactivate", target_type="user", target_id=str(user.id))
+    # UC-ADMIN-009 AC3
+    user.must_change_password = False
+
+    await record_audit(
+        db, admin.id, "user.force_reactivate", target_type="user", target_id=str(user.id)
+    )
+
+    # AC3: the account is reachable again, but only the holder of this link
+    # may walk back in — deactivation is what an admin does after a
+    # compromise, and the old password may still belong to the attacker.
+    reset_url = (
+        f"{get_settings().FRONTEND_URL}/reset-password"
+        f"?token={create_password_reset_token(str(user.id))}"
+    )
+    await send_email(
+        db,
+        to_email=user.email,
+        subject="Tu cuenta fue reactivada — Recetario IA",
+        body=(
+            "Hola,\n\n"
+            "Alguien con permisos administrativos reactivó tu cuenta.\n"
+            "Para elegir una contraseña nueva abrí este enlace:\n"
+            f"{reset_url}\n\n"
+            "Si no esperabas este mensaje, avisá al equipo de Recetario IA.\n\n— Recetario IA"
+        ),
+    )
     await db.commit()
-    return _to_item(user)
+
+    payload = _to_item(user)
+    # Same concession as forgot_password: SMTP is external, so dev exposes the
+    # link to make the flow exercisable without a mail server.
+    if get_settings().ENVIRONMENT != "production":
+        payload["reset_url"] = reset_url
+    return payload
 
 
 @router.post("/{user_id}/gdpr-erase", summary="Erase user data (GDPR, admin)")
