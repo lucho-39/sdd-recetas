@@ -100,6 +100,14 @@ El proyecto está en fase **MVP (0.x)**.
   recetas vivas que referencian el ingrediente — el mismo `@>` de JSONB que usa el conteo — con
   paginación y el autor. En el tab de validados hay una acción nueva que abre un dialog con el
   listado, para ver dónde se usa un ingrediente antes de desvalidarlo.
+- **Notificación al creador al rechazar un ingrediente** (UC-ADMIN-016 AC3): rechazar ahora avisa a
+  quien lo creó por los canales que tenga activos. Reusó el sistema de RF-13, que existía pero estaba
+  acoplado a recetas — `notifications.recipe_id` era `NOT NULL` con FK a `recipes` y la unique de
+  deduplicación la incluía. La columna ahora es nullable (migración `9c0bd638c4c7`) y hay un
+  `notify_ingredient_creator()` separado de `notify_recipe_author()`: un rechazo es una transición
+  administrativa, no social, así que ignora las preferencias por evento y sólo honra las de canal,
+  no usa push y no deduplica (un ingrediente sólo puede rechazarse una vez). Los templates de email
+  son configurables desde `/config`.
 
 ### Fixed — Panel de administración
 - **`tsconfig.json` del admin declaraba `"$lib"` sin `"$lib/*"`**, así que ningún alias resolvía:

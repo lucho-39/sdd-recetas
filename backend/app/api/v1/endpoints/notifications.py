@@ -21,7 +21,7 @@ def _serialize(notification: Notification) -> dict:
     return {
         "id": str(notification.id),
         "type": notification.type,
-        "recipe_id": str(notification.recipe_id),
+        "recipe_id": str(notification.recipe_id) if notification.recipe_id else None,
         "recipe_slug": recipe.slug if recipe else None,
         "recipe_title": recipe.title if recipe else None,
         "actor": (

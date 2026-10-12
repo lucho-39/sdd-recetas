@@ -30,6 +30,12 @@ DEFAULTS: Dict[str, Any] = {
         "Hola,\n\nTu receta '{recipe}' recibió una calificación de {stars} "
         "de parte de '{actor}'.\n\nPodés verla en {url}\n\n— Recetario IA"
     ),
+    # UC-ADMIN-016 AC3. Context placeholders: {actor}, {ingredient}, {reason}.
+    "email_ingredient_rejected_subject": "Tu ingrediente '{ingredient}' fue rechazado",
+    "email_ingredient_rejected_body": (
+        "Hola,\n\nTu ingrediente '{ingredient}' fue rechazado del catálogo. "
+        "Razón: {reason}.\n\n— Recetario IA"
+    ),
 }
 
 

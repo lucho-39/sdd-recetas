@@ -20,6 +20,7 @@ from app.schemas.admin import (
     IngredientRecoverRequest,
     IngredientRejectRequest,
 )
+from app.services.notifications import notify_ingredient_creator
 
 router = APIRouter()
 
@@ -262,6 +263,9 @@ async def reject_ingredient(
     )
     await db.commit()
     await db.refresh(ingredient)
+    # UC-016 AC3: after the commit so a notification failure cannot undo the
+    # rejection. Same call shape as favorites/ratings.
+    await notify_ingredient_creator(db, actor=admin, ingredient=ingredient, reason=data.reason)
     usage = await _usage_count_for(db, ingredient.id)
     return _serialize(ingredient, usage_count=usage)
 

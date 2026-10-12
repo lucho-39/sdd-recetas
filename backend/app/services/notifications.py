@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.app_settings import current_settings
-from app.models import Notification, NotificationPreference, Recipe, User
+from app.models import Ingredient, Notification, NotificationPreference, Recipe, User
 from app.realtime.server import emit_notification
 from app.services.email import send_email
 from app.services.webpush import send_web_push
@@ -44,12 +44,15 @@ async def get_preferences(db: AsyncSession, user_id: UUID) -> Dict[str, bool]:
 
 
 def build_payload(
-    notification: Optional[Notification], recipe: Recipe, actor: Optional[User], detail: Optional[dict]
+    notification: Optional[Notification],
+    recipe: Optional[Recipe],
+    actor: Optional[User],
+    detail: Optional[dict],
 ) -> Dict[str, Any]:
     return {
         "id": str(notification.id) if notification else None,
         "type": notification.type if notification else None,
-        "recipe_id": str(recipe.id),
+        "recipe_id": str(recipe.id) if recipe else None,
         "recipe_slug": recipe.slug if recipe else None,
         "recipe_title": recipe.title if recipe else None,
         "actor": (
@@ -203,5 +206,80 @@ async def notify_recipe_author(
                 "tag": f"{type}-{recipe.id}",
             },
         )
+
+    return notification
+
+
+async def notify_ingredient_creator(
+    db: AsyncSession,
+    *,
+    actor: User,
+    ingredient: Ingredient,
+    reason: str,
+) -> Optional[Notification]:
+    """UC-ADMIN-016 AC3: tell the creator their ingredient was rejected.
+
+    Deliberately not routed through notify_recipe_author: there is no recipe
+    behind this event, and an admin rejection is not a social one — so it
+    ignores the per-event flags (favorites/ratings) and only honours the
+    channel ones. Push is skipped: a rejection is not urgent enough to leave
+    the tab for, and the creator is most likely offline when it happens.
+
+    No dedupe either: an ingredient can only be rejected once — the second
+    attempt is a 400 — so a second row would be a bug, not a repeat.
+    """
+    recipient_id = ingredient.created_by
+    if recipient_id is None or recipient_id == actor.id:
+        return None
+
+    preferences = await get_preferences(db, recipient_id)
+    in_app = preferences["in_app_enabled"]
+    email = preferences["email_enabled"]
+    if not in_app and not email:
+        return None
+
+    detail = {
+        "reason": reason,
+        "ingredient_name": ingredient.name,
+        "ingredient_slug": ingredient.slug,
+    }
+    message = f"Tu ingrediente '{ingredient.name}' fue rechazado. Razón: {reason}"
+
+    notification: Optional[Notification] = None
+    if in_app:
+        notification = Notification(
+            user_id=recipient_id,
+            actor_id=actor.id,
+            recipe_id=None,
+            type="ingredient_rejected",
+            detail=detail,
+            is_read=False,
+        )
+        db.add(notification)
+        await db.commit()
+        await db.refresh(notification)
+
+        payload = build_payload(notification, None, actor, detail)
+        payload["in_app"] = True
+        await emit_notification(str(recipient_id), payload)
+
+    if email:
+        recipient = await db.get(User, recipient_id)
+        if recipient and recipient.email:
+            settings = current_settings()
+            context = {
+                "actor": actor.display_name,
+                "ingredient": ingredient.name,
+                "reason": reason,
+            }
+            subject = _render(
+                settings["email_ingredient_rejected_subject"],
+                context,
+                f"Ingrediente '{ingredient.name}' rechazado",
+            )[:200]
+            body = _render(
+                settings["email_ingredient_rejected_body"], context, message
+            )
+            await send_email(db, to_email=recipient.email, subject=subject, body=body)
 
     return notification

@@ -1,7 +1,10 @@
 """Tests for the notifications endpoints and their live triggers."""
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Recipe
+from app.models import Recipe, User
+
+from conftest import create_ingredient
 
 
 async def test_notifications_require_authentication(client: AsyncClient) -> None:
@@ -243,3 +246,88 @@ async def test_custom_email_template(
         )
     ).scalars().all()
     assert rows[-1].subject == "[Nueva] 5★ en Tarta de manzana"
+
+
+async def test_ingredient_rejection_notifies_creator(
+    client: AsyncClient,
+    admin_headers: dict,
+    auth_headers: dict,
+    db_session: AsyncSession,
+    user: User,
+) -> None:
+    """UC-ADMIN-016 AC3: the creator gets an in-app notification with the reason."""
+    ingredient = await create_ingredient(
+        db_session, slug="rechazable", name="Rechazable", created_by=user.id
+    )
+
+    rejected = await client.post(
+        f"/api/admin/ingredients/{ingredient.id}/reject",
+        headers=admin_headers,
+        json={"reason": "Spam"},
+    )
+    assert rejected.status_code == 200
+
+    listing = await client.get("/api/v1/notifications", headers=auth_headers)
+    assert listing.status_code == 200
+    item = listing.json()["items"][0]
+    assert item["type"] == "ingredient_rejected"
+    assert item["detail"]["reason"] == "Spam"
+    assert item["detail"]["ingredient_name"] == "Rechazable"
+    # There is no recipe behind this event; the frontend falls back to '/'.
+    assert item["recipe_id"] is None
+
+
+async def test_ingredient_rejection_skips_seed_ingredients(
+    client: AsyncClient,
+    admin_headers: dict,
+    auth_headers: dict,
+    db_session: AsyncSession,
+) -> None:
+    """A catalog entry with no creator has nobody to notify."""
+    ingredient = await create_ingredient(db_session, slug="sin-creador", name="Sin Creador")
+
+    rejected = await client.post(
+        f"/api/admin/ingredients/{ingredient.id}/reject",
+        headers=admin_headers,
+        json={"reason": "Otro"},
+    )
+    assert rejected.status_code == 200
+
+    listing = await client.get("/api/v1/notifications", headers=auth_headers)
+    assert listing.json()["total"] == 0
+
+
+async def test_ingredient_rejection_sends_email_when_enabled(
+    client: AsyncClient,
+    admin_headers: dict,
+    auth_headers: dict,
+    db_session: AsyncSession,
+    user: User,
+) -> None:
+    """The channel preference is honoured; the per-event ones are not."""
+    from sqlalchemy import select
+
+    from app.models import EmailOutbox
+
+    await client.put(
+        "/api/v1/users/me/notification-preferences",
+        headers=auth_headers,
+        json={"email_enabled": True, "favorites_enabled": False, "ratings_enabled": False},
+    )
+    ingredient = await create_ingredient(
+        db_session, slug="por-email", name="Por Email", created_by=user.id
+    )
+
+    rejected = await client.post(
+        f"/api/admin/ingredients/{ingredient.id}/reject",
+        headers=admin_headers,
+        json={"reason": "Duplicado"},
+    )
+    assert rejected.status_code == 200
+
+    rows = (
+        await db_session.execute(
+            select(EmailOutbox).where(EmailOutbox.to_email == user.email)
+        )
+    ).scalars().all()
+    assert any("Por Email" in row.subject for row in rows)

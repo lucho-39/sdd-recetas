@@ -273,7 +273,13 @@ class AuditLog(Base):
 
 
 class Notification(Base):
-    """In-app notification for a recipe author (likes and ratings)."""
+    """In-app notification (likes, ratings and admin transitions).
+
+    `recipe_id` is nullable: a notification about an ingredient rejection has
+    no recipe behind it (UC-ADMIN-016 AC3). The recipe-bound events keep
+    using it, and the frontend already falls back to '/' when the slug is
+    missing.
+    """
 
     __tablename__ = "notifications"
 
@@ -285,8 +291,8 @@ class Notification(Base):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     type: Mapped[str] = mapped_column(String(30), nullable=False)
-    recipe_id: Mapped[uuid4] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("recipes.id", ondelete="CASCADE"), nullable=False, index=True
+    recipe_id: Mapped[Optional[uuid4]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("recipes.id", ondelete="CASCADE"), nullable=True, index=True
     )
     is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     detail: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
