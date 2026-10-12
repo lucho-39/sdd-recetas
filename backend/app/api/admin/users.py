@@ -18,7 +18,7 @@ from app.core.security import (
     require_admin,
     revoke_all_refresh_tokens,
 )
-from app.models import Favorite, OAuthAccount, Rating, Recipe, User, UserRole
+from app.models import Favorite, OAuthAccount, Rating, Recipe, User, UserRole, Visit
 from app.schemas.admin import GdprEraseRequest, UserAdminUpdate
 from app.services.email import send_email
 
@@ -422,3 +422,162 @@ async def change_role(
     )
     await db.commit()
     return _to_item(user)
+
+
+async def _paged(db, *, count_stmt, rows_stmt, page, limit, mapper):
+    """UC-ADMIN-006 AC2: one shape for all four activity tabs."""
+    total = await db.scalar(count_stmt) or 0
+    rows = (await db.execute(rows_stmt.offset((page - 1) * limit).limit(limit))).all()
+    return {
+        "items": [mapper(row) for row in rows],
+        "total": total,
+        "page": page,
+        "limit": limit,
+    }
+
+
+def _recipe_row(row) -> dict:
+    # A Row, not the entity: _paged maps every tab the same way, and a
+    # single-entity select still comes back wrapped.
+    recipe = row[0]
+    return {
+        "id": str(recipe.id),
+        "title": recipe.title,
+        "slug": recipe.slug,
+        "is_public": recipe.is_public,
+        # Deleted rows stay in the list: an admin auditing an account is
+        # usually there precisely because of what it used to publish.
+        "deleted_at": recipe.deleted_at,
+        "avg_rating": recipe.avg_rating,
+        "rating_count": recipe.rating_count,
+        "visit_count": recipe.visit_count,
+        "created_at": recipe.created_at,
+    }
+
+
+def _favorite_row(row) -> dict:
+    favorite, recipe = row[0], row[1]
+    return {
+        "recipe_id": str(recipe.id),
+        "title": recipe.title,
+        "slug": recipe.slug,
+        "is_public": recipe.is_public,
+        "collection_name": favorite.collection_name,
+        "created_at": favorite.created_at,
+    }
+
+
+def _rating_row(row) -> dict:
+    rating, title, slug = row[0], row[1], row[2]
+    return {
+        "recipe_title": title,
+        "recipe_slug": slug,
+        "score": rating.score,
+        "review_text": rating.review_text,
+        "created_at": rating.created_at,
+    }
+
+
+def _visit_row(row) -> dict:
+    visit, title, slug = row[0], row[1], row[2]
+    return {"recipe_title": title, "recipe_slug": slug, "visited_at": visit.visited_at}
+
+
+@router.get("/{user_id}/recipes", summary="Recipes authored by a user (admin)")
+async def user_recipes(
+    user_id: UUID,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    _=Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """UC-ADMIN-006 AC2: the account's own recipes, private and deleted included."""
+    if not await db.get(User, user_id):
+        raise HTTPException(status_code=404, detail="User not found")
+    return await _paged(
+        db,
+        count_stmt=select(func.count(Recipe.id)).where(Recipe.author_id == user_id),
+        rows_stmt=(
+            select(Recipe)
+            .where(Recipe.author_id == user_id)
+            .order_by(Recipe.created_at.desc())
+        ),
+        page=page,
+        limit=limit,
+        mapper=_recipe_row,
+    )
+
+
+@router.get("/{user_id}/favorites", summary="Recipes a user favorited (admin)")
+async def user_favorites(
+    user_id: UUID,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    _=Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    if not await db.get(User, user_id):
+        raise HTTPException(status_code=404, detail="User not found")
+    return await _paged(
+        db,
+        count_stmt=select(func.count(Favorite.recipe_id)).where(Favorite.user_id == user_id),
+        rows_stmt=(
+            select(Favorite, Recipe)
+            .join(Recipe, Recipe.id == Favorite.recipe_id)
+            .where(Favorite.user_id == user_id)
+            .order_by(Favorite.created_at.desc())
+        ),
+        page=page,
+        limit=limit,
+        mapper=_favorite_row,
+    )
+
+
+@router.get("/{user_id}/ratings", summary="Ratings a user gave (admin)")
+async def user_ratings(
+    user_id: UUID,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    _=Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    if not await db.get(User, user_id):
+        raise HTTPException(status_code=404, detail="User not found")
+    return await _paged(
+        db,
+        count_stmt=select(func.count(Rating.id)).where(Rating.user_id == user_id),
+        rows_stmt=(
+            select(Rating, Recipe.title, Recipe.slug)
+            .join(Recipe, Recipe.id == Rating.recipe_id)
+            .where(Rating.user_id == user_id)
+            .order_by(Rating.created_at.desc())
+        ),
+        page=page,
+        limit=limit,
+        mapper=_rating_row,
+    )
+
+
+@router.get("/{user_id}/visits", summary="Recent recipe visits by a user (admin)")
+async def user_visits(
+    user_id: UUID,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    _=Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    if not await db.get(User, user_id):
+        raise HTTPException(status_code=404, detail="User not found")
+    return await _paged(
+        db,
+        count_stmt=select(func.count(Visit.id)).where(Visit.user_id == user_id),
+        rows_stmt=(
+            select(Visit, Recipe.title, Recipe.slug)
+            .join(Recipe, Recipe.id == Visit.recipe_id)
+            .where(Visit.user_id == user_id)
+            .order_by(Visit.visited_at.desc())
+        ),
+        page=page,
+        limit=limit,
+        mapper=_visit_row,
+    )

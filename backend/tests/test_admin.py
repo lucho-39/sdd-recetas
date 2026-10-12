@@ -16,6 +16,7 @@ from app.models import (
     Recipe,
     RefreshToken,
     User,
+    Visit,
 )
 
 
@@ -1005,3 +1006,104 @@ async def test_admin_user_detail_has_no_ratings_yet(
     response = await client.get(f"/api/admin/users/{user.id}", headers=admin_headers)
     assert response.status_code == 200
     assert response.json()["ratings_average"] is None
+
+
+async def test_admin_user_recipes_tab_includes_private_and_deleted(
+    client: AsyncClient,
+    admin_headers: dict,
+    user: User,
+    category,
+    db_session: AsyncSession,
+) -> None:
+    """UC-ADMIN-006 AC2: the audit view shows everything the account published."""
+    await create_recipe(db_session, author=user, category=category, title="Pub", slug="pub")
+    await create_recipe(
+        db_session, author=user, category=category, title="Priv", slug="priv", is_public=False
+    )
+    gone = await create_recipe(
+        db_session, author=user, category=category, title="Gone", slug="gone"
+    )
+    gone.deleted_at = datetime.now(UTC)
+    await db_session.commit()
+
+    response = await client.get(f"/api/admin/users/{user.id}/recipes", headers=admin_headers)
+    assert response.status_code == 200
+    body = response.json()
+
+    assert body["total"] == 3
+    assert body["limit"] == 20
+    assert {item["slug"] for item in body["items"]} == {"pub", "priv", "gone"}
+    assert next(i for i in body["items"] if i["slug"] == "gone")["deleted_at"] is not None
+
+
+async def test_admin_user_activity_tabs_paginate(
+    client: AsyncClient,
+    admin_headers: dict,
+    user: User,
+    category,
+    db_session: AsyncSession,
+) -> None:
+    for n in range(3):
+        await create_recipe(
+            db_session, author=user, category=category, title=f"R{n}", slug=f"r{n}"
+        )
+
+    first = await client.get(
+        f"/api/admin/users/{user.id}/recipes?limit=2&page=1", headers=admin_headers
+    )
+    second = await client.get(
+        f"/api/admin/users/{user.id}/recipes?limit=2&page=2", headers=admin_headers
+    )
+    assert first.json()["total"] == 3
+    assert len(first.json()["items"]) == 2
+    assert len(second.json()["items"]) == 1
+    first_slugs = {i["slug"] for i in first.json()["items"]}
+    second_slugs = {i["slug"] for i in second.json()["items"]}
+    assert first_slugs & second_slugs == set()
+
+
+async def test_admin_user_favorites_tab(
+    client: AsyncClient, admin_headers: dict, user: User, recipe: Recipe, db_session: AsyncSession
+) -> None:
+    db_session.add(Favorite(user_id=user.id, recipe_id=recipe.id, collection_name="Cena"))
+    await db_session.commit()
+
+    response = await client.get(f"/api/admin/users/{user.id}/favorites", headers=admin_headers)
+    assert response.status_code == 200
+    item = response.json()["items"][0]
+    assert item["title"] == recipe.title
+    assert item["collection_name"] == "Cena"
+
+
+async def test_admin_user_ratings_tab(
+    client: AsyncClient, admin_headers: dict, user: User, recipe: Recipe, db_session: AsyncSession
+) -> None:
+    db_session.add(Rating(user_id=user.id, recipe_id=recipe.id, score=2, review_text="Salada"))
+    await db_session.commit()
+
+    response = await client.get(f"/api/admin/users/{user.id}/ratings", headers=admin_headers)
+    assert response.status_code == 200
+    item = response.json()["items"][0]
+    assert item["score"] == 2
+    assert item["review_text"] == "Salada"
+    assert item["recipe_slug"] == recipe.slug
+
+
+async def test_admin_user_visits_tab(
+    client: AsyncClient, admin_headers: dict, user: User, recipe: Recipe, db_session: AsyncSession
+) -> None:
+    db_session.add(Visit(user_id=user.id, recipe_id=recipe.id, visitor_fingerprint="fp-visit-tab"))
+    await db_session.commit()
+
+    response = await client.get(f"/api/admin/users/{user.id}/visits", headers=admin_headers)
+    assert response.status_code == 200
+    assert response.json()["items"][0]["recipe_slug"] == recipe.slug
+
+
+async def test_admin_activity_tabs_reject_unknown_user(
+    client: AsyncClient, admin_headers: dict
+) -> None:
+    missing = "00000000-0000-0000-0000-000000000000"
+    for tab in ("recipes", "favorites", "ratings", "visits"):
+        response = await client.get(f"/api/admin/users/{missing}/{tab}", headers=admin_headers)
+        assert response.status_code == 404, tab
