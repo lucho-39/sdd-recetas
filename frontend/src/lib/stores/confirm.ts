@@ -6,9 +6,21 @@ export type ConfirmRequest = {
 	confirmLabel?: string;
 	cancelLabel?: string;
 	destructive?: boolean;
+	/**
+	 * Present ⇒ the dialog collects text. That is what makes `promptDialog`
+	 * differ from `confirmDialog` — not a second host component.
+	 */
+	promptLabel?: string;
+	promptDefault?: string;
+	promptPlaceholder?: string;
 };
 
-export type ConfirmResult = { confirmed: boolean; password: string | null };
+export type ConfirmResult = {
+	confirmed: boolean;
+	password: string | null;
+	/** Text entered by `promptDialog`; null when cancelled. */
+	value: string | null;
+};
 
 export type ConfirmState = ConfirmRequest & {
 	requirePassword: boolean;
@@ -39,5 +51,20 @@ export function confirmDialog(request: ConfirmRequest): Promise<boolean> {
 export function confirmPasswordDialog(request: ConfirmRequest): Promise<ConfirmResult> {
 	return new Promise((resolve) => {
 		confirmState.set({ ...request, requirePassword: true, resolve });
+	});
+}
+
+/**
+ * Promise-based replacement for the native `prompt()`. Resolves with the
+ * entered text, or null if the dialog was cancelled — the same two outcomes
+ * `prompt()` produces, so call sites read the same way.
+ */
+export function promptDialog(request: ConfirmRequest): Promise<string | null> {
+	return new Promise((resolve) => {
+		confirmState.set({
+			...request,
+			requirePassword: false,
+			resolve: ({ confirmed, value }) => resolve(confirmed ? value : null)
+		});
 	});
 }

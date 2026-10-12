@@ -3,17 +3,31 @@
 	import { confirmState, type ConfirmResult } from '$lib/stores/confirm';
 
 	let password = '';
+	let value = '';
 
-	$: requirePassword = $confirmState?.requirePassword ?? false;
-	$: canConfirm = !requirePassword || password.length > 0;
+	$: state = $confirmState;
+	$: requirePassword = state?.requirePassword ?? false;
+	$: promptLabel = state?.promptLabel ?? null;
+
+	// Seed (and clear) the field on open. Only `state` is read here, so typing
+	// never re-runs this and overwrites what the user entered.
+	$: if (state) {
+		value = state.promptDefault ?? '';
+		password = '';
+	}
+
+	$: canConfirm =
+		(!requirePassword || password.length > 0) && (promptLabel === null || value.trim().length > 0);
 
 	function settle(confirmed: boolean) {
 		const current = $confirmState;
 		const result: ConfirmResult = {
 			confirmed,
-			password: confirmed && current?.requirePassword ? password : null
+			password: confirmed && current?.requirePassword ? password : null,
+			value: confirmed && current?.promptLabel ? value : null
 		};
 		password = '';
+		value = '';
 		confirmState.set(null);
 		current?.resolve(result);
 	}
@@ -38,6 +52,16 @@
 				bind:value={password}
 				class="input-base"
 				autocomplete="current-password"
+			/>
+		</label>
+	{:else if promptLabel !== null}
+		<label class="block">
+			<span class="mb-1 block text-sm font-medium text-foreground">{promptLabel}</span>
+			<input
+				type="text"
+				bind:value
+				class="input-base"
+				placeholder={$confirmState?.promptPlaceholder ?? ''}
 			/>
 		</label>
 	{/if}

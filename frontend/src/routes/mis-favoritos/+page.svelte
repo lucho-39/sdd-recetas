@@ -8,7 +8,7 @@
 		IconEdit as Edit
 	} from '@tabler/icons-svelte';
 	import { auth } from '$lib/stores/auth';
-	import { confirmDialog } from '$lib/stores/confirm';
+	import { confirmDialog, promptDialog } from '$lib/stores/confirm';
 	import RecipeCard from '$components/recipe/RecipeCard.svelte';
 
 	type Favorite = {
@@ -72,19 +72,31 @@
 		await load();
 	}
 
-	function onMove(fav: Favorite, value: string) {
+	async function onMove(fav: Favorite, value: string, select: HTMLSelectElement) {
 		if (value === '__new__') {
-			const name = prompt('Nombre de la nueva colección:');
-			if (!name) return;
-			patchFavorite(fav.recipe_id, name.trim());
+			// The option is a command, not a selection: put the <select> back
+			// before anything can be awaited, or cancelling leaves it pointing
+			// at an option that was never chosen.
+			select.value = fav.collection_name ?? '';
+			const name = await promptDialog({
+				title: 'Nueva colección',
+				promptLabel: 'Nombre de la nueva colección',
+				confirmLabel: 'Crear'
+			});
+			if (name?.trim()) await patchFavorite(fav.recipe_id, name.trim());
 			return;
 		}
-		patchFavorite(fav.recipe_id, value || null);
+		await patchFavorite(fav.recipe_id, value || null);
 	}
 
 	async function renameCollection() {
 		if (selected === null) return;
-		const name = prompt('Nuevo nombre de la colección:', selected);
+		const name = await promptDialog({
+			title: 'Renombrar colección',
+			promptLabel: 'Nuevo nombre',
+			promptDefault: selected,
+			confirmLabel: 'Renombrar'
+		});
 		if (!name || name === selected) return;
 		const res = await apiFetch(`/api/v1/favorites/collections/${encodeURIComponent(selected)}`, {
 			method: 'PATCH',
@@ -203,7 +215,7 @@
 									<select
 										class="input-base py-1.5 text-xs"
 										value={fav.collection_name ?? ''}
-										on:change={(e) => onMove(fav, e.currentTarget.value)}
+										on:change={(e) => onMove(fav, e.currentTarget.value, e.currentTarget)}
 										aria-label="Mover a colección"
 									>
 										<option value="">Sin colección</option>
