@@ -6,7 +6,7 @@ from datetime import UTC, date, datetime, time, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.audit import record_audit
@@ -171,6 +171,60 @@ def _order_by(sort: str, recipes_count):
     return (User.created_at.desc(),)
 
 
+def _tally(predicate):
+    """COUNT matching a predicate — an aggregate over an empty set is NULL."""
+    return func.coalesce(func.sum(case((predicate, 1), else_=0)), 0)
+
+
+async def _metrics(db: AsyncSession, user_id: UUID) -> dict:
+    """UC-ADMIN-006 AC3 / UC-ADMIN-008 AC2: the numbers both panels show.
+
+    The recipe breakdown is one aggregate rather than four COUNTs, because
+    splitting visibility and deletion means four passes over the same rows.
+    """
+    recipes_public, recipes_private, recipes_deleted = (
+        await db.execute(
+            select(
+                _tally(and_(Recipe.deleted_at.is_(None), Recipe.is_public.is_(True))),
+                _tally(and_(Recipe.deleted_at.is_(None), Recipe.is_public.is_(False))),
+                _tally(Recipe.deleted_at.is_not(None)),
+            )
+            .select_from(Recipe)
+            .where(Recipe.author_id == user_id)
+        )
+    ).one()
+
+    favorites = await db.scalar(
+        select(func.count(Favorite.recipe_id)).where(Favorite.user_id == user_id)
+    )
+    ratings_count = await db.scalar(
+        select(func.count(Rating.id)).where(Rating.user_id == user_id)
+    )
+    ratings_average = await db.scalar(
+        select(func.avg(Rating.score)).where(Rating.user_id == user_id)
+    )
+    provider = await db.scalar(
+        select(func.coalesce(func.min(OAuthAccount.provider), "email")).where(
+            OAuthAccount.user_id == user_id
+        )
+    )
+
+    return {
+        "provider": provider,
+        # public + private, so this still matches the list's recipes_count,
+        # which already excludes soft-deleted rows.
+        "recipes_count": int(recipes_public) + int(recipes_private),
+        "recipes_public": int(recipes_public),
+        "recipes_private": int(recipes_private),
+        "recipes_deleted": int(recipes_deleted),
+        "favorites_count": int(favorites or 0),
+        "ratings_count": int(ratings_count or 0),
+        "ratings_average": round(float(ratings_average), 2)
+        if ratings_average is not None
+        else None,
+    }
+
+
 @router.get("/{user_id}", summary="User detail (admin)")
 async def get_user(
     user_id: UUID,
@@ -183,7 +237,7 @@ async def get_user(
     # _to_item, not UserResponse: the shared auth schema backs the public
     # /auth and /users/me endpoints, and UC-ADMIN-006 needs avatar_url plus
     # the two tombstone dates that schema does not carry.
-    return _to_item(user)
+    return {**_to_item(user), **await _metrics(db, user_id)}
 
 
 @router.post("/{user_id}/activate", summary="Activate user (admin)")

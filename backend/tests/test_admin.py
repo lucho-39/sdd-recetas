@@ -1,12 +1,22 @@
 """Tests for the administrative API (/api/admin)."""
 from datetime import UTC, datetime, timedelta
 
+import pytest
 from conftest import create_ingredient, create_recipe
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import AuditLog, EmailOutbox, OAuthAccount, Recipe, RefreshToken, User
+from app.models import (
+    AuditLog,
+    EmailOutbox,
+    Favorite,
+    OAuthAccount,
+    Rating,
+    Recipe,
+    RefreshToken,
+    User,
+)
 
 
 async def test_admin_endpoints_require_auth(client: AsyncClient) -> None:
@@ -924,3 +934,74 @@ async def test_admin_reactivate_restores_account_and_emails_link(
         )
     ).scalars().all()
     assert "user.force_reactivate" in actions
+
+
+async def test_admin_user_detail_reports_metrics(
+    client: AsyncClient,
+    admin_headers: dict,
+    user: User,
+    recipe: Recipe,
+    db_session: AsyncSession,
+) -> None:
+    """UC-ADMIN-006 AC3 / UC-ADMIN-008 AC2: the numbers both panels show."""
+    db_session.add(Favorite(user_id=user.id, recipe_id=recipe.id))
+    db_session.add(Rating(user_id=user.id, recipe_id=recipe.id, score=4))
+    await db_session.commit()
+
+    response = await client.get(f"/api/admin/users/{user.id}", headers=admin_headers)
+    assert response.status_code == 200
+    body = response.json()
+
+    assert body["provider"] == "email"
+    assert body["recipes_count"] == 1
+    assert body["recipes_public"] == 1
+    assert body["recipes_private"] == 0
+    assert body["recipes_deleted"] == 0
+    assert body["favorites_count"] == 1
+    assert body["ratings_count"] == 1
+    assert body["ratings_average"] == pytest.approx(4.0)
+
+
+async def test_admin_user_detail_splits_visibility_and_deletion(
+    client: AsyncClient,
+    admin_headers: dict,
+    user: User,
+    category,
+    db_session: AsyncSession,
+) -> None:
+    """UC-ADMIN-006 AC3: public / private / deleted are three separate buckets."""
+    await create_recipe(
+        db_session, author=user, category=category, title="Publica", slug="publica"
+    )
+    await create_recipe(
+        db_session,
+        author=user,
+        category=category,
+        title="Privada",
+        slug="privada",
+        is_public=False,
+    )
+    gone = await create_recipe(
+        db_session, author=user, category=category, title="Borrada", slug="borrada"
+    )
+    gone.deleted_at = datetime.now(UTC)
+    await db_session.commit()
+
+    response = await client.get(f"/api/admin/users/{user.id}", headers=admin_headers)
+    assert response.status_code == 200
+    body = response.json()
+
+    assert body["recipes_public"] == 1
+    assert body["recipes_private"] == 1
+    assert body["recipes_deleted"] == 1
+    # recipes_count matches the list endpoint, which excludes soft deletes.
+    assert body["recipes_count"] == 2
+
+
+async def test_admin_user_detail_has_no_ratings_yet(
+    client: AsyncClient, admin_headers: dict, user: User
+) -> None:
+    """An average over zero ratings is null, not 0 — nobody scored anything."""
+    response = await client.get(f"/api/admin/users/{user.id}", headers=admin_headers)
+    assert response.status_code == 200
+    assert response.json()["ratings_average"] is None

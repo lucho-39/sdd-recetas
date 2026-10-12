@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import {
+		IconEye as View,
 		IconRefresh as Reactivate,
 		IconTrashFilled as Erase,
 		IconUserCheck as Activate,
@@ -305,9 +306,20 @@
 						<td class="p-3 text-right">{row.favorites_count}</td>
 						<td class="p-3 text-right">{row.ratings_count}</td>
 						<td class="p-3 text-right">
+							<!-- UC-ADMIN-005 AC5: always offered — an erased account still
+							     warrants inspection, even with nothing left to change. -->
+							<a
+								href="/usuarios/{row.id}"
+								class="btn btn-ghost btn-sm"
+								title="Ver detalle"
+								aria-label="Ver el detalle de {row.display_name}"
+							>
+								<View class="h-4 w-4" aria-hidden="true" />
+							</a>
 							{#if row.deleted_at}
-								<!-- UC-ADMIN-010 AC1: already erased, nothing left to act on. -->
-								<span class="text-xs text-muted-foreground">Sin acciones</span>
+								<!-- UC-ADMIN-010 AC1: already erased, so there is nothing left
+								     to activate, suspend or erase. The view link is the only
+								     action a GDPR-erased row keeps. -->
 							{:else if row.is_active}
 								<button
 									type="button"
