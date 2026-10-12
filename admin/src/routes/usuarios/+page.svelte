@@ -346,15 +346,21 @@
 							<span class="badge {badge(row).cls}">{badge(row).label}</span>
 						</td>
 						<td class="p-3">
-							<select
-								value={row.role}
-								on:change={(e) => changeRole(row, e.currentTarget.value)}
-								class="input-base py-1"
-								aria-label="Rol de {row.display_name}"
-							>
-								<option value="user">user</option>
-								<option value="admin">admin</option>
-							</select>
+							{#if row.deleted_at || !row.is_active}
+								<!-- UC-ADMIN-011 AC1: el backend rechaza con 400, así que el
+								     control ni se ofrece en cuentas que no están activas. -->
+								<span class="badge bg-muted text-muted-foreground">{row.role}</span>
+							{:else}
+								<select
+									value={row.role}
+									on:change={(e) => changeRole(row, e.currentTarget.value)}
+									class="input-base py-1"
+									aria-label="Rol de {row.display_name}"
+								>
+									<option value="user">user</option>
+									<option value="admin">admin</option>
+								</select>
+							{/if}
 						</td>
 						<td class="p-3 whitespace-nowrap text-muted-foreground">{formatDate(row.created_at)}</td>
 						<td class="p-3 whitespace-nowrap text-muted-foreground">
@@ -479,7 +485,7 @@
 	<AlertDialog
 		open
 		title="Forzar reactivación"
-		description="Se le enviará un email para definir nuevo display_name y elegir contraseña."
+		description="Se le enviará un email con un enlace para elegir una contraseña nueva."
 		confirmLabel="Reactivar"
 		loading={busy}
 		onConfirm={confirm}
@@ -492,7 +498,7 @@
 		open
 		destructive
 		title="ELIMINAR DEFINITIVAMENTE al usuario"
-		description="Esta acción es IRREVERSIBLE: la PII queda anonimizada, sus recetas pasan al usuario system y las FK quedan en NULL."
+		description="Esta acción es IRREVERSIBLE: la PII queda anonimizada y la cuenta se desactiva. Sus recetas quedan atribuidas a 'Usuario eliminado', o se borran si lo elegís en el paso siguiente."
 		confirmLabel="Continuar"
 		loading={busy}
 		onConfirm={confirm}
