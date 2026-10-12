@@ -5,7 +5,7 @@ import secrets
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -184,8 +184,25 @@ async def change_role(
     user = await db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
     if data.role is not None:
+        # UC-ADMIN-011 AC2: demoting yourself drops you out of require_admin on
+        # the next request, and there is no recovery path in the MVP.
+        if data.role != UserRole.ADMIN and user.id == admin.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You cannot change your own role",
+            )
+        # UC-ADMIN-011 AC1: role changes apply to live accounts only — a
+        # dormant account must be reactivated first so the audit trail names
+        # an actor who still exists.
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Reactivate the account before changing its role",
+            )
         user.role = UserRole(data.role)
+
     if data.is_verified is not None:
         user.is_verified = data.is_verified
     await record_audit(

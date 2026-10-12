@@ -62,6 +62,38 @@ async def test_admin_change_user_role(
     assert response.json()["role"] == "admin"
 
 
+async def test_admin_cannot_change_own_role(
+    client: AsyncClient, admin_headers: dict, admin_user: User, db_session: AsyncSession
+) -> None:
+    """UC-ADMIN-011 AC2: demoting yourself is a one-way trip out of admin."""
+    response = await client.patch(
+        f"/api/admin/users/{admin_user.id}/role",
+        headers=admin_headers,
+        json={"role": "user"},
+    )
+    assert response.status_code == 403
+
+    await db_session.refresh(admin_user)
+    assert admin_user.role.value == "admin"
+
+
+async def test_admin_cannot_change_role_of_deactivated_user(
+    client: AsyncClient, admin_headers: dict, user: User, db_session: AsyncSession
+) -> None:
+    """UC-ADMIN-011 AC1: role changes apply to live accounts only."""
+    deact = await client.post(f"/api/admin/users/{user.id}/deactivate", headers=admin_headers)
+    assert deact.status_code == 200
+
+    response = await client.patch(
+        f"/api/admin/users/{user.id}/role",
+        headers=admin_headers,
+        json={"role": "admin"},
+    )
+    assert response.status_code == 400
+    await db_session.refresh(user)
+    assert user.role.value == "user"
+
+
 async def test_admin_categories_crud(
     client: AsyncClient, admin_headers: dict
 ) -> None:
