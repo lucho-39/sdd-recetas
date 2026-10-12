@@ -261,9 +261,9 @@
 
 ### UC-ADMIN-032: Templates de Email
 **Como** admin, **quiero** editar templates de email **para** comunicación.
-- **AC1**: Templates: verification, password_reset, reactivation_magic_link, gdpr_confirmation, welcome
-- **AC2**: Editor: subject, HTML body, text body, variables disponibles ({{user_name}}, {{link}}, {{code}})
-- **AC3**: Preview + test send (a email admin)
+- **AC1**: Templates editables en `/config` (vía `GET`/`PUT /api/admin/config`): asunto + cuerpo de favorito, calificación e ingrediente rechazado. Los emails de verificación, reset, reactivación y GDPR usan textos fijos del backend (no configurables).
+- **AC2**: Editor: texto plano con placeholders (`{actor}`, `{recipe}`, `{score}`, `{stars}`, `{url}`, `{ingredient}`, `{reason}`). Sin HTML ni preview (v2).
+- **AC3**: Guardar persiste en `app_settings` y refresca la caché en caliente. Sin test-send (v2).
 
 ### UC-ADMIN-033: Modo Mantenimiento
 **Como** admin, **quiero** activar modo mantenimiento **para** deploys/emergencias.
@@ -345,9 +345,8 @@
 | PATCH | `/api/admin/flags/{key}` | Actualizar flag |
 | GET | `/api/admin/rate-limits` | Config rate limits |
 | PATCH | `/api/admin/rate-limits/{endpoint}` | Actualizar rate limit |
-| GET | `/api/admin/email-templates` | Templates email |
-| PATCH | `/api/admin/email-templates/{key}` | Actualizar template |
-| POST | `/api/admin/email-templates/{key}/test` | Test send |
+| GET | `/api/admin/config` | Configuración (flags + templates de email) |
+| PUT | `/api/admin/config` | Actualizar configuración |
 | PATCH | `/api/admin/maintenance` | Toggle mantenimiento |
 | GET | `/api/admin/audit-log` | Log auditoría |
 | GET | `/api/admin/error-log` | Log errores 5xx |
@@ -372,7 +371,7 @@
 - Error log: `GET /error-log` (filtros por `status_code`/`path`); un middleware captura las respuestas 5xx.
 - Infra: modo mantenimiento (503 en tráfico público, admin accesible) y rate limiting por minuto (exento `/api/admin`).
 
-**Pendiente (v2)**: `GET /recipes/{id}/stats` ya está; quedan reactivación por email, firma de documentos y otros extras no listados.
+**Pendiente (v2)**: firma de documentos y otros extras no listados. La reactivación por email ya está implementada (UC-009).
 
 ## Flujos de Autenticación Admin (Proyecto Separado)
 
