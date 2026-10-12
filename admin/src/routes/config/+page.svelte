@@ -14,6 +14,8 @@
 		email_favorite_body?: string;
 		email_rating_subject?: string;
 		email_rating_body?: string;
+		email_ingredient_rejected_subject?: string;
+		email_ingredient_rejected_body?: string;
 		[key: string]: unknown;
 	};
 
@@ -123,10 +125,11 @@
 
 			<fieldset class="space-y-3 border-t border-border pt-4">
 				<legend class="text-sm font-medium text-foreground">Plantillas de email</legend>
-				<p class="text-xs text-muted-foreground">
-					Placeholders: <code>{'{actor}'}</code>, <code>{'{recipe}'}</code>,
-					<code>{'{score}'}</code>, <code>{'{stars}'}</code>, <code>{'{url}'}</code>.
-				</p>
+			<p class="text-xs text-muted-foreground">
+				Placeholders: <code>{'{actor}'}</code>, <code>{'{recipe}'}</code>,
+				<code>{'{score}'}</code>, <code>{'{stars}'}</code>, <code>{'{url}'}</code>,
+				<code>{'{ingredient}'}</code>, <code>{'{reason}'}</code>.
+			</p>
 				<label class="block">
 					<span class="mb-1 block text-xs text-muted-foreground">Asunto — favorito</span>
 					<input class="input-base" bind:value={settings.email_favorite_subject} />
@@ -139,10 +142,18 @@
 					<span class="mb-1 block text-xs text-muted-foreground">Asunto — calificación</span>
 					<input class="input-base" bind:value={settings.email_rating_subject} />
 				</label>
-				<label class="block">
-					<span class="mb-1 block text-xs text-muted-foreground">Cuerpo — calificación</span>
-					<textarea rows="3" class="input-base" bind:value={settings.email_rating_body}></textarea>
-				</label>
+			<label class="block">
+				<span class="mb-1 block text-xs text-muted-foreground">Cuerpo — calificación</span>
+				<textarea rows="3" class="input-base" bind:value={settings.email_rating_body}></textarea>
+			</label>
+			<label class="block">
+				<span class="mb-1 block text-xs text-muted-foreground">Asunto — ingrediente rechazado</span>
+				<input class="input-base" bind:value={settings.email_ingredient_rejected_subject} />
+			</label>
+			<label class="block">
+				<span class="mb-1 block text-xs text-muted-foreground">Cuerpo — ingrediente rechazado</span>
+				<textarea rows="3" class="input-base" bind:value={settings.email_ingredient_rejected_body}></textarea>
+			</label>
 			</fieldset>
 
 			<div>

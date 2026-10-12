@@ -511,7 +511,7 @@
 		open
 		destructive
 		title="¿Eliminar también sus recetas?"
-		description="Dejarlas marcadas hace soft delete de todo lo que haya creado. Desmarcadas quedan publicadas bajo el usuario system."
+		description="Dejarlas marcadas hace soft delete de todo lo que haya creado. Desmarcadas quedan publicadas bajo 'Usuario eliminado'."
 		confirmLabel="Eliminar cuenta"
 		loading={busy}
 		onConfirm={confirm}
