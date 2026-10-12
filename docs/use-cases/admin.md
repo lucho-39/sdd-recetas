@@ -48,6 +48,7 @@
 - **AC3**: Búsqueda: email, display_name (live search con debounce 300ms)
 - **AC4**: Ordenamiento: created_at (default), last_login_at, email, recetas_count
 - **AC5**: Acciones por fila: ver detalle, activar/desactivar, forzar reactivación, forzar baja GDPR, cambiar rol (user↔admin)
+- **Nota**: "ver detalle" abre el resumen ejecutivo (UC-008); el detalle completo (UC-006) se alcanza desde su acción "Ver detalle completo".
 
 ### UC-ADMIN-006: Ver detalle de usuario
 **Como** admin, **quiero** ver el detalle completo de un usuario **para** auditar su actividad.
@@ -62,7 +63,7 @@
 - **AC2**: Desactivar: modal confirmación → `is_active=false`, `deactivated_at=now()`, revoca refresh tokens, usuario no puede loguear
 - **AC3**: Activar: `is_active=true`, `deactivated_at=NULL`, usuario recupera acceso inmediato
 - **AC4**: Toast confirmación + actualización tabla en tiempo real
-- **AC5**: Log auditoría: admin_id, user_id, action="activate"/"deactivate", timestamp
+- **AC5**: Log auditoría: admin_id, user_id, action="user.activate"/"user.deactivate", timestamp
 
 ### UC-ADMIN-008: Ver perfil de usuario (Resumen ejecutivo)
 **Como** admin, **quiero** ver un resumen ejecutivo del usuario **para** toma de decisiones rápida.
@@ -70,28 +71,29 @@
 - **AC2**: Métricas clave: Fecha creación, Último login, Total recetas, Total favoritos, Promedio rating
 - **AC3**: Estado cuenta: Activo / Inactivo / Eliminado (GDPR) con badge semántico
 - **AC4**: Acciones rápidas: Activar/Desactivar, Ver detalle completo, Forzar reactivación, GDPR
+- **Nota**: se abre desde la acción "Ver resumen" de cada fila (UC-005 AC5); "Ver detalle completo" navega a UC-006.
 
 ### UC-ADMIN-009: Forzar reactivación de usuario
 **Como** admin, **quiero** reactivar un usuario desactivado **para** restaurar su acceso (soporte).
 - **AC1**: Solo usuarios con `is_active=false` y `deactivated_at` not null
-- **AC2**: Modal confirmación: "Reactivar a usuario X? Se le enviará email para definir nuevo display_name"
-- **AC3**: Al confirmar → `is_active=true`, `deactivated_at=NULL`, `must_change_password=false`, genera magic link reactivación → email
-- **AC4**: Log de auditoría: admin_id, user_id, action="force_reactivate", timestamp
+- **AC2**: Modal confirmación: "Reactivar a usuario X? Se le enviará un email con un enlace para elegir una contraseña nueva"
+- **AC3**: Al confirmar → `is_active=true`, `deactivated_at=NULL`, `must_change_password=false`, genera un link de un solo uso a `/reset-password` (token `password_reset`) → email; fuera de producción la respuesta incluye `reset_url`
+- **AC4**: Log de auditoría: admin_id, user_id, action="user.force_reactivate", timestamp
 
 ### UC-ADMIN-010: Forzar eliminación GDPR (Right to Erasure)
 **Como** admin, **quiero** ejecutar eliminación GDPR inmediata **para** cumplimiento legal.
 - **AC1**: Solo usuarios con `is_active=false` (ya desactivados)
-- **AC2**: Modal doble confirmación: "ELIMINAR DEFINITIVAMENTE a usuario X? Esta acción es IRREVERSIBLE: PII anonimizada, recetas → system user, FKs → NULL"
-- **AC3**: Ejecuta `usuario_eliminar_definitivo(user_id)` (ver `data-model.md`)
-- **AC4**: Log auditoría: admin_id, user_id, action="force_gdpr_erasure", timestamp
+- **AC2**: Modal doble confirmación: "ELIMINAR DEFINITIVAMENTE a usuario X? Esta acción es IRREVERSIBLE: PII anonimizada, cuenta desactivada, recetas atribuidas a 'Usuario eliminado' (o borradas si se elige en el paso siguiente)"
+- **AC3**: Anonimiza la PII (email → `deleted+<id>@recetario.local`, display_name → "Usuario eliminado", avatar NULL, password rotada), fija `is_active=false` y `deleted_at=now()`. Si se elige borrar recetas, hace soft-delete de las vivas; si no, quedan atribuidas al autor anonimizado. No hay reasignación a system user: no existe en el schema y la PK de favoritos (`user_id`, `recipe_id`) impide FKs en NULL
+- **AC4**: Log auditoría: admin_id, user_id, action="user.gdpr_erase", timestamp
 
 ### UC-ADMIN-011: Cambiar rol (user ↔ admin)
 **Como** admin, **quiero** promover/degradar usuarios **para** gestión de permisos.
 - **AC1**: Usuario destino debe tener `is_active=true`
 - **AC2**: No puede degradarse a sí mismo (protección)
-- **AC3**: user → admin: crea usuario en proyecto admin (si no existe), sincroniza email/display_name, `role: "admin"`
-- **AC4**: admin → user: desactiva acceso admin (revoca refresh tokens admin), mantiene usuario frontend
-- **AC5**: Log auditoría
+- **AC3**: user → admin: UPDATE del rol en la tabla `users`. Efectivo de inmediato porque `require_admin` lee el rol de la DB en cada request; no hay proyecto admin separado que sincronizar
+- **AC4**: admin → user: UPDATE del rol; el acceso admin cae en el próximo request por la misma razón. No hay tokens admin separados que revocar
+- **AC5**: Log auditoría (action="user.update")
 
 ---
 
@@ -198,8 +200,8 @@
 ### UC-ADMIN-024: Eliminar receta (Admin)
 **Como** admin, **quiero** eliminar una receta definitivamente **para** remover contenido inapropiado.
 - **AC1**: Solo si `deleted_at IS NULL` (no borradas previamente)
-- **AC2**: Modal doble confirmación: "ELIMINAR DEFINITIVAMENTE receta X? Esta acción es IRREVERSIBLE: receta → soft delete, author_id → system user, contadores preservados"
-- **AC3**: Al confirmar → `deleted_at=now()`, `author_id=system_user`, log auditoría
+- **AC2**: Modal doble confirmación: "ELIMINAR DEFINITIVAMENTE receta X? Esta acción es IRREVERSIBLE: receta → soft delete (`deleted_at=now()`, `is_public=false`), contadores preservados"
+- **AC3**: Al confirmar → `deleted_at=now()`, `is_public=false`, log auditoría (action="recipe.delete"). Idempotente: si ya estaba borrada, devuelve el estado sin cambios
 - **AC4**: Toast confirmación + tabla actualizada
 
 ### UC-ADMIN-025: Ocultar / Publicar receta
@@ -277,7 +279,7 @@
 **Como** admin, **quiero** ver historial de acciones admin **para** trazabilidad.
 - **AC1**: Tabla: timestamp, admin_id, admin_email, action, target_type, target_id, details (JSON), ip_address
 - **AC2**: Filtros: admin, action, target_type, rango fechas
-- **AC3**: Acciones logadas: todos los CRUD admin, force_reactivate, force_gdpr_erasure, role_change, flag_change, maintenance_toggle
+- **AC3**: Acciones logadas: todos los CRUD admin, user.force_reactivate, user.gdpr_erase, user.update (rol), flag_change, maintenance_toggle
 - **AC4**: Export CSV (últimos 90d)
 
 ### UC-ADMIN-035: Logs de errores (5xx)

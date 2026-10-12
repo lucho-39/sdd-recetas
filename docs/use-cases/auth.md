@@ -56,4 +56,4 @@
 
 - ✅ Registro/login/refresh/logout, verificación de email (envío real de email vía
   SMTP configurable) y gestión de cuenta.
-- 🔲 OAuth Google/GitHub; reset de contraseña real; reuso de refresh por familia.
+- ✅ OAuth Google/GitHub (config-gated por credenciales); reset de contraseña real (`forgot-password`/`reset-password` con token de un solo uso); detección de reuso de refresh por familia (revoca la familia ante reuso).

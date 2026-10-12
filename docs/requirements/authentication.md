@@ -82,7 +82,7 @@ Campos clave:
 | RB-AUTH-07 | Email verification: requerido antes de permitir login (OAuth = verificado automático) |
 | RB-AUTH-08 | Baja lógica: `is_active=false`, anonimiza PII visible, email reservado, recetas/favoritos/visitas/ratings mantenidos (recuperables) |
 | RB-AUTH-09 | Reactivación: `is_active=true`, restaura display_name, datos reconectados automáticamente |
-| RB-AUTH-10 | Eliminación GDPR: anonimización irreversible, recetas → system user, FKs → NULL |
+| RB-AUTH-10 | Eliminación GDPR: anonimización irreversible (email, display_name, avatar, password), cuenta desactivada; recetas conservadas bajo autor anonimizado o soft-delete opcional. Sin reasignación a system user (no existe en el schema) ni FKs en NULL (la PK de favoritos lo impide) |
 | RB-AUTH-11 | `last_login_at` actualizado en cada login exitoso |
 
 ## Endpoints Adicionales (Baja y Reactivación)
