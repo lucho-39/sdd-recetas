@@ -10,7 +10,10 @@ settings = get_settings()
 
 engine = create_async_engine(
     str(settings.DATABASE_URL),
-    echo=settings.DEBUG,
+    # DEBUG defaults to true and nothing ever sets it to false, so gating on
+    # it alone would echo every statement in production too. Dev keeps its
+    # SQL logs; production never does, regardless of DEBUG.
+    echo=settings.DEBUG and settings.ENVIRONMENT != "production",
     pool_pre_ping=True,
     pool_recycle=3600,
 )
