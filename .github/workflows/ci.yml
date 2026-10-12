@@ -53,6 +53,9 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
+      - name: Lint
+        run: uv run ruff check .
+
       # Includes the Socket.IO realtime integration tests
       # (tests/test_realtime_socket.py), which start a real ASGI server.
       - name: Run tests

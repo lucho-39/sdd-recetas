@@ -32,16 +32,16 @@ async def dashboard(
 ):
     return DashboardStats(
         users_total=await _count(db, User),
-        users_active=await _count(db, User, User.is_active == True),  # noqa: E712
+        users_active=await _count(db, User, User.is_active == True),
         recipes_total=await _count(db, Recipe),
-        recipes_public=await _count(db, Recipe, Recipe.is_public == True),  # noqa: E712
+        recipes_public=await _count(db, Recipe, Recipe.is_public == True),
         recipes_deleted=await _count(db, Recipe, Recipe.deleted_at.is_not(None)),
         ingredients_total=await _count(db, Ingredient),
         ingredients_pending=await _count(
             db,
             Ingredient,
-            Ingredient.validated_by_admin == False,  # noqa: E712
-            Ingredient.rejected == False,  # noqa: E712
+            Ingredient.validated_by_admin == False,
+            Ingredient.rejected == False,
         ),
         categories_total=await _count(db, Category),
         tags_total=await _count(db, Tag),

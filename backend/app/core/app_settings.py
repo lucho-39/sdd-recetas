@@ -4,14 +4,14 @@ Database-backed application settings with code defaults.
 Values are stored as JSON in ``app_settings`` and can be edited from the admin
 panel. Missing keys fall back to ``DEFAULTS``.
 """
-from typing import Any, Dict
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import AppSetting
 
-DEFAULTS: Dict[str, Any] = {
+DEFAULTS: dict[str, Any] = {
     "registration_open": True,
     "require_email_verification": False,
     "max_upload_size_mb": 5,
@@ -47,21 +47,21 @@ async def get_setting(db: AsyncSession, key: str) -> Any:
     return row.value
 
 
-async def get_all_settings(db: AsyncSession) -> Dict[str, Any]:
+async def get_all_settings(db: AsyncSession) -> dict[str, Any]:
     """Return every known setting merged with the code defaults.
 
     Rows with keys not declared in ``DEFAULTS`` (e.g. internally generated
     secrets) are intentionally excluded from API responses.
     """
     result = await db.execute(select(AppSetting))
-    data: Dict[str, Any] = dict(DEFAULTS)
+    data: dict[str, Any] = dict(DEFAULTS)
     for row in result.scalars().all():
         if row.key in DEFAULTS:
             data[row.key] = row.value
     return data
 
 
-async def set_settings(db: AsyncSession, values: Dict[str, Any]) -> None:
+async def set_settings(db: AsyncSession, values: dict[str, Any]) -> None:
     """Upsert the provided settings (unknown keys are ignored)."""
     for key, value in values.items():
         if key not in DEFAULTS:
@@ -75,10 +75,10 @@ async def set_settings(db: AsyncSession, values: Dict[str, Any]) -> None:
 
 # In-process settings cache, primed at startup and refreshed on config updates.
 # Middleware reads it synchronously so it never hits the database per request.
-_cache: Dict[str, Any] = {"value": None}
+_cache: dict[str, Any] = {"value": None}
 
 
-def current_settings() -> Dict[str, Any]:
+def current_settings() -> dict[str, Any]:
     """Cached settings (falls back to code defaults when not primed)."""
     cached = _cache["value"]
     return dict(cached) if cached is not None else dict(DEFAULTS)
@@ -88,7 +88,7 @@ def invalidate_settings_cache() -> None:
     _cache["value"] = None
 
 
-async def load_settings_cache(db: AsyncSession) -> Dict[str, Any]:
+async def load_settings_cache(db: AsyncSession) -> dict[str, Any]:
     value = await get_all_settings(db)
     _cache["value"] = value
     return value

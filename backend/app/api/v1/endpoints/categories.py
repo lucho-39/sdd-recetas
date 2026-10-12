@@ -1,9 +1,8 @@
 """
 Category endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.security import get_current_user_optional
@@ -14,8 +13,8 @@ router = APIRouter()
 
 @router.get("", summary="List categories")
 async def list_categories(
-    db = Depends(get_db),
-    current_user = Depends(get_current_user_optional),
+    db=Depends(get_db),
+    current_user=Depends(get_current_user_optional),
 ):
     """List all active categories (public reference data)."""
     result = await db.execute(
@@ -29,7 +28,7 @@ async def list_categories(
 @router.get("/{slug}", summary="Get category by slug")
 async def get_category(
     slug: str,
-    db = Depends(get_db),
+    db=Depends(get_db),
 ):
     """Get category by slug."""
     result = await db.execute(

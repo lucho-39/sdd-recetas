@@ -1,11 +1,10 @@
 """Tests for the recipe endpoints."""
+from conftest import create_category, create_recipe, create_tag, create_user
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Category, Recipe, Tag, User
-
-from conftest import create_category, create_recipe, create_tag, create_user
 
 
 def _recipe_payload(category: Category, **overrides: object) -> dict:
@@ -38,7 +37,11 @@ async def test_list_recipes_returns_public_recipes(
 
 
 async def test_list_recipes_excludes_private_recipes(
-    client: AsyncClient, db_session: AsyncSession, user: User, category: Category, auth_headers: dict
+    client: AsyncClient,
+    db_session: AsyncSession,
+    user: User,
+    category: Category,
+    auth_headers: dict,
 ) -> None:
     await create_recipe(
         db_session,
@@ -702,7 +705,9 @@ async def test_ingredient_filter_is_or_between_ingredients(
     assert "Pollo al horno" not in single_titles
 
 
-async def test_slug_is_ascii_safe(client: AsyncClient, category: Category, auth_headers: dict) -> None:
+async def test_slug_is_ascii_safe(
+    client: AsyncClient, category: Category, auth_headers: dict
+) -> None:
     """RB-02: accented titles produce accent-free slugs, so URLs stay copy-pasteable."""
     payload = _recipe_payload(category, title="Jalapeño relleno")
     response = await client.post("/api/v1/recipes", json=payload, headers=auth_headers)

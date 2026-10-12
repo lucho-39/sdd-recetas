@@ -1,11 +1,10 @@
 """Tests for the v2 flows: password reset, refresh reuse, OAuth and AI gating."""
+from conftest import TEST_PASSWORD, create_user
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import EmailOutbox
-
-from conftest import TEST_PASSWORD, create_user
 
 
 async def test_forgot_password_queues_email(

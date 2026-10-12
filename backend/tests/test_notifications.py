@@ -1,10 +1,9 @@
 """Tests for the notifications endpoints and their live triggers."""
+from conftest import create_ingredient
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Recipe, User
-
-from conftest import create_ingredient
 
 
 async def test_notifications_require_authentication(client: AsyncClient) -> None:
@@ -71,7 +70,9 @@ async def test_mark_read_updates_unread_count(
     unread = await client.get("/api/v1/notifications/unread-count", headers=auth_headers)
     assert unread.json()["unread_count"] == 1
 
-    item_id = (await client.get("/api/v1/notifications", headers=auth_headers)).json()["items"][0]["id"]
+    item_id = (await client.get("/api/v1/notifications", headers=auth_headers)).json()[
+        "items"
+    ][0]["id"]
     read = await client.post(f"/api/v1/notifications/{item_id}/read", headers=auth_headers)
     assert read.status_code == 200
 
@@ -83,7 +84,9 @@ async def test_delete_one_and_all(
     client: AsyncClient, recipe: Recipe, auth_headers: dict, admin_headers: dict
 ) -> None:
     await client.post(f"/api/v1/favorites/{recipe.id}", headers=admin_headers)
-    item_id = (await client.get("/api/v1/notifications", headers=auth_headers)).json()["items"][0]["id"]
+    item_id = (await client.get("/api/v1/notifications", headers=auth_headers)).json()[
+        "items"
+    ][0]["id"]
 
     deleted = await client.delete(f"/api/v1/notifications/{item_id}", headers=auth_headers)
     assert deleted.status_code == 204
@@ -103,7 +106,9 @@ async def test_cannot_touch_another_users_notification(
     client: AsyncClient, recipe: Recipe, auth_headers: dict, admin_headers: dict
 ) -> None:
     await client.post(f"/api/v1/favorites/{recipe.id}", headers=admin_headers)
-    item_id = (await client.get("/api/v1/notifications", headers=auth_headers)).json()["items"][0]["id"]
+    item_id = (await client.get("/api/v1/notifications", headers=auth_headers)).json()[
+        "items"
+    ][0]["id"]
 
     # admin (the actor, not the recipient) must not read or delete it
     read = await client.post(f"/api/v1/notifications/{item_id}/read", headers=admin_headers)

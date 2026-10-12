@@ -1,8 +1,7 @@
 """Tests for the tag endpoints."""
+from conftest import create_tag
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from conftest import create_tag
 
 
 async def test_list_tags_is_public(client: AsyncClient) -> None:

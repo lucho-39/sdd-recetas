@@ -99,7 +99,12 @@ async def delete_tag(
     if not tag:
         raise HTTPException(status_code=404, detail="Tag not found")
     await record_audit(
-        db, admin.id, "tag.delete", target_type="tag", target_id=str(tag.id), detail={"slug": tag.slug}
+        db,
+        admin.id,
+        "tag.delete",
+        target_type="tag",
+        target_id=str(tag.id),
+        detail={"slug": tag.slug},
     )
     await db.delete(tag)
     await db.commit()

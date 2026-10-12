@@ -1,51 +1,50 @@
 """
 Authentication endpoints
 """
+import logging
 from datetime import datetime, timedelta
-from typing import Optional
 from urllib.parse import urlencode
 from uuid import UUID, uuid4
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.core.app_settings import get_setting
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.security import (
-    verify_password,
-    get_password_hash,
-    create_access_token,
-    create_refresh_token,
-    create_email_verification_token,
-    create_password_reset_token,
-    create_oauth_state,
-    decode_token,
     blacklist_token,
+    create_access_token,
+    create_email_verification_token,
+    create_oauth_state,
+    create_password_reset_token,
+    create_refresh_token,
+    decode_token,
     get_current_active_user,
+    get_password_hash,
+    verify_password,
 )
-from app.models import OAuthAccount, RefreshToken, Recipe, User, UserRole
+from app.models import OAuthAccount, Recipe, RefreshToken, User, UserRole
 from app.schemas.auth import (
-    Token,
-    TokenRefresh,
-    UserCreate,
-    UserResponse,
-    PasswordChange,
-    PasswordResetRequest,
-    PasswordResetConfirm,
-    PasswordChange as PasswordChangeSchema,
     AccountDeactivateRequest,
     AccountDeleteRequest,
+    PasswordChange,
+    PasswordResetConfirm,
+    PasswordResetRequest,
+    Token,
+    UserCreate,
+    UserResponse,
 )
 from app.services.email import send_email
 
 settings = get_settings()
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -77,11 +76,11 @@ async def create_admin_user(db: AsyncSession) -> None:
     db.add(admin_user)
     await db.commit()
     await db.refresh(admin_user)
-    print(f"Admin user created: {admin_user.email}")
+    logger.info("Admin user created: %s", admin_user.email)
 
 
 async def _issue_tokens(
-    db: AsyncSession, user: User, family_id: Optional[str] = None
+    db: AsyncSession, user: User, family_id: str | None = None
 ) -> tuple[str, str]:
     """Create an access + refresh pair and persist the refresh token row."""
     jti = str(uuid4())
@@ -245,10 +244,10 @@ async def refresh_token(
 
     try:
         user_uuid = UUID(str(user_id))
-    except (ValueError, TypeError):
+    except (ValueError, TypeError) as err:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
-        )
+        ) from err
 
     user = await db.get(User, user_uuid)
     if not user or not user.is_active:
@@ -381,8 +380,10 @@ async def verify_email(
 
     try:
         user_uuid = UUID(str(data.get("sub")))
-    except (ValueError, TypeError):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token")
+    except (ValueError, TypeError) as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token"
+        ) from err
 
     user = await db.get(User, user_uuid)
     if not user:
@@ -397,7 +398,7 @@ async def _revoke_all_refresh_tokens(db: AsyncSession, user_id) -> None:
     rows = (
         await db.execute(
             select(RefreshToken).where(
-                RefreshToken.user_id == user_id, RefreshToken.revoked == False  # noqa: E712
+                RefreshToken.user_id == user_id, RefreshToken.revoked == False
             )
         )
     ).scalars().all()
@@ -502,7 +503,7 @@ async def forgot_password(
     result = await db.execute(select(User).where(User.email == request.email))
     user = result.scalar_one_or_none()
 
-    reset_url: Optional[str] = None
+    reset_url: str | None = None
     if user and user.is_active:
         token = create_password_reset_token(str(user.id))
         reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
@@ -540,8 +541,10 @@ async def reset_password(
 
     try:
         user_uuid = UUID(str(payload.get("sub")))
-    except (ValueError, TypeError):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token")
+    except (ValueError, TypeError) as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token"
+        ) from err
 
     user = await db.get(User, user_uuid)
     if not user:

@@ -67,10 +67,10 @@ async def generate_recipe(
                 headers={"Authorization": f"Bearer {settings.AI_API_KEY}"},
                 json=payload,
             )
-    except httpx.HTTPError:
+    except httpx.HTTPError as err:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY, detail="AI provider is unreachable"
-        )
+        ) from err
 
     if response.status_code != 200:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="AI provider error")
@@ -78,9 +78,9 @@ async def generate_recipe(
     try:
         content = response.json()["choices"][0]["message"]["content"]
         draft = json.loads(content)
-    except (KeyError, IndexError, json.JSONDecodeError):
+    except (KeyError, IndexError, json.JSONDecodeError) as err:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY, detail="AI returned an invalid response"
-        )
+        ) from err
 
     return {"draft": draft}

@@ -1,10 +1,9 @@
 """Tests for the current-user profile endpoints."""
+from conftest import create_recipe
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Category, Recipe, User
-
-from conftest import create_recipe
 
 
 async def test_get_me_returns_profile(

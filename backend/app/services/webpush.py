@@ -9,7 +9,7 @@ import asyncio
 import base64
 import json
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -26,7 +26,7 @@ _PUBLIC_KEY_SETTING = "vapid_public_key"
 _PRIVATE_KEY_SETTING = "vapid_private_key"
 
 
-def generate_vapid_keys() -> Tuple[str, str]:
+def generate_vapid_keys() -> tuple[str, str]:
     """Return (public_key_base64url, private_key_pem)."""
     private_key = ec.generate_private_key(ec.SECP256R1())
     private_pem = private_key.private_bytes(
@@ -55,7 +55,7 @@ async def _write_setting(db: AsyncSession, key: str, value: str) -> None:
         row.value = value
 
 
-async def ensure_vapid_keys(db: AsyncSession) -> Tuple[str, str]:
+async def ensure_vapid_keys(db: AsyncSession) -> tuple[str, str]:
     """Return the VAPID key pair, generating and persisting it if needed."""
     settings = get_settings()
     if settings.VAPID_PUBLIC_KEY and settings.VAPID_PRIVATE_KEY:
@@ -79,7 +79,7 @@ async def get_public_key(db: AsyncSession) -> str:
 
 
 def _send_one(
-    subscription_info: Dict[str, Any], data: Dict[str, Any], private_key: str, subject: str
+    subscription_info: dict[str, Any], data: dict[str, Any], private_key: str, subject: str
 ) -> None:
     webpush(
         subscription_info=subscription_info,
@@ -90,7 +90,7 @@ def _send_one(
     )
 
 
-async def send_web_push(db: AsyncSession, *, user_id, payload: Dict[str, Any]) -> int:
+async def send_web_push(db: AsyncSession, *, user_id, payload: dict[str, Any]) -> int:
     """Send a Web Push notification to every subscription of a user.
 
     Returns how many were delivered. Subscriptions the push service reports as
@@ -110,7 +110,7 @@ async def send_web_push(db: AsyncSession, *, user_id, payload: Dict[str, Any]) -
         return 0
 
     sent = 0
-    stale: List[PushSubscription] = []
+    stale: list[PushSubscription] = []
     for subscription in subscriptions:
         info = {
             "endpoint": subscription.endpoint,
@@ -123,7 +123,7 @@ async def send_web_push(db: AsyncSession, *, user_id, payload: Dict[str, Any]) -
             sent += 1
         except WebPushException as exc:
             status_code = getattr(getattr(exc, "response", None), "status_code", None)
-            if status_code in (404, 410):
+            if status_code in {404, 410}:
                 stale.append(subscription)
             else:
                 logger.warning("Web push failed for subscription %s: %s", subscription.id, exc)

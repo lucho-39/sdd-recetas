@@ -2,9 +2,9 @@
 Authentication schemas
 """
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class Token(BaseModel):
@@ -27,8 +27,8 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(BaseModel):
-    display_name: Optional[str] = Field(None, min_length=1, max_length=100)
-    avatar_url: Optional[str] = Field(None, max_length=500)
+    display_name: str | None = Field(None, min_length=1, max_length=100)
+    avatar_url: str | None = Field(None, max_length=500)
 
 
 class UserResponse(UserBase):
@@ -38,24 +38,14 @@ class UserResponse(UserBase):
     # may legitimately use reserved TLDs such as ``.local``.
     email: str
     id: UUID
-    avatar_url: Optional[str] = None
+    avatar_url: str | None = None
     role: str
     is_active: bool
     is_verified: bool
     must_change_password: bool
-    last_login_at: Optional[datetime] = None
+    last_login_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    expires_in: int
-
-
-class TokenRefresh(BaseModel):
-    refresh_token: str
 
 
 class PasswordChange(BaseModel):
@@ -82,18 +72,19 @@ class PublicProfileResponse(BaseModel):
 
     id: UUID
     display_name: str
-    avatar_url: Optional[str] = None
+    avatar_url: str | None = None
     created_at: datetime
     recipe_count: int = 0
+
 
 class NotificationPreferenceUpdate(BaseModel):
     """Partial update of the current user's notification settings."""
 
-    in_app_enabled: Optional[bool] = None
-    email_enabled: Optional[bool] = None
-    push_enabled: Optional[bool] = None
-    favorites_enabled: Optional[bool] = None
-    ratings_enabled: Optional[bool] = None
+    in_app_enabled: bool | None = None
+    email_enabled: bool | None = None
+    push_enabled: bool | None = None
+    favorites_enabled: bool | None = None
+    ratings_enabled: bool | None = None
 
 
 class AccountDeactivateRequest(BaseModel):

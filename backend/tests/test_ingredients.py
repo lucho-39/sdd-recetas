@@ -1,10 +1,9 @@
 """Tests for the ingredient endpoints."""
+from conftest import create_ingredient
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Ingredient
-
-from conftest import create_ingredient
 
 
 async def test_search_ingredients_is_public(client: AsyncClient) -> None:
@@ -117,7 +116,6 @@ async def test_seed_ingredients_catalog(db_session: AsyncSession) -> None:
     from sqlalchemy import func, select
 
     from app.core.seed import seed_initial_data
-    from app.models import Ingredient
 
     await seed_initial_data(db_session)
     total = await db_session.scalar(select(func.count()).select_from(Ingredient))

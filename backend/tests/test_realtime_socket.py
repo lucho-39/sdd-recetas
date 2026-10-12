@@ -45,7 +45,7 @@ async def realtime_server():
         server.should_exit = True
         try:
             await asyncio.wait_for(task, timeout=10)
-        except asyncio.TimeoutError:  # pragma: no cover
+        except TimeoutError:  # pragma: no cover
             task.cancel()
 
 
@@ -57,7 +57,7 @@ async def test_socket_receives_notification(realtime_server: str) -> None:
     received: asyncio.Future = asyncio.get_running_loop().create_future()
 
     @client.on("notification")
-    async def _on_notification(data):  # noqa: ANN001
+    async def _on_notification(data):
         if not received.done():
             received.set_result(data)
 

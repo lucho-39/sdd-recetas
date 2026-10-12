@@ -12,7 +12,7 @@ from sqlalchemy.orm import selectinload
 from app.core.audit import record_audit
 from app.core.database import get_db
 from app.core.security import require_admin
-from app.models import Category, Favorite, Rating, Recipe, User, Visit
+from app.models import Category, Favorite, Rating, Recipe, Visit
 from app.schemas.admin import RecipeAdminUpdate, RecipeVisibilityUpdate
 from app.schemas.recipe import RecipeResponse
 
@@ -43,9 +43,9 @@ async def list_recipes(
     if status == "deleted":
         filters.append(Recipe.deleted_at.is_not(None))
     elif status == "public":
-        filters.extend([Recipe.deleted_at.is_(None), Recipe.is_public == True])  # noqa: E712
+        filters.extend([Recipe.deleted_at.is_(None), Recipe.is_public == True])
     elif status == "private":
-        filters.extend([Recipe.deleted_at.is_(None), Recipe.is_public == False])  # noqa: E712
+        filters.extend([Recipe.deleted_at.is_(None), Recipe.is_public == False])
     if category_id:
         filters.append(Recipe.category_id == category_id)
     if author_id:
@@ -188,7 +188,11 @@ async def update_recipe(
     return RecipeResponse.model_validate(recipe)
 
 
-@router.patch("/{recipe_id}/visibility", response_model=RecipeResponse, summary="Toggle recipe visibility (admin)")
+@router.patch(
+    "/{recipe_id}/visibility",
+    response_model=RecipeResponse,
+    summary="Toggle recipe visibility (admin)",
+)
 async def set_visibility(
     recipe_id: UUID,
     data: RecipeVisibilityUpdate,

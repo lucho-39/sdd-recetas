@@ -3,7 +3,22 @@ API v1 Router
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import health, auth, users, recipes, categories, tags, ingredients, favorites, ratings, visits, uploads, notifications, push, ai
+from app.api.v1.endpoints import (
+    ai,
+    auth,
+    categories,
+    favorites,
+    health,
+    ingredients,
+    notifications,
+    push,
+    ratings,
+    recipes,
+    tags,
+    uploads,
+    users,
+    visits,
+)
 
 api_router = APIRouter()
 

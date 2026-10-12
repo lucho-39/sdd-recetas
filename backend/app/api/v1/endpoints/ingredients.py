@@ -2,11 +2,11 @@
 Ingredient endpoints
 """
 import re
-from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select, func, or_, cast, Text
+from sqlalchemy import Text, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -28,8 +28,8 @@ class IngredientCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     category: str = Field("otro", max_length=30)
     default_unit: str = Field("unidad", max_length=20)
-    allowed_units: List[str] = Field(default_factory=list)
-    aliases: List[str] = Field(default_factory=list)
+    allowed_units: list[str] = Field(default_factory=list)
+    aliases: list[str] = Field(default_factory=list)
 
 
 def _serialize(ingredient: Ingredient) -> dict:
@@ -48,11 +48,11 @@ def _serialize(ingredient: Ingredient) -> dict:
 
 @router.get("", summary="Search ingredients")
 async def search_ingredients(
-    query: Optional[str] = Query(None, description="Search ingredients"),
-    category: Optional[str] = Query(None, description="Filter by category"),
+    query: str | None = Query(None, description="Search ingredients"),
+    category: str | None = Query(None, description="Filter by category"),
     limit: int = 20,
-    db = Depends(get_db),
-    current_user = Depends(get_current_user_optional),
+    db=Depends(get_db),
+    current_user=Depends(get_current_user_optional),
 ):
     """Autocomplete search for ingredients (public read)."""
     query_stmt = select(Ingredient).where(Ingredient.is_active == True)
@@ -124,7 +124,7 @@ async def create_ingredient(
 
 @router.get("/categories", summary="List ingredient categories")
 async def list_categories(
-    db = Depends(get_db),
+    db=Depends(get_db),
 ):
     """List ingredient categories with counts."""
     result = await db.execute(
@@ -139,8 +139,8 @@ async def list_categories(
 @router.get("/{ingredient_id}", summary="Get ingredient by ID")
 async def get_ingredient(
     ingredient_id: UUID,
-    db = Depends(get_db),
-    current_user = Depends(get_current_user_optional),
+    db=Depends(get_db),
+    current_user=Depends(get_current_user_optional),
 ):
     """Get ingredient by ID (public reference data)."""
     result = await db.execute(

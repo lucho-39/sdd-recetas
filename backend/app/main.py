@@ -10,13 +10,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.core.app_settings import current_settings, load_settings_cache
-from app.core.config import get_settings
-from app.core.database import init_db, async_session_maker
-from app.core.seed import seed_initial_data
-from app.api.v1.router import api_router
 from app.api.admin import admin_router
 from app.api.v1.endpoints.auth import create_admin_user
+from app.api.v1.router import api_router
+from app.core.app_settings import current_settings, load_settings_cache
+from app.core.config import get_settings
+from app.core.database import async_session_maker, init_db
+from app.core.seed import seed_initial_data
 from app.models import ErrorLog
 from app.realtime.server import sio
 
@@ -111,6 +111,7 @@ async def observability_middleware(request: Request, call_next):
     if response.status_code >= 500:
         await _record_error(path, request.method, response.status_code, None)
     return response
+
 
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)

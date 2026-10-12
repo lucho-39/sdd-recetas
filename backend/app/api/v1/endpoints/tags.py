@@ -1,24 +1,22 @@
 """
 Tag endpoints
 """
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import select
 
 from app.core.database import get_db
 from app.core.security import get_current_user_optional
-from app.models import Tag, RecipeTag
+from app.models import Tag
 
 router = APIRouter()
 
 
 @router.get("", summary="List tags")
 async def list_tags(
-    query: Optional[str] = Query(None, description="Search tags by name"),
+    query: str | None = Query(None, description="Search tags by name"),
     limit: int = 20,
-    db = Depends(get_db),
-    current_user = Depends(get_current_user_optional),
+    db=Depends(get_db),
+    current_user=Depends(get_current_user_optional),
 ):
     """Search tags with autocomplete (public read)."""
     stmt = select(Tag).where(Tag.usage_count > 0)
@@ -35,7 +33,7 @@ async def list_tags(
 @router.get("/popular", summary="Get most popular tags")
 async def popular_tags(
     limit: int = 20,
-    db = Depends(get_db),
+    db=Depends(get_db),
 ):
     """Get most used tags."""
     result = await db.execute(

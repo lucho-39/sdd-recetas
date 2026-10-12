@@ -13,7 +13,7 @@ from app.core.audit import record_audit
 from app.core.database import get_db
 from app.core.security import get_password_hash, require_admin
 from app.models import Recipe, User, UserRole
-from app.schemas.admin import GdprEraseRequest, UserAdminUpdate, UserAdminListItem
+from app.schemas.admin import GdprEraseRequest, UserAdminUpdate
 from app.schemas.auth import UserResponse
 
 router = APIRouter()
@@ -48,7 +48,7 @@ async def list_users(
         filters.append(or_(User.email.ilike(term), User.display_name.ilike(term)))
     if is_active is not None:
         filters.append(User.is_active == is_active)
-    if role in ("user", "admin"):
+    if role in {"user", "admin"}:
         filters.append(User.role == UserRole(role))
 
     total = await db.scalar(select(func.count()).select_from(User).where(*filters))

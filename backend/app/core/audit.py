@@ -1,7 +1,7 @@
 """
 Audit trail helper for administrative actions.
 """
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,12 +11,12 @@ from app.models import AuditLog
 
 async def record_audit(
     db: AsyncSession,
-    actor_id: Optional[UUID],
+    actor_id: UUID | None,
     action: str,
     *,
-    target_type: Optional[str] = None,
-    target_id: Optional[str] = None,
-    detail: Optional[dict[str, Any]] = None,
+    target_type: str | None = None,
+    target_id: str | None = None,
+    detail: dict[str, Any] | None = None,
 ) -> None:
     """Insert an audit entry; the caller is responsible for committing."""
     db.add(

@@ -1,10 +1,9 @@
 """Tests for the administrative API (/api/admin)."""
+from conftest import create_ingredient, create_recipe
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Ingredient, Recipe, User, UserRole
-
-from conftest import create_category, create_ingredient, create_recipe
+from app.models import Recipe, User
 
 
 async def test_admin_endpoints_require_auth(client: AsyncClient) -> None:

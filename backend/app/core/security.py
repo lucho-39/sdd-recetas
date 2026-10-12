@@ -3,7 +3,6 @@ Security utilities for authentication
 """
 import hashlib
 from datetime import datetime, timedelta
-from typing import Optional
 from uuid import UUID, uuid4
 
 import bcrypt
@@ -48,8 +47,8 @@ def get_password_hash(password: str) -> str:
 
 def create_access_token(
     subject: str,
-    expires_delta: Optional[timedelta] = None,
-    extra_claims: Optional[dict] = None,
+    expires_delta: timedelta | None = None,
+    extra_claims: dict | None = None,
 ) -> str:
     """Create a new JWT access token."""
     if expires_delta:
@@ -72,8 +71,8 @@ def create_access_token(
 
 def create_refresh_token(
     subject: str,
-    expires_delta: Optional[timedelta] = None,
-    jti: Optional[str] = None,
+    expires_delta: timedelta | None = None,
+    jti: str | None = None,
 ) -> str:
     """Create a new refresh token."""
     if expires_delta:
@@ -93,7 +92,7 @@ def create_refresh_token(
 
 def create_password_reset_token(
     subject: str,
-    expires_delta: Optional[timedelta] = None,
+    expires_delta: timedelta | None = None,
 ) -> str:
     """Create a short-lived token used to reset a password."""
     expire = datetime.utcnow() + (
@@ -111,7 +110,7 @@ def create_password_reset_token(
 
 def create_email_verification_token(
     subject: str,
-    expires_delta: Optional[timedelta] = None,
+    expires_delta: timedelta | None = None,
 ) -> str:
     """Create a short-lived token used to verify an email address."""
     expire = datetime.utcnow() + (expires_delta or timedelta(hours=24))
@@ -125,7 +124,7 @@ def create_email_verification_token(
     return jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 
-def create_oauth_state(provider: str, expires_delta: Optional[timedelta] = None) -> str:
+def create_oauth_state(provider: str, expires_delta: timedelta | None = None) -> str:
     """Create a short-lived anti-CSRF state for the OAuth flow."""
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=10))
     to_encode = {
@@ -138,7 +137,7 @@ def create_oauth_state(provider: str, expires_delta: Optional[timedelta] = None)
     return jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 
-def decode_token(token: str) -> Optional[dict]:
+def decode_token(token: str) -> dict | None:
     """Decode and validate a JWT token."""
     try:
         return jwt.decode(
@@ -186,8 +185,8 @@ async def get_current_user(
 
     try:
         user_uuid = UUID(str(user_id))
-    except (ValueError, TypeError):
-        raise credentials_exception
+    except (ValueError, TypeError) as err:
+        raise credentials_exception from err
 
     result = await db.execute(select(User).where(User.id == user_uuid))
     user = result.scalar_one_or_none()
@@ -232,9 +231,9 @@ oauth2_scheme_optional = OAuth2PasswordBearer(
 
 
 async def get_current_user_optional(
-    token: Optional[str] = Depends(oauth2_scheme_optional),
+    token: str | None = Depends(oauth2_scheme_optional),
     db: AsyncSession = Depends(get_db),
-) -> Optional[User]:
+) -> User | None:
     """Return the authenticated user if a valid token is present, otherwise None.
 
     Used by public read endpoints that behave differently for logged-in users

@@ -107,7 +107,12 @@ async def update_category(
     )
     await db.commit()
     await db.refresh(category)
-    return {"id": str(category.id), "slug": category.slug, "name": category.name, "is_active": category.is_active}
+    return {
+        "id": str(category.id),
+        "slug": category.slug,
+        "name": category.name,
+        "is_active": category.is_active,
+    }
 
 
 @router.delete("/{category_id}", summary="Delete or deactivate category (admin)")

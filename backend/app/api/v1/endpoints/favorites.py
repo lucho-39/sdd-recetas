@@ -1,11 +1,9 @@
 """
 Favorites endpoints
 """
-from typing import Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, status
-from sqlalchemy import select, delete, func
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
@@ -19,9 +17,9 @@ router = APIRouter()
 
 @router.get("", summary="List user favorites")
 async def list_favorites(
-    collection: str = None,
-    db = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    collection: str | None = None,
+    db=Depends(get_db),
+    current_user=Depends(get_current_active_user),
 ):
     """List user's favorite recipes."""
     query = select(Favorite).where(Favorite.user_id == current_user.id)
@@ -53,9 +51,9 @@ async def list_favorites(
 @router.post("/{recipe_id}", status_code=status.HTTP_201_CREATED)
 async def add_favorite(
     recipe_id: str,
-    collection: str = None,
-    db = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    collection: str | None = None,
+    db=Depends(get_db),
+    current_user=Depends(get_current_active_user),
 ):
     """Add recipe to favorites.
 
@@ -104,9 +102,9 @@ async def add_favorite(
 @router.delete("/{recipe_id}", status_code=204)
 async def remove_favorite(
     recipe_id: str,
-    collection: str = None,
-    db = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    collection: str | None = None,
+    db=Depends(get_db),
+    current_user=Depends(get_current_active_user),
 ):
     """Remove recipe from favorites."""
     from app.models import Favorite
@@ -134,13 +132,11 @@ async def remove_favorite(
         recipe.save_count = max(0, recipe.save_count - 1)
     await db.commit()
 
-    return None
-
 
 @router.get("/collections", summary="List user's collections")
 async def list_collections(
-    db = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    db=Depends(get_db),
+    current_user=Depends(get_current_active_user),
 ):
     """List user's collections with counts."""
     result = await db.execute(
@@ -163,8 +159,8 @@ async def list_collections(
 async def update_favorite(
     recipe_id: str,
     payload: dict = Body(...),
-    db = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    db=Depends(get_db),
+    current_user=Depends(get_current_active_user),
 ):
     """Set (or clear) the collection of an existing favorite."""
     result = await db.execute(
@@ -188,8 +184,8 @@ async def update_favorite(
 async def rename_collection(
     name: str,
     payload: dict = Body(...),
-    db = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    db=Depends(get_db),
+    current_user=Depends(get_current_active_user),
 ):
     """Rename one of the user's collections."""
     new_name = (payload.get("new_name") or "").strip()
@@ -216,8 +212,8 @@ async def rename_collection(
 @router.delete("/collections/{name}", summary="Delete a collection")
 async def delete_collection(
     name: str,
-    db = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    db=Depends(get_db),
+    current_user=Depends(get_current_active_user),
 ):
     """Delete a collection, moving its favorites back to the default list."""
     result = await db.execute(

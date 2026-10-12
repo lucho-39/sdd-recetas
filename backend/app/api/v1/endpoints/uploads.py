@@ -28,21 +28,18 @@ CONTENT_TYPE_EXT = {
 
 def _is_supported_image(data: bytes) -> bool:
     """Validate the actual file signature (client content_type is spoofable)."""
-    if data.startswith(b"\x89PNG\r\n\x1a\n"):
-        return True
-    if data.startswith(b"\xff\xd8\xff"):
-        return True
-    if data.startswith((b"GIF87a", b"GIF89a")):
-        return True
-    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
-        return True
-    return False
+    return (
+        data.startswith(b"\x89PNG\r\n\x1a\n")
+        or data.startswith(b"\xff\xd8\xff")
+        or data.startswith((b"GIF87a", b"GIF89a"))
+        or (data[:4] == b"RIFF" and data[8:12] == b"WEBP")
+    )
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, summary="Upload an image")
 async def upload_image(
     file: UploadFile = File(...),
-    current_user = Depends(get_current_active_user),
+    current_user=Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Upload a recipe image and return its public URL."""

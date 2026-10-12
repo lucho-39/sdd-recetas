@@ -161,8 +161,8 @@ async def list_pending(
 ):
     return await _list(
         db,
-        Ingredient.validated_by_admin == False,  # noqa: E712
-        Ingredient.rejected == False,  # noqa: E712
+        Ingredient.validated_by_admin == False,
+        Ingredient.rejected == False,
         search=search,
         category=category,
         page=page,
@@ -183,7 +183,7 @@ async def list_validated(
 ):
     return await _list(
         db,
-        Ingredient.validated_by_admin == True,  # noqa: E712
+        Ingredient.validated_by_admin == True,
         search=search,
         category=category,
         page=page,
@@ -203,7 +203,7 @@ async def list_rejected(
 ):
     return await _list(
         db,
-        Ingredient.rejected == True,  # noqa: E712
+        Ingredient.rejected == True,
         search=search,
         category=category,
         page=page,
@@ -301,9 +301,12 @@ async def merge_ingredient(
         new_items = []
         for item in recipe.ingredients or []:
             if item.get("ingredient_id") == str(source.id):
-                item = {**item, "ingredient_id": str(target.id), "name": target.name}
+                new_items.append(
+                    {**item, "ingredient_id": str(target.id), "name": target.name}
+                )
                 changed = True
-            new_items.append(item)
+            else:
+                new_items.append(item)
         if changed:
             recipe.ingredients = new_items
             recipes_updated += 1

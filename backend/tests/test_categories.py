@@ -1,10 +1,9 @@
 """Tests for the category endpoints."""
+from conftest import create_category
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Category
-
-from conftest import create_category
 
 
 async def test_list_categories_returns_active_categories(

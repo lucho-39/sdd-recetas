@@ -1,15 +1,15 @@
 """
 Visit tracking endpoints
 """
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.security import create_visitor_fingerprint, get_current_user_optional
-from app.models import Visit, Recipe
+from app.models import Recipe, Visit
 
 router = APIRouter()
 
@@ -32,7 +32,7 @@ async def record_visit(
         raise HTTPException(status_code=404, detail="Recipe not found")
 
     fingerprint = create_visitor_fingerprint(request)
-    today = func.date(Visit.visited_at) == datetime.now(timezone.utc).date()
+    today = func.date(Visit.visited_at) == datetime.now(UTC).date()
 
     conditions = [Visit.recipe_id == recipe_id, today]
     if current_user is not None:

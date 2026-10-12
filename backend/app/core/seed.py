@@ -34,7 +34,10 @@ DEMO_RECIPES: list[dict] = [
         "cook_time_minutes": 45,
         "servings": 8,
         "difficulty": "easy",
-        "instructions": "Pelar las manzanas, mezclar con azúcar y canela, cubrir con la masa y hornear 45 minutos.",
+        "instructions": (
+            "Pelar las manzanas, mezclar con azúcar y canela, "
+            "cubrir con la masa y hornear 45 minutos."
+        ),
     },
     {
         "slug": "ensalada-cesar",
@@ -45,7 +48,10 @@ DEMO_RECIPES: list[dict] = [
         "cook_time_minutes": 10,
         "servings": 2,
         "difficulty": "easy",
-        "instructions": "Lavar la lechuga, preparar el aderezo, dorar el pollo y mezclar todo con crutones.",
+        "instructions": (
+            "Lavar la lechuga, preparar el aderezo, "
+            "dorar el pollo y mezclar todo con crutones."
+        ),
     },
     {
         "slug": "sopa-de-calabaza",
@@ -56,7 +62,10 @@ DEMO_RECIPES: list[dict] = [
         "cook_time_minutes": 30,
         "servings": 4,
         "difficulty": "medium",
-        "instructions": "Cocinar la calabaza con cebolla, licuar, condimentar y servir con un hilo de crema.",
+        "instructions": (
+            "Cocinar la calabaza con cebolla, licuar, "
+            "condimentar y servir con un hilo de crema."
+        ),
     },
 ]
 

@@ -16,7 +16,7 @@ import os
 # environment may force RS256 without providing an RSA key pair.
 os.environ["JWT_ALGORITHM"] = os.environ.get("TEST_JWT_ALGORITHM", "HS256")
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from uuid import UUID
 
 import pytest
@@ -25,7 +25,6 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
-    async_sessionmaker,
     create_async_engine,
 )
 from sqlalchemy.pool import NullPool

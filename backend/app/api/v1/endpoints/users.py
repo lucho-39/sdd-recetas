@@ -5,7 +5,7 @@ import re
 import unicodedata
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -49,7 +49,7 @@ async def _resolve_public_user(db: AsyncSession, identifier: str) -> User | None
     except ValueError:
         pass
 
-    rows = await db.execute(select(User.id, User.display_name).where(User.is_active == True))  # noqa: E712
+    rows = await db.execute(select(User.id, User.display_name).where(User.is_active == True))
     wanted = identifier.lower()
     match = next((uid for uid, name in rows.all() if _name_slug(name) == wanted), None)
     return await db.get(User, match) if match else None
@@ -96,7 +96,7 @@ async def list_my_recipes(
     if not include_deleted:
         filters.append(Recipe.deleted_at.is_(None))
     if not include_private:
-        filters.append(Recipe.is_public == True)  # noqa: E712
+        filters.append(Recipe.is_public == True)
 
     offset = (page - 1) * limit
     result = await db.execute(
@@ -168,7 +168,7 @@ async def get_public_profile(
         .select_from(Recipe)
         .where(
             Recipe.author_id == user.id,
-            Recipe.is_public == True,  # noqa: E712
+            Recipe.is_public == True,
             Recipe.deleted_at.is_(None),
         )
     )
@@ -196,7 +196,7 @@ async def list_user_public_recipes(
 
     filters = [
         Recipe.author_id == user.id,
-        Recipe.is_public == True,  # noqa: E712
+        Recipe.is_public == True,
         Recipe.deleted_at.is_(None),
     ]
     offset = (page - 1) * limit

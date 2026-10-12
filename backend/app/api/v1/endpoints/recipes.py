@@ -4,25 +4,24 @@ Recipe endpoints
 import copy
 import re
 import unicodedata
-from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy import select, func, or_
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.security import get_current_active_user, get_current_user_optional
-from app.models import Recipe, Category, Tag, User, Favorite, Rating, Visit, Ingredient
+from app.models import Category, Ingredient, Rating, Recipe, Tag, User
 from app.schemas import (
     RecipeCreate,
-    RecipeUpdate,
-    RecipeResponse,
-    RecipeListItem,
     RecipeIngredient,
-    ingredients_as_dicts,
+    RecipeListItem,
+    RecipeResponse,
+    RecipeUpdate,
     SimilarRecipe,
-    UserResponse,
+    ingredients_as_dicts,
 )
 
 router = APIRouter()
@@ -39,7 +38,7 @@ def slugify(text: str) -> str:
     return text
 
 
-def is_admin(user: Optional[User]) -> bool:
+def is_admin(user: User | None) -> bool:
     """True when the given user carries the admin role."""
     if user is None:
         return False
@@ -47,7 +46,7 @@ def is_admin(user: Optional[User]) -> bool:
     return role == "admin"
 
 
-def recipe_visible_to(recipe: Recipe, user: Optional[User]) -> bool:
+def recipe_visible_to(recipe: Recipe, user: User | None) -> bool:
     """RB-09: a public recipe is readable by anyone, a private one only by its
     author (and by admins). Soft-deleted recipes are never visible."""
     if recipe.deleted_at is not None:
@@ -60,8 +59,8 @@ def recipe_visible_to(recipe: Recipe, user: Optional[User]) -> bool:
 
 
 async def resolve_ingredient_catalog(
-    db: AsyncSession, ingredients: Optional[List[dict]]
-) -> List[dict]:
+    db: AsyncSession, ingredients: list[dict] | None
+) -> list[dict]:
     """Return a copy of the ingredient list with catalog data resolved.
 
     The JSONB stores only ``ingredient_id``; the UI needs the display name and,
@@ -69,7 +68,7 @@ async def resolve_ingredient_catalog(
     Unknown / non-UUID ids are left untouched.
     """
     items = copy.deepcopy(ingredients or [])
-    ids: List[UUID] = []
+    ids: list[UUID] = []
     for item in items:
         value = item.get("ingredient_id")
         if not value:
@@ -100,8 +99,8 @@ async def resolve_ingredient_catalog(
 
 
 async def validate_ingredients(
-    db: AsyncSession, items: Optional[List[RecipeIngredient]]
-) -> List[dict]:
+    db: AsyncSession, items: list[RecipeIngredient] | None
+) -> list[dict]:
     """RB-ING-02 / RF-12.6: every ingredient must reference an existing, active
     catalog entry that has not been rejected by an admin."""
     if not items:
@@ -150,14 +149,14 @@ async def validate_ingredients(
 
 
 async def sync_recipe_tags(
-    db: AsyncSession, recipe: Recipe, tag_slugs: Optional[List[str]]
+    db: AsyncSession, recipe: Recipe, tag_slugs: list[str] | None
 ) -> None:
     """Replace a recipe's tags by slug, creating missing ones.
 
     ``usage_count`` is kept in sync: incremented for newly associated tags and
     decremented for the ones removed.
     """
-    normalized: List[str] = []
+    normalized: list[str] = []
     seen: set[str] = set()
     for raw in tag_slugs or []:
         slug = slugify(str(raw))
@@ -181,7 +180,7 @@ async def sync_recipe_tags(
         if slug not in seen:
             tag.usage_count = max(0, tag.usage_count - 1)
 
-    new_tags: List[Tag] = []
+    new_tags: list[Tag] = []
     for slug in normalized:
         tag = existing.get(slug)
         if tag is None:
@@ -194,7 +193,9 @@ async def sync_recipe_tags(
     recipe.tags = new_tags
 
 
-async def generate_unique_slug(db: AsyncSession, title: str, exclude_id: Optional[UUID] = None) -> tuple[str, List[SimilarRecipe]]:
+async def generate_unique_slug(
+    db: AsyncSession, title: str, exclude_id: UUID | None = None
+) -> tuple[str, list[SimilarRecipe]]:
     """
     Generate a unique slug for a recipe title.
     Returns the slug and a list of similar existing recipes.
@@ -254,17 +255,17 @@ async def generate_unique_slug(db: AsyncSession, title: str, exclude_id: Optiona
 
 @router.get("", summary="List recipes", response_model=dict)
 async def list_recipes(
-    category: Optional[str] = Query(None, description="Filter by category slug"),
-    tags: Optional[List[str]] = Query(None, description="Filter by tag slugs"),
-    ingredients: Optional[List[str]] = Query(None, description="Filter by ingredient ids"),
-    query: Optional[str] = Query(None, description="Search in title and description"),
-    difficulty: Optional[str] = Query(None, description="Filter by difficulty: easy|medium|hard"),
-    max_time: Optional[int] = Query(None, ge=1, description="Max total time in minutes"),
+    category: str | None = Query(None, description="Filter by category slug"),
+    tags: list[str] | None = Query(None, description="Filter by tag slugs"),
+    ingredients: list[str] | None = Query(None, description="Filter by ingredient ids"),
+    query: str | None = Query(None, description="Search in title and description"),
+    difficulty: str | None = Query(None, description="Filter by difficulty: easy|medium|hard"),
+    max_time: int | None = Query(None, ge=1, description="Max total time in minutes"),
     sort: str = Query("recent", description="Sort order: recent, visited, saved, top_rated"),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user_optional),
+    current_user=Depends(get_current_user_optional),
 ):
     """List recipes with filtering and pagination (public read)."""
     filters = [Recipe.is_public == True, Recipe.deleted_at.is_(None)]
@@ -345,7 +346,7 @@ async def list_recipes(
 async def get_recipe(
     slug: str,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user_optional),
+    current_user=Depends(get_current_user_optional),
 ):
     """Get recipe by slug (public read, private only for author/admin)."""
     result = await db.execute(
@@ -384,7 +385,7 @@ async def get_recipe(
 async def create_recipe(
     recipe_data: RecipeCreate,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    current_user=Depends(get_current_active_user),
 ):
     """Create a new recipe with automatic slug generation and similar recipe suggestions."""
     # Verify category exists
@@ -435,7 +436,7 @@ async def update_recipe(
     slug: str,
     recipe_data: RecipeUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    current_user=Depends(get_current_active_user),
 ):
     """Update a recipe."""
     result = await db.execute(
@@ -467,7 +468,7 @@ async def update_recipe(
             raise HTTPException(status_code=400, detail="Invalid category")
 
     # Handle title change -> slug regeneration
-    similar_recipes: List[SimilarRecipe] = []
+    similar_recipes: list[SimilarRecipe] = []
     if "title" in update_data and update_data["title"] != recipe.title:
         new_slug, similar_recipes = await generate_unique_slug(
             db, update_data["title"], exclude_id=recipe.id
@@ -492,7 +493,7 @@ async def update_recipe(
 async def delete_recipe(
     slug: str,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    current_user=Depends(get_current_active_user),
 ):
     """Delete a recipe (soft delete) - cascades to favorites, ratings, visits via DB constraints."""
     result = await db.execute(
@@ -507,14 +508,12 @@ async def delete_recipe(
     recipe.deleted_at = datetime.utcnow()
     await db.commit()
 
-    return None
-
 
 @router.post("/{slug}/restore", response_model=RecipeResponse, summary="Restore a deleted recipe")
 async def restore_recipe(
     slug: str,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    current_user=Depends(get_current_active_user),
 ):
     """Restore a soft-deleted recipe (author only)."""
     result = await db.execute(
@@ -534,11 +533,11 @@ async def restore_recipe(
     return RecipeResponse.model_validate(recipe)
 
 
-@router.get("/{slug}/similar", response_model=List[SimilarRecipe], summary="Find similar recipes")
+@router.get("/{slug}/similar", response_model=list[SimilarRecipe], summary="Find similar recipes")
 async def find_similar_recipes(
     slug: str,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    current_user=Depends(get_current_active_user),
 ):
     """Find recipes similar to the given one by title."""
     result = await db.execute(

@@ -7,7 +7,7 @@ joins a room named ``user:<id>`` so notifications can be pushed to every
 connected tab of a user.
 """
 import logging
-from typing import Any, Dict
+from typing import Any
 
 import socketio
 
@@ -49,7 +49,7 @@ async def disconnect(sid: str) -> None:
     return None
 
 
-async def emit_notification(user_id: str, payload: Dict[str, Any]) -> None:
+async def emit_notification(user_id: str, payload: dict[str, Any]) -> None:
     """Emit a notification to all sockets of a user (best effort)."""
     try:
         await sio.emit("notification", payload, room=user_room(str(user_id)))

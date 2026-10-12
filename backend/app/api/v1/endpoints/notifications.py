@@ -4,7 +4,8 @@ Notification endpoints (in-app notification center).
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import delete as sql_delete, func, select
+from sqlalchemy import delete as sql_delete
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -44,7 +45,7 @@ async def _unread_count(db: AsyncSession, user_id: UUID) -> int:
         await db.scalar(
             select(func.count())
             .select_from(Notification)
-            .where(Notification.user_id == user_id, Notification.is_read == False)  # noqa: E712
+            .where(Notification.user_id == user_id, Notification.is_read == False)
         )
     ) or 0
 
@@ -53,7 +54,7 @@ async def _unread_count(db: AsyncSession, user_id: UUID) -> int:
 async def list_notifications(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
-    current_user = Depends(get_current_active_user),
+    current_user=Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
     total = await db.scalar(
@@ -80,7 +81,7 @@ async def list_notifications(
 
 @router.get("/unread-count", summary="Unread notifications count")
 async def unread_count(
-    current_user = Depends(get_current_active_user),
+    current_user=Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
     return {"unread_count": await _unread_count(db, current_user.id)}
@@ -88,12 +89,12 @@ async def unread_count(
 
 @router.post("/read-all", summary="Mark all my notifications as read")
 async def mark_all_read(
-    current_user = Depends(get_current_active_user),
+    current_user=Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
         select(Notification).where(
-            Notification.user_id == current_user.id, Notification.is_read == False  # noqa: E712
+            Notification.user_id == current_user.id, Notification.is_read == False
         )
     )
     notifications = result.scalars().all()
@@ -106,7 +107,7 @@ async def mark_all_read(
 @router.post("/{notification_id}/read", summary="Mark a notification as read")
 async def mark_read(
     notification_id: UUID,
-    current_user = Depends(get_current_active_user),
+    current_user=Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
     notification = await db.get(Notification, notification_id)
@@ -120,7 +121,7 @@ async def mark_read(
 @router.delete("/{notification_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_notification(
     notification_id: UUID,
-    current_user = Depends(get_current_active_user),
+    current_user=Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
     notification = await db.get(Notification, notification_id)
@@ -128,12 +129,11 @@ async def delete_notification(
         raise HTTPException(status_code=404, detail="Notification not found")
     await db.delete(notification)
     await db.commit()
-    return None
 
 
 @router.delete("", summary="Delete all my notifications")
 async def delete_all_notifications(
-    current_user = Depends(get_current_active_user),
+    current_user=Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(

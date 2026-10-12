@@ -3,7 +3,7 @@ Notification service: persist likes/ratings notifications, honour per-user
 preferences and push them live over Socket.IO (email channel included).
 """
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
@@ -15,7 +15,7 @@ from app.realtime.server import emit_notification
 from app.services.email import send_email
 from app.services.webpush import send_web_push
 
-DEFAULT_PREFERENCES: Dict[str, bool] = {
+DEFAULT_PREFERENCES: dict[str, bool] = {
     "in_app_enabled": True,
     "email_enabled": False,
     "push_enabled": False,
@@ -29,7 +29,7 @@ _EVENT_FIELD = {
 }
 
 
-async def get_preferences(db: AsyncSession, user_id: UUID) -> Dict[str, bool]:
+async def get_preferences(db: AsyncSession, user_id: UUID) -> dict[str, bool]:
     """Return the user's preferences, falling back to the defaults."""
     preference = await db.get(NotificationPreference, user_id)
     if preference is None:
@@ -44,11 +44,11 @@ async def get_preferences(db: AsyncSession, user_id: UUID) -> Dict[str, bool]:
 
 
 def build_payload(
-    notification: Optional[Notification],
-    recipe: Optional[Recipe],
-    actor: Optional[User],
-    detail: Optional[dict],
-) -> Dict[str, Any]:
+    notification: Notification | None,
+    recipe: Recipe | None,
+    actor: User | None,
+    detail: dict | None,
+) -> dict[str, Any]:
     return {
         "id": str(notification.id) if notification else None,
         "type": notification.type if notification else None,
@@ -74,7 +74,7 @@ def build_payload(
     }
 
 
-def _message(type: str, actor: User, recipe: Recipe, detail: Optional[dict]) -> str:
+def _message(type: str, actor: User, recipe: Recipe, detail: dict | None) -> str:
     """Human-readable notification message (shared wording with the UI)."""
     who = actor.display_name
     title = recipe.title
@@ -90,7 +90,7 @@ def _message(type: str, actor: User, recipe: Recipe, detail: Optional[dict]) -> 
     return f"'{who}' guardó tu receta '{title}'"
 
 
-def _context(actor: User, recipe: Recipe, detail: Optional[dict]) -> Dict[str, Any]:
+def _context(actor: User, recipe: Recipe, detail: dict | None) -> dict[str, Any]:
     score = (detail or {}).get("score")
     stars = f"{score} {'estrella' if score == 1 else 'estrellas'}" if score else ""
     return {
@@ -102,7 +102,7 @@ def _context(actor: User, recipe: Recipe, detail: Optional[dict]) -> Dict[str, A
     }
 
 
-def _render(template: str, context: Dict[str, Any], fallback: str) -> str:
+def _render(template: str, context: dict[str, Any], fallback: str) -> str:
     try:
         return template.format(**context)
     except (KeyError, IndexError, ValueError):
@@ -110,7 +110,7 @@ def _render(template: str, context: Dict[str, Any], fallback: str) -> str:
 
 
 def _email_content(
-    type: str, actor: User, recipe: Recipe, detail: Optional[dict]
+    type: str, actor: User, recipe: Recipe, detail: dict | None
 ) -> tuple[str, str]:
     settings = current_settings()
     context = _context(actor, recipe, detail)
@@ -132,8 +132,8 @@ async def notify_recipe_author(
     actor: User,
     recipe: Recipe,
     type: str,
-    detail: Optional[Dict[str, Any]] = None,
-) -> Optional[Notification]:
+    detail: dict[str, Any] | None = None,
+) -> Notification | None:
     """Notify the recipe author honouring their preferences.
 
     Self-actions are ignored. The in-app channel dedupes by
@@ -152,7 +152,7 @@ async def notify_recipe_author(
     push = preferences["push_enabled"]
     email = preferences["email_enabled"]
 
-    notification: Optional[Notification] = None
+    notification: Notification | None = None
     if in_app:
         existing = (
             await db.execute(
@@ -216,7 +216,7 @@ async def notify_ingredient_creator(
     actor: User,
     ingredient: Ingredient,
     reason: str,
-) -> Optional[Notification]:
+) -> Notification | None:
     """UC-ADMIN-016 AC3: tell the creator their ingredient was rejected.
 
     Deliberately not routed through notify_recipe_author: there is no recipe
@@ -245,7 +245,7 @@ async def notify_ingredient_creator(
     }
     message = f"Tu ingrediente '{ingredient.name}' fue rechazado. Razón: {reason}"
 
-    notification: Optional[Notification] = None
+    notification: Notification | None = None
     if in_app:
         notification = Notification(
             user_id=recipient_id,

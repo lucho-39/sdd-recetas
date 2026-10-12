@@ -1,9 +1,9 @@
 """
 Recipe schemas
 """
-from typing import List, Optional
 from datetime import datetime
 from uuid import UUID
+
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.core.units import VALID_UNITS
@@ -20,18 +20,18 @@ class RecipeIngredient(BaseModel):
     validated against the database in the endpoint layer.
     """
 
-    ingredient_id: Optional[UUID] = Field(
+    ingredient_id: UUID | None = Field(
         default=None,
         description="Catalog id; required so the ingredient can be resolved",
     )
     name: str = Field(..., min_length=1, max_length=100)
-    amount: Optional[float] = Field(None, gt=0)
-    unit: Optional[str] = Field(None, max_length=20)
-    notes: Optional[str] = Field(None, max_length=500)
+    amount: float | None = Field(None, gt=0)
+    unit: str | None = Field(None, max_length=20)
+    notes: str | None = Field(None, max_length=500)
 
     @field_validator("unit")
     @classmethod
-    def unit_must_be_known(cls, v: Optional[str]) -> Optional[str]:
+    def unit_must_be_known(cls, v: str | None) -> str | None:
         if v is None:
             return v
         cleaned = v.strip().lower()
@@ -52,7 +52,7 @@ class RecipeIngredient(BaseModel):
         return cleaned
 
 
-def ingredients_as_dicts(items: Optional[List[RecipeIngredient]]) -> List[dict]:
+def ingredients_as_dicts(items: list[RecipeIngredient] | None) -> list[dict]:
     """Serialize validated ingredients into the plain JSONB shape stored in the DB."""
     if not items:
         return []
@@ -62,22 +62,22 @@ def ingredients_as_dicts(items: Optional[List[RecipeIngredient]]) -> List[dict]:
 
 class RecipeBase(BaseModel):
     title: str = Field(..., min_length=3, max_length=200)
-    description: Optional[str] = None
+    description: str | None = None
     category_id: UUID
-    image_url: Optional[str] = Field(None, max_length=500)
-    prep_time_minutes: Optional[int] = Field(None, ge=0)
-    cook_time_minutes: Optional[int] = Field(None, ge=0)
-    servings: Optional[int] = Field(None, ge=1)
-    difficulty: Optional[str] = Field(None, pattern="^(easy|medium|hard)$")
+    image_url: str | None = Field(None, max_length=500)
+    prep_time_minutes: int | None = Field(None, ge=0)
+    cook_time_minutes: int | None = Field(None, ge=0)
+    servings: int | None = Field(None, ge=1)
+    difficulty: str | None = Field(None, pattern="^(easy|medium|hard)$")
     instructions: str = Field(..., min_length=10)
     # Kept permissive on the read path so legacy JSONB rows still deserialize.
-    ingredients: List[dict] = Field(default_factory=list)
+    ingredients: list[dict] = Field(default_factory=list)
     is_public: bool = True
 
 
 class RecipeCreate(RecipeBase):
-    tags: List[str] = Field(default_factory=list)
-    ingredients: List[RecipeIngredient] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
+    ingredients: list[RecipeIngredient] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def no_duplicate_ingredients(self) -> "RecipeCreate":
@@ -88,18 +88,18 @@ class RecipeCreate(RecipeBase):
 
 
 class RecipeUpdate(BaseModel):
-    title: Optional[str] = Field(None, min_length=3, max_length=200)
-    description: Optional[str] = None
-    category_id: Optional[UUID] = None
-    image_url: Optional[str] = Field(None, max_length=500)
-    prep_time_minutes: Optional[int] = Field(None, ge=0)
-    cook_time_minutes: Optional[int] = Field(None, ge=0)
-    servings: Optional[int] = Field(None, ge=1)
-    difficulty: Optional[str] = Field(None, pattern="^(easy|medium|hard)$")
-    instructions: Optional[str] = Field(None, min_length=10)
-    ingredients: Optional[List[RecipeIngredient]] = None
-    is_public: Optional[bool] = None
-    tags: Optional[List[str]] = None
+    title: str | None = Field(None, min_length=3, max_length=200)
+    description: str | None = None
+    category_id: UUID | None = None
+    image_url: str | None = Field(None, max_length=500)
+    prep_time_minutes: int | None = Field(None, ge=0)
+    cook_time_minutes: int | None = Field(None, ge=0)
+    servings: int | None = Field(None, ge=1)
+    difficulty: str | None = Field(None, pattern="^(easy|medium|hard)$")
+    instructions: str | None = Field(None, min_length=10)
+    ingredients: list[RecipeIngredient] | None = None
+    is_public: bool | None = None
+    tags: list[str] | None = None
 
     @model_validator(mode="after")
     def no_duplicate_ingredients(self) -> "RecipeUpdate":
@@ -116,16 +116,16 @@ class RecipeResponse(RecipeBase):
     slug: str
     author: UserResponse
     category: "CategoryResponse"
-    tags: List["TagResponse"] = []
+    tags: list["TagResponse"] = []
     visit_count: int
     save_count: int
     avg_rating: float
     rating_count: int
     created_at: datetime
     updated_at: datetime
-    deleted_at: Optional[datetime] = None
-    similar_recipes: List["SimilarRecipe"] = []
-    my_rating: Optional[int] = None
+    deleted_at: datetime | None = None
+    similar_recipes: list["SimilarRecipe"] = []
+    my_rating: int | None = None
 
     class Config:
         from_attributes = True
@@ -135,21 +135,21 @@ class RecipeListItem(BaseModel):
     id: UUID
     slug: str
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     category: "CategoryResponse"
-    tags: List["TagResponse"] = []
-    image_url: Optional[str] = None
-    prep_time_minutes: Optional[int] = None
-    cook_time_minutes: Optional[int] = None
-    servings: Optional[int] = None
-    difficulty: Optional[str] = None
+    tags: list["TagResponse"] = []
+    image_url: str | None = None
+    prep_time_minutes: int | None = None
+    cook_time_minutes: int | None = None
+    servings: int | None = None
+    difficulty: str | None = None
     visit_count: int
     save_count: int
     avg_rating: float
     rating_count: int
     author: UserResponse
     is_public: bool = True
-    deleted_at: Optional[datetime] = None
+    deleted_at: datetime | None = None
     created_at: datetime
 
     class Config:
@@ -167,7 +167,7 @@ class CategoryResponse(BaseModel):
     id: UUID
     slug: str
     name: str
-    icon: Optional[str] = None
+    icon: str | None = None
     color: str
 
     class Config:

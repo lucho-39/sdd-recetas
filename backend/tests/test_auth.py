@@ -1,4 +1,5 @@
 """Tests for the authentication endpoints."""
+from conftest import TEST_PASSWORD, create_user
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,8 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.endpoints.auth import create_admin_user
 from app.core.config import get_settings
 from app.models import User, UserRole
-
-from conftest import TEST_PASSWORD, create_user
 
 
 async def test_register_creates_account(client: AsyncClient) -> None:
@@ -200,7 +199,7 @@ async def test_bootstrap_admin_creates_admin_and_is_idempotent(
     # The bootstrap runs in the app lifespan; there is no public endpoint for
     # it on purpose (recreating the admin must not be triggerable).
     gone = await client.post("/api/v1/auth/bootstrap-admin")
-    assert gone.status_code in (404, 405)
+    assert gone.status_code in {404, 405}
 
     first = await create_admin_user(db_session)
     assert first is None
