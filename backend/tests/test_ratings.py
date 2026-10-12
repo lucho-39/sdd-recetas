@@ -1,12 +1,12 @@
 """Tests for the rating endpoints."""
+import pytest
+from conftest import create_user
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import create_access_token
 from app.models import Rating, Recipe
-
-from conftest import create_user
 
 
 async def test_rate_recipe(
@@ -18,7 +18,7 @@ async def test_rate_recipe(
     assert response.status_code == 201
     body = response.json()
     assert body["message"] == "Rating saved"
-    assert body["avg_rating"] == 5.0
+    assert body["avg_rating"] == pytest.approx(5.0)
     assert body["rating_count"] == 1
 
 
@@ -63,7 +63,7 @@ async def test_rating_updates_recipe_aggregates(
     assert refreshed is not None
     await db_session.refresh(refreshed)
     assert refreshed.rating_count == 1
-    assert refreshed.avg_rating == 4.0
+    assert refreshed.avg_rating == pytest.approx(4.0)
 
 
 async def test_rating_is_upserted_per_user(
@@ -97,6 +97,35 @@ async def test_get_recipe_ratings(
     assert body["total"] == 1
     assert body["ratings"][0]["score"] == 5
     assert body["ratings"][0]["review_text"] == "Riquísima"
+
+
+async def test_get_recipe_ratings_honors_limit(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    recipe: Recipe,
+    auth_headers: dict,
+) -> None:
+    """The limit param used to be accepted and silently ignored (always 10)."""
+    other_headers = []
+    for i in range(2):
+        user = await create_user(db_session, email=f"rater{i}@example.com")
+        other_headers.append(
+            {"Authorization": f"Bearer {create_access_token(subject=str(user.id))}"}
+        )
+
+    await client.post(f"/api/v1/ratings/{recipe.id}?score=5", headers=auth_headers)
+    for headers in other_headers:
+        await client.post(f"/api/v1/ratings/{recipe.id}?score=4", headers=headers)
+
+    limited = await client.get(f"/api/v1/ratings/{recipe.id}?limit=2")
+    assert limited.status_code == 200
+    body = limited.json()
+    assert body["total"] == 3
+    assert body["limit"] == 2
+    assert len(body["ratings"]) == 2
+
+    beyond_max = await client.get(f"/api/v1/ratings/{recipe.id}?limit=101")
+    assert beyond_max.status_code == 422
 
 
 async def test_rating_distribution(

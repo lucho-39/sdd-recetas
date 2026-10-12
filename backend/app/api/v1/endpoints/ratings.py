@@ -1,14 +1,13 @@
 """
 Rating endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select, func, delete as sql_delete
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import delete as sql_delete
+from sqlalchemy import func, select
 
 from app.core.database import get_db
 from app.core.security import get_current_active_user
 from app.models import Rating, Recipe
-from app.schemas.auth import UserResponse
 from app.services.notifications import notify_recipe_author
 
 router = APIRouter()
@@ -18,9 +17,9 @@ router = APIRouter()
 async def rate_recipe(
     recipe_id: str,
     score: int,
-    review_text: str = None,
-    db = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    review_text: str | None = None,
+    db=Depends(get_db),
+    current_user=Depends(get_current_active_user),
 ):
     """Rate a recipe (1-5 stars)."""
     if not 1 <= score <= 5:
@@ -80,21 +79,21 @@ async def rate_recipe(
 @router.get("/{recipe_id}", summary="Get recipe ratings")
 async def get_ratings(
     recipe_id: str,
-    page: int = 1,
-    limit: int = 10,
-    db = Depends(get_db),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
+    db=Depends(get_db),
 ):
     """Get paginated ratings for a recipe."""
     from app.models import Rating, User
 
-    offset = (page - 1) * 10
+    offset = (page - 1) * limit
     result = await db.execute(
         select(Rating, User.display_name, User.avatar_url)
         .join(User, Rating.user_id == User.id)
         .where(Rating.recipe_id == recipe_id)
         .order_by(Rating.created_at.desc())
-        .offset((page - 1) * 10)
-        .limit(10)
+        .offset(offset)
+        .limit(limit)
     )
     ratings = []
     for rating, display_name, avatar_url in result.all():
@@ -126,7 +125,7 @@ async def get_ratings(
         "ratings": ratings,
         "total": total,
         "page": page,
-        "limit": 10,
+        "limit": limit,
         "distribution": distribution,
     }
 
@@ -134,8 +133,8 @@ async def get_ratings(
 @router.get("/{recipe_id}/mine", summary="Get my rating")
 async def get_my_rating(
     recipe_id: str,
-    db = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    db=Depends(get_db),
+    current_user=Depends(get_current_active_user),
 ):
     """Return the current user's rating for a recipe, if any."""
     rating = (
@@ -155,8 +154,8 @@ async def get_my_rating(
 @router.delete("/{recipe_id}", summary="Delete my rating")
 async def delete_rating(
     recipe_id: str,
-    db = Depends(get_db),
-    current_user = Depends(get_current_active_user),
+    db=Depends(get_db),
+    current_user=Depends(get_current_active_user),
 ):
     """Remove the current user's rating and recalculate the aggregates."""
     recipe = await db.get(Recipe, recipe_id)
