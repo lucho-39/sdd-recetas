@@ -9,6 +9,7 @@
 	} from '@tabler/icons-svelte';
 	import { adminFetch, formatDate } from '$lib/api';
 	import AlertDialog from '$lib/components/AlertDialog.svelte';
+	import Dialog from '$lib/components/Dialog.svelte';
 
 	type UserRow = {
 		id: string;
@@ -110,6 +111,63 @@
 	let dialog: Dialog | null = null;
 	let deleteRecipes = false;
 	let busy = false;
+
+	// UC-ADMIN-008: a compact card so an admin can decide without leaving the
+	// list. It reuses GET /api/admin/users/{id}, which already carries every
+	// figure AC2 asks for — no second endpoint just for this dialog.
+	type Summary = UserRow & {
+		avatar_url?: string | null;
+		recipes_public: number;
+		recipes_private: number;
+		recipes_deleted: number;
+		ratings_average: number | null;
+	};
+
+	let summaryOpen = false;
+	let summary: Summary | null = null;
+	let summaryLoading = false;
+
+	async function openSummary(row: UserRow) {
+		summaryOpen = true;
+		summary = null;
+		summaryLoading = true;
+		error = '';
+		try {
+			summary = await adminFetch<Summary>(`/users/${row.id}`);
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'No se pudo cargar el resumen';
+			summaryOpen = false;
+		} finally {
+			summaryLoading = false;
+		}
+	}
+
+	// AC4 hands off to the confirmation dialogs that already exist — one
+	// dialog at a time, so the summary steps aside before it opens.
+	function handOff(kind: 'activate' | 'deactivate' | 'reactivate') {
+		if (!summary) return;
+		summaryOpen = false;
+		dialog = { kind, row: summary };
+	}
+
+	function handOffGdpr() {
+		if (!summary) return;
+		summaryOpen = false;
+		openGdpr(summary);
+	}
+
+	function summaryFacts(s: Summary) {
+		return [
+			{ label: 'Alta', value: formatDate(s.created_at) },
+			{ label: 'Último login', value: s.last_login_at ? formatDate(s.last_login_at) : '—' },
+			{ label: 'Recetas', value: String(s.recipes_count) },
+			{ label: 'Favoritos', value: String(s.favorites_count) },
+			{
+				label: 'Promedio rating',
+				value: s.ratings_average === null ? '—' : s.ratings_average.toFixed(1)
+			}
+		];
+	}
 
 	async function confirm() {
 		if (!dialog) return;
@@ -308,14 +366,15 @@
 						<td class="p-3 text-right">
 							<!-- UC-ADMIN-005 AC5: always offered — an erased account still
 							     warrants inspection, even with nothing left to change. -->
-							<a
-								href="/usuarios/{row.id}"
+							<button
+								type="button"
 								class="btn btn-ghost btn-sm"
-								title="Ver detalle"
-								aria-label="Ver el detalle de {row.display_name}"
+								title="Ver resumen"
+								aria-label="Ver el resumen de {row.display_name}"
+								on:click={() => openSummary(row)}
 							>
 								<View class="h-4 w-4" aria-hidden="true" />
-							</a>
+							</button>
 							{#if row.deleted_at}
 								<!-- UC-ADMIN-010 AC1: already erased, so there is nothing left
 								     to activate, suspend or erase. The view link is the only
@@ -460,4 +519,93 @@
 			Eliminar también sus recetas
 		</label>
 	</AlertDialog>
+{/if}
+
+<!-- UC-ADMIN-008: the resumen ejecutivo. A card, not a page — it exists so a
+     decision can be made without losing the list behind it, which is why the
+     mutations it offers are the same four the rows offer, gated the same way. -->
+{#if summaryOpen}
+	<Dialog open title="Resumen de usuario" onClose={() => (summaryOpen = false)}>
+		{#if summaryLoading}
+			<p class="text-sm text-muted-foreground">Cargando…</p>
+		{:else if summary}
+			<!-- AC1: identity + AC3: estado -->
+			<div class="flex items-start gap-3">
+				{#if summary.avatar_url}
+					<img src={summary.avatar_url} alt="" class="h-12 w-12 rounded-full" />
+				{:else}
+					<div
+						class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent text-lg font-medium text-muted-foreground"
+					>
+						{summary.display_name.slice(0, 1).toUpperCase()}
+					</div>
+				{/if}
+				<div class="min-w-0 flex-1">
+					<div class="flex flex-wrap items-center gap-2">
+						<p class="font-medium text-foreground">{summary.display_name}</p>
+						<span class="rounded-full px-2 py-0.5 text-xs font-medium {badge(summary).cls}">
+							{badge(summary).label}
+						</span>
+					</div>
+					<p class="truncate text-sm text-muted-foreground">{summary.email}</p>
+					<p class="mt-1 text-xs text-muted-foreground">
+						{summary.provider} · {summary.role}
+					</p>
+				</div>
+			</div>
+
+			<!-- AC2: las cinco cifras del resumen. -->
+			<dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+				{#each summaryFacts(summary) as fact}
+					<div>
+						<dt class="text-[11px] uppercase tracking-wide text-muted-foreground">
+							{fact.label}
+						</dt>
+						<dd class="text-sm font-medium text-foreground">{fact.value}</dd>
+					</div>
+				{/each}
+			</dl>
+
+			<!-- AC4: acciones rápidas. Same gating as the row, because these are
+			     the same operations — a summary that offered more would be a
+			     second, inconsistent set of rules. -->
+			<div class="mt-5 border-t border-border pt-4">
+				<p class="mb-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+					Acciones rápidas
+				</p>
+				<div class="flex flex-wrap gap-2">
+					{#if summary.deleted_at}
+						<span class="btn btn-outline btn-sm opacity-50" aria-disabled="true">
+							Ya eliminado
+						</span>
+					{:else}
+						{#if summary.is_active}
+							<button type="button" class="btn btn-outline btn-sm" on:click={() => handOff('deactivate')}>
+								Desactivar
+							</button>
+						{:else}
+							<button type="button" class="btn btn-outline btn-sm" on:click={() => handOff('activate')}>
+								Activar
+							</button>
+							{#if summary.deactivated_at}
+								<button type="button" class="btn btn-outline btn-sm" on:click={() => handOff('reactivate')}>
+									Forzar reactivación
+								</button>
+							{/if}
+							<button type="button" class="btn btn-destructive btn-sm" on:click={handOffGdpr}>
+								GDPR
+							</button>
+						{/if}
+					{/if}
+					<a
+						href="/usuarios/{summary.id}"
+						class="btn btn-primary btn-sm"
+						on:click={() => (summaryOpen = false)}
+					>
+						Ver detalle completo
+					</a>
+				</div>
+			</div>
+		{/if}
+	</Dialog>
 {/if}
