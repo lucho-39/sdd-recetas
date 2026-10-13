@@ -9,6 +9,9 @@ visitante ──https──▶ Caddy (:80/:443, TLS automático)
                                               │  /api, /uploads, /socket.io
                                               ▼ (mismo origen, sin CORS)
                                            backend:8000 ──▶ postgres:5432
+
+(Puertos de contenedor. En el host van bindeados solo a loopback para
+convivir con otros stacks: 13000/13001/18000/15432. Ver Firewall abajo.)
 ```
 
 Cada SvelteKit ya proxea `/api`, `/uploads` y `/socket.io` al backend desde
@@ -36,8 +39,9 @@ a tu server con los puertos 80/443 alcanzables.
 Requiere: Linux x86_64 con IP pública, Podman + `podman-compose`, git, `ufw`.
 
 ```bash
-# 1. Firewall: solo entran SSH, HTTP y HTTPS. Los puertos 3000/3001/8000/5432
-#    quedan cerrados al exterior: solo Caddy habla con los contenedores, y de
+# 1. Firewall: solo entran SSH, HTTP y HTTPS. Los puertos de host
+#    (13000/13001/18000/15432) encima van bindeados solo a 127.0.0.1 en el
+#    compose: doble barrera, solo Caddy habla con los contenedores, y de
 #    eso depende que el rate limiting por X-Forwarded-For sea confiable.
 sudo ufw allow 22,80,443/tcp
 sudo ufw enable
