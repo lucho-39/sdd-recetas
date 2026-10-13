@@ -79,7 +79,16 @@ async def observability_middleware(request: Request, call_next):
     if limit > 0 and path.startswith("/api/") and not path.startswith("/api/admin"):
         import time
 
-        client = request.client.host if request.client else "unknown"
+        # Behind Caddy every connection comes from the proxy, so the socket
+        # peer is useless as a bucket key. Caddy appends the real client to
+        # X-Forwarded-For; the leftmost entry is the one to count. Only safe
+        # because the backend port is never published publicly (see
+        # architecture/03-deployment.md) — direct callers could spoof it.
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            client = forwarded.split(",")[0].strip() or "unknown"
+        else:
+            client = request.client.host if request.client else "unknown"
         now = time.monotonic()
         bucket = _rate_buckets.setdefault(client, [])
         bucket[:] = [stamp for stamp in bucket if now - stamp < _RATE_WINDOW_SECONDS]
