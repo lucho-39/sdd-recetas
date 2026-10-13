@@ -17,6 +17,8 @@
 | Q3 | **Stack tecnológico** | **Frontend**: SvelteKit (última versión, Svelte 5 runes) — PWA nativo, Vite<br>**Backend**: FastAPI (última versión, Python 3.12+) — REST, Pydantic v2, async<br>**DB**: PostgreSQL 16+ (pg_trgm, pgcrypto, btree_gin)<br>**Auth**: JWT HS256 (access 15min) + Refresh Token JWT (30d, HttpOnly cookie, rotación) — RS256/opaque quedan v2<br>**Sesiones**: Duración redes sociales (access 15min, refresh 30d rolling, sliding window)<br>**Imágenes**: Preparado (campo `image_url` nullable, esquema S3-compatible) — NO implementado MVP<br>**API**: REST (OpenAPI/Swagger auto-generado por FastAPI)<br>**Contenedores**: Podman — imágenes base AWS (public.ecr.aws/...) — NO Docker Hub<br>**Despliegue**: Podman Compose / Quadlet en VPS | 2026-09-05 | Define todo el stack: lenguaje, framework, DB, auth, contenedores, deployment. Base para ADR-001, ADR-002, ADR-003, ADR-004 |
 | Q20 | **Sistema Admin** | **Proyecto separado SvelteKit** (independiente del frontend usuario)<br>**Auth independiente**: usuarios admin ≠ usuarios frontend<br>**Bootstrap admin**: Variables de entorno `ADMIN_INITIAL_USER`, `ADMIN_INITIAL_PASSWORD` → en primer arranque backend crea admin, `must_change_password=true`<br>**Primer login**: Fuerza cambio de contraseña obligatorio<br>**Auth admin**: JWT propio (claims `role: "admin"`), cookies HttpOnly propias, refresh rotation propia **[endpoints `/api/admin/*` implementados]** | 2026-09-05 | Admin desacoplado del frontend; bootstrap por env (container-friendly); force password change; auth aislado |
 | Q22 | **Color por categoría** | Campo `color` VARCHAR(7) Hex (#RRGGBB) en `categoria` — seed data con colores shadcn-svelte compatibles light/dark mode | 2026-09-05 | Badge UI consistente en cards y detalle; shadcn-svelte `Badge` component usa color para variant custom |
+| Q10 | **Monorepo vs Multi-repo** | **A. Monorepo**: `frontend/`, `admin/`, `backend/` en un solo repo, un compose, un CI. Partir en 3 repos suma triple CI y versionado cruzado sin beneficio para un equipo de uno con deploy en un VPS | 2026-10-12 | Estructura de repos, CI/CD, ADR-005 |
+| Q21 | **Estructura proyecto Admin** | **A. SvelteKit separada en el monorepo**: `admin/` es app independiente (puerto 3001, contenedor propio) sin imports cruzados con `frontend/`. Tipos compartidos generados desde OpenAPI quedan v2 | 2026-10-12 | Deploy, CI/CD, ADR-005 |
 
 ---
 
@@ -34,13 +36,11 @@
 |---|----------|----------|---------|
 | Q8 | **IA Generation Provider** | OpenAI (GPT-4o-mini), Anthropic (Haiku), Ollama local, self-hosted (vLLM) | Costos, latencia, privacidad, `ai-generation.md` |
 | Q9 | **Almacenamiento de imágenes** (v2+) | S3 (R2/MinIO), Cloudinary, Uploadcare, local filesystem | `data-model.md` (image_url), `03-deployment.md`, costos |
-| Q10 | **Monorepo vs Multi-repo** | **A.** Monorepo (Turborepo/Nx) — FE usuario + FE admin + BE + shared types<br>**B.** Multi-repo — 3 repos separados (frontend, admin, backend)<br>**C.** Mono-repo parcial — FE+BE juntos, admin separado | CI/CD, type sharing, deploy independence, admin auth isolation |
 | Q11 | **Internacionalización (i18n)** | Solo ES MVP; estructura para EN/PT/IT en v2 (next-intl, i18next, Paraglide) | `ui/`, routing, content, SEO |
 | Q12 | **Analytics / Telemetría** | PostHog (self-hosted), Plausible, Umami, custom events (opt-in only) | `02-security.md`, `non-functional-requirements.md` (RNF-05) |
 | Q13 | **Email Service** (verificación, reset password) | Resend, SendGrid, Mailgun, AWS SES, Postmark, self-hosted (Postal) | `authentication.md`, infra, costos, deliverability |
 | Q14 | **Rate Limiting / WAF** | Arcjet, Cloudflare, custom middleware (Redis), nginx + lua | `02-security.md`, `authentication.md` (RB-AUTH-04) |
 | Q15 | **Observabilidad Stack** | Prometheus+Grafana, Datadog, Honeycomb, OpenTelemetry + Tempo/Loki | `03-deployment.md`, `non-functional` (RNF-09) |
-| Q21 | **Estructura proyecto Admin** | **A.** SvelteKit app separada en monorepo (compartir types/utils con frontend)<br>**B.** SvelteKit app en repo aparte (deploy independiente, auth totalmente aislado) | Q10, `03-deployment.md`, CI/CD, shared types |
 
 ---
 
@@ -76,7 +76,7 @@
 
 ## 📝 PRÓXIMOS PASOS INMEDIATOS
 
-1. **Definir Q10 (Monorepo vs Multi-repo) + Q21 (Estructura Admin)** → impacta estructura de repos, CI/CD, shared types
+1. ~~Definir Q10 (Monorepo vs Multi-repo) + Q21 (Estructura Admin)~~ ✅ resueltas 2026-10-12 (A+A: monorepo con admin separada, ver ADR-005)
 2. **Escribir ADRs** en `docs/decisions/`: ADR-001 (Tech Stack), ADR-002 (Database), ADR-003 (Auth + Admin Auth), ADR-004 (Search), ADR-005 (Deployment), ADR-006 (ORM)
 3. **Arquitectura** en `docs/architecture/`: `00-architecture.md` (C4 nivel 1-2), `01-api-design.md` (OpenAPI), `02-security.md` (authN/authZ user + admin), `03-deployment.md` (Podman + VPS)
 4. **Completar casos de uso** faltantes en `docs/use-cases/`: `recipes.md`, `favorites.md`, `social.md`, `ratings.md`, `auth.md`, `admin.md`, `ai-generation.md`, `cooking-mode.md`, `visit-tracking.md`, `ingredients.md`
@@ -100,5 +100,5 @@
 
 ---
 
-**Última actualización**: 2026-09-05  
+**Última actualización**: 2026-10-12  
 **Próxima revisión**: Tras decidir Q3-Q7
