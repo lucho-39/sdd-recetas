@@ -11,13 +11,14 @@
 #   sudo env APP_DOMAIN=xxx.duckdns.org ADMIN_DOMAIN=xxx-admin.duckdns.org \
 #     systemctl restart caddy
 # Caddy pide solo los certificados al primer request con los puertos 80/443
-# abiertos (ufw allow 80,443/tcp). Los puertos 3000/3001/8000/5432 quedan
-# cerrados al exterior: solo Caddy habla con los contenedores.
+# abiertos (ufw allow 80,443/tcp). Los puertos de host (13000/13001/18000/
+# 15432) solo escuchan en 127.0.0.1 y el firewall los mantiene cerrados al
+# exterior: solo Caddy habla con los contenedores.
 
 {$APP_DOMAIN} {
-	reverse_proxy 127.0.0.1:3000
+	reverse_proxy 127.0.0.1:13000
 }
 
 {$ADMIN_DOMAIN} {
-	reverse_proxy 127.0.0.1:3001
+	reverse_proxy 127.0.0.1:13001
 }
