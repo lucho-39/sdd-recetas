@@ -55,8 +55,13 @@ cp .env.production.example .env
 # 3. Caddy como reverse proxy del host (TLS automático vía Let's Encrypt)
 sudo apt install -y caddy
 sudo cp Caddyfile /etc/caddy/Caddyfile
-sudo env APP_DOMAIN=tu-app.duckdns.org ADMIN_DOMAIN=tu-app-admin.duckdns.org \
-  systemctl restart caddy
+# systemctl restart NO hereda el env del comando que lo invoca: los dominios
+# van en un drop-in de systemd (sobrevive reboots y restarts).
+sudo mkdir -p /etc/systemd/system/caddy.service.d
+printf '[Service]\nEnvironment=APP_DOMAIN=tu-app.duckdns.org\nEnvironment=ADMIN_DOMAIN=tu-app-admin.duckdns.org\n' | \
+  sudo tee /etc/systemd/system/caddy.service.d/domains.conf
+sudo systemctl daemon-reload
+sudo systemctl restart caddy
 
 # 4. Levantar la app (el primer arranque compila los frontends: 2-5 min,
 #    los healthchecks marcan el ritmo, tené paciencia)

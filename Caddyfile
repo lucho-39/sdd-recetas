@@ -8,8 +8,11 @@
 # Instalación en el server (Debian/Ubuntu):
 #   sudo apt install -y caddy
 #   sudo cp Caddyfile /etc/caddy/Caddyfile
-#   sudo env APP_DOMAIN=xxx.duckdns.org ADMIN_DOMAIN=xxx-admin.duckdns.org \
-#     systemctl restart caddy
+#   printf '[Service]\nEnvironment=APP_DOMAIN=xxx.duckdns.org\nEnvironment=ADMIN_DOMAIN=xxx-admin.duckdns.org\n' \
+#     | sudo tee /etc/systemd/system/caddy.service.d/domains.conf
+#   sudo systemctl daemon-reload && sudo systemctl restart caddy
+# (systemctl restart NO hereda el env del invocador: los dominios se pasan
+# en un drop-in de systemd, no en la línea de restart.)
 # Caddy pide solo los certificados al primer request con los puertos 80/443
 # abiertos (ufw allow 80,443/tcp). Los puertos de host (13000/13001/18000/
 # 15432) solo escuchan en 127.0.0.1 y el firewall los mantiene cerrados al
