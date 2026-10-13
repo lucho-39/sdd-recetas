@@ -75,7 +75,7 @@ Campos clave:
 |----|-------|
 | RB-AUTH-01 | Email único global (único usuario por email, independientemente del provider) |
 | RB-AUTH-02 | Un usuario puede vincular múltiples providers OAuth a la misma cuenta (mismo email) |
-| RB-AUTH-03 | Password: mínimo 8 chars, 1 mayúscula, 1 minúscula, 1 número, 1 especial |
+| RB-AUTH-03 | Password: mínimo 8 caracteres (implementado). Complejidad (mayúscula, número, especial) queda v2 |
 | RB-AUTH-04 | Rate limit: 5 intentos login/registro por IP/15 min; 3 reset password por email/hora |
 | RB-AUTH-05 | Refresh token: rotación en cada uso (emitir nuevo, revocar anterior); detectar reuso → revocar toda la familia |
 | RB-AUTH-06 | Logout: revoca refresh token actual; opcionalmente revoca todos (logout all devices) |

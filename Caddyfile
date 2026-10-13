@@ -1,0 +1,23 @@
+# Recetario IA — producción con dos subdominios gratuitos (p. ej. DuckDNS).
+#
+# Cada SvelteKit ya proxea /api, /uploads y /socket.io al backend desde su
+# propio preview server (ver vite.config.ts), así que Caddy solo reparte por
+# host y termina TLS. Nada de rutas por path: el frontend NUNCA habla con el
+# backend por otro host, y por eso no hay CORS ni cookies cross-site.
+#
+# Instalación en el server (Debian/Ubuntu):
+#   sudo apt install -y caddy
+#   sudo cp Caddyfile /etc/caddy/Caddyfile
+#   sudo env APP_DOMAIN=xxx.duckdns.org ADMIN_DOMAIN=xxx-admin.duckdns.org \
+#     systemctl restart caddy
+# Caddy pide solo los certificados al primer request con los puertos 80/443
+# abiertos (ufw allow 80,443/tcp). Los puertos 3000/3001/8000/5432 quedan
+# cerrados al exterior: solo Caddy habla con los contenedores.
+
+{$APP_DOMAIN} {
+	reverse_proxy 127.0.0.1:3000
+}
+
+{$ADMIN_DOMAIN} {
+	reverse_proxy 127.0.0.1:3001
+}

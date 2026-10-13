@@ -22,7 +22,7 @@ Aplicación mobile-first PWA para gestión de recetas de cocina con:
 | **Frontend (User)** | SvelteKit 2.x + Svelte 5 (runes) + TypeScript |
 | **Frontend (Admin)** | SvelteKit 2.x (proyecto separado) |
 | **Backend** | FastAPI 0.115+ (Python 3.12+) |
-| **Base de Datos** | PostgreSQL 16+ (pg_trgm, pgcrypto, btree_gin) |
+| **Base de Datos** | PostgreSQL 16+ (ILIKE + JSONB; índices trigram quedan v2) |
 | **ORM** | SQLAlchemy 2.0 async + Alembic |
 | **Auth** | JWT HS256 (access 15min) + Refresh JWT 30d (HttpOnly cookie) |
 | **Tiempo real** | Socket.IO (python-socketio + socket.io-client) |
@@ -30,7 +30,7 @@ Aplicación mobile-first PWA para gestión de recetas de cocina con:
 | **Contenedores** | Podman + Podman Compose / Quadlet |
 | **Imágenes Base** | AWS ECR Public (`public.ecr.aws/...`) |
 | **Deployment** | VPS (Hetzner/DigitalOcean) + Podman Compose / Quadlet |
-| **Monorepo** | pnpm workspaces por app (`frontend/`, `admin/`) + `backend/` |
+| **Monorepo** | `frontend/` + `admin/` (SvelteKit) + `backend/` (FastAPI): un repo, un compose, un CI |
 
 ## 🎨 Diseño & UX
 
@@ -92,6 +92,12 @@ CORS_ORIGINS=http://localhost:3000,http://localhost:3001
 # GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET             → OAuth GitHub
 # AI_API_KEY / AI_BASE_URL / AI_MODEL                 → generación de recetas con IA
 ```
+
+## 🌐 Demo en vivo y deploy
+
+- **Demo**: `https://tu-app.duckdns.org` (pública) · admin en `https://tu-app-admin.duckdns.org`
+- **Llevarla a tu server con dominio gratis**: guía paso a paso en [`docs/architecture/03-deployment.md`](docs/architecture/03-deployment.md) (DuckDNS + Caddy con TLS automático).
+- Reemplazá los dominios de ejemplo por los reales cuando existan.
 
 ## 🐳 Despliegue con Podman
 
@@ -169,7 +175,7 @@ sdd-recetas/
 ### Usuario (Frontend)
 - **Access Token**: JWT HS256, 15 min, en memoria
 - **Refresh Token**: JWT HS256 con `jti`, 30 días, HttpOnly cookie, rotación
-- **OAuth**: Google + GitHub — **[v2]**
+- **OAuth**: Google + GitHub (config-gated por credenciales)
 - **Bootstrap Admin**: Variables `ADMIN_INITIAL_USER` + `ADMIN_INITIAL_PASSWORD` → `must_change_password=true`
 
 ### Admin (Proyecto Separado)
@@ -192,7 +198,7 @@ users, categories, tags, recipes, recipe_tags, favorites, visits, ratings, ingre
 - JSONB para ingredients (referencia al catálogo por ingredient_id)
 - Búsqueda por ILIKE (pg_trgm queda v2)
 - Contadores denormalizados calculados en la app (visit_count, avg_rating, save_count); sin triggers de BD
-- Soft delete admin con anonimización GDPR (v2)
+- Soft delete + anonimización GDPR implementados (sin reasignación a system user: ver UC-010)
 ```
 
 ## 🔍 Búsqueda Unificada
@@ -210,11 +216,15 @@ GET /api/recipes?category=postre&tags=vegano,sin-tacc&ingredients=almendra&q=bro
 ## 🧪 Testing
 
 ```bash
-# Backend (179 tests, incluida la integración de Socket.IO)
+# Backend: suite pytest (incluye integración Socket.IO y middleware)
 cd backend && uv run pytest
 
-# CI: .github/workflows/ci.yml corre la suite de backend con Postgres
-# y el build del frontend
+# Frontends: vitest unitario (utils, espejos de catálogo)
+cd frontend && pnpm run test
+cd admin && pnpm run test
+
+# CI: .github/workflows/ci.yml — ruff + pytest (backend) y
+# check + lint + test + build en cada frontend
 ```
 
 ## 📝 Changelog
@@ -247,10 +257,10 @@ cd backend && uv run ruff format .
 ## 🔐 Seguridad
 
 - ✅ JWT HS256 (simétrico) con `jti` y expiración 15 min (RS256 queda v2)
-- ⚠️ Refresh token rotación (nuevo par en cada refresh); detección de reuso por familia **pendiente [v2]**
+- ✅ Refresh token rotación (nuevo par en cada refresh) + detección de reuso por familia (revoca la familia)
 - ✅ HttpOnly + Secure + SameSite=Lax cookies
 - ✅ CORS restringido a orígenes permitidos
-- ⚠️ Rate limiting **pendiente [v2]**
+- ✅ Rate limiting por minuto (middleware, configurable en `/config`; exento `/api/admin`; tras proxy cuenta por `X-Forwarded-For`)
 - ⚠️ Password policy: solo longitud mínima 8 (complejidad **pendiente [v2]**)
 - ✅ bcrypt para hash de contraseñas
 - ⚠️ CSP/HSTS/X-Frame-Options **pendientes [v2]** (terminación TLS a cargo del proxy)
