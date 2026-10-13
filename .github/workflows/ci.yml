@@ -96,6 +96,10 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
+      # Vitest unit tests (utils, catalog mirrors). No browser needed.
+      - name: Test
+        run: pnpm run test
+
       - name: Build
         run: pnpm run build
 
@@ -135,6 +139,10 @@ jobs:
 
       - name: Lint
         run: pnpm run lint
+
+      # Vitest unit tests (catalog mirrors). No browser needed.
+      - name: Test
+        run: pnpm run test
 
       - name: Build
         run: pnpm run build

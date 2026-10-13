@@ -10,6 +10,7 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "vite dev -- --check",
 		"lint": "prettier --check . && eslint .",
+		"test": "vitest run",
 		"format": "prettier --write ."
 	},
 	"devDependencies": {
